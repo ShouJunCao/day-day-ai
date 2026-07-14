@@ -1,0 +1,58 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- uv ----
+# 保留 uv.lock 以锁定依赖版本，不忽略
+
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ---- IDE / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- Build / distribution ----
+dist/
+build/
+*.whl
+
+# ---- Test / coverage ----
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.cache/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Runtime generated artifacts ----
+# 03_prompt_engineering/01_prompt_principles 默认模板存储目录 (registry.json / *.txt)
+prompts/
+# 03_prompt_engineering/07_template_management 示例生成的模板目录
+mock_prompts/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
