@@ -7,11 +7,13 @@ import asyncio
 from prompt_evaluator import EvaluationPipeline, LLMEvaluator, RuleBasedEvaluator
 from metrics import aggregate_scores
 
+import os
+
 async def main() -> None:
     # 1. 初始化评估器
     judge = LLMEvaluator(
         judge_model="qwen-plus",
-        api_key="key",
+        api_key=os.getenv("API_KEY"),
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         rubric="评估代码的正确性、边界处理与可读性（0-100）"
     )
