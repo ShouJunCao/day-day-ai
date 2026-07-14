@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.1 大语言模型发展简史 - 学习内容</title>
+<style>
+@page { size: A4; margin: 2cm 2.5cm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #f8f9fb;
+    color: #2c3e50;
+    line-height: 1.8;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+}
+.hero-banner {
+    background: linear-gradient(135deg, #1a3c6e 0%, #3a7bd5 50%, #6ba3e8 100%);
+    color: white;
+    padding: 48px 40px;
+    border-radius: 16px;
+    margin-bottom: 36px;
+    position: relative;
+    overflow: hidden;
+}
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+}
+.hero-banner h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+}
+.hero-banner .subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+.hero-banner .module-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-top: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.summary-box {
+    background: linear-gradient(135deg, #f0f4f8, #e8eef5);
+    border-left: 4px solid #1a3c6e;
+    padding: 20px 24px;
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 36px;
+    font-size: 15px;
+}
+.summary-box strong { color: #1a3c6e; }
+
+h2 {
+    font-size: 22px;
+    color: #1a3c6e;
+    margin: 36px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+h3 {
+    font-size: 18px;
+    color: #2a5ea8;
+    margin: 28px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+h3 .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+h4 {
+    font-size: 15px;
+    color: #3a7bd5;
+    margin: 20px 0 8px;
+}
+p {
+    margin-bottom: 14px;
+    font-size: 15px;
+}
+.model-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.model-card .tag {
+    display: inline-block;
+    background: #e8f0fe;
+    color: #1a3c6e;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
+.model-card .tag.green { background: #e6f7ed; color: #1a7a3a; }
+.model-card .tag.orange { background: #fef3e2; color: #b35c00; }
+.model-card .tag.red { background: #fde8e8; color: #c53030; }
+.model-card .tag.purple { background: #f0e8fe; color: #6b21a8; }
+
+.highlight {
+    background: linear-gradient(180deg, transparent 60%, #dbeafe 60%);
+    padding: 0 2px;
+    font-weight: 600;
+}
+
+.chart-container {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+}
+.chart-container .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a3c6e;
+    margin-bottom: 16px;
+}
+.chart-container svg { max-width: 100%; }
+
+.insight-box {
+    background: #fffbf0;
+    border: 1px solid #f5d98e;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+}
+.insight-box .title {
+    font-weight: 700;
+    color: #b35c00;
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+
+.trend-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.trend-table th {
+    background: #1a3c6e;
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+}
+.trend-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.trend-table tr:nth-child(even) td { background: #f5f8fc; }
+
+.timeline-svg-wrap {
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.footer-note {
+    text-align: center;
+    color: #8899aa;
+    font-size: 12px;
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+blockquote {
+    border-left: 3px solid #3a7bd5;
+    padding: 12px 16px;
+    margin: 16px 0;
+    background: #f0f7ff;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #4a6fa5;
+}
+code {
+    background: #eef2f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #1a3c6e;
+}
+ul, ol { padding-left: 20px; margin: 8px 0 16px; }
+li { margin-bottom: 6px; font-size: 14px; }
+
+@media print {
+    body { padding: 0; max-width: none; }
+    .hero-banner { break-after: avoid; }
+    .model-card { break-inside: avoid; }
+    .chart-container { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hero Banner -->
+<div class="hero-banner">
+    <h1>1.1 大语言模型发展简史</h1>
+    <div class="subtitle">GPT → BERT → LLaMA → Qwen → Claude → DeepSeek</div>
+    <div class="module-tag">📖 模块一 · 大模型原理入门 · 第 1 节</div>
+</div>
+
+<!-- 一句话总结 -->
+<div class="summary-box">
+    <strong>🎯 核心脉络：</strong>从 2017 年 Transformer 架构诞生，到 2026 年多模态推理 Agent 遍地开花，大语言模型只用了不到 10 年就彻底改变了人工智能的面貌。发展线索可概括为四个阶段：<strong>架构奠基（2017-2018）→ 规模竞赛（2019-2022）→ 开源崛起（2023-2024）→ 效率革命与多模态融合（2025-2026）</strong>。
+</div>
+
+<!-- 时间轴图 -->
+<h2>发展脉络总览</h2>
+
+<div class="chart-container">
+    <div class="chart-title">📊 大语言模型发展时间线（2017-2026）</div>
+    <div class="timeline-svg-wrap">
+    <svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Background phases -->
+        <rect x="0" y="30" width="180" height="340" rx="8" fill="#f0f4f8" opacity="0.7"/>
+        <rect x="185" y="30" width="200" height="340" rx="8" fill="#e8f0fe" opacity="0.7"/>
+        <rect x="390" y="30" width="200" height="340" rx="8" fill="#e6f7ed" opacity="0.7"/>
+        <rect x="595" y="30" width="200" height="340" rx="8" fill="#fef3e2" opacity="0.7"/>
+
+        <!-- Phase labels -->
+        <text x="90" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#1a3c6e">🏗️ 架构奠基</text>
+        <text x="285" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#2a5ea8">📈 规模竞赛</text>
+        <text x="490" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7a3a">🔓 开源崛起</text>
+        <text x="695" y="22" text-anchor="middle" font-size="12" font-weight="700" fill="#b35c00">🔥 效率革命</text>
+
+        <!-- Timeline axis -->
+        <line x1="20" y1="195" x2="780" y2="195" stroke="#cbd5e1" stroke-width="2"/>
+        
+        <!-- Year markers -->
+        <g font-size="11" fill="#64748b" text-anchor="middle">
+            <text x="50" y="210">2017</text>
+            <text x="140" y="210">2018</text>
+            <text x="230" y="210">2019</text>
+            <text x="320" y="210">2020</text>
+            <text x="370" y="210">2022</text>
+            <text x="450" y="210">2023</text>
+            <text x="540" y="210">2024</text>
+            <text x="650" y="210">2025</text>
+            <text x="750" y="210">2026</text>
+        </g>
+
+        <!-- Events above timeline (closed source) -->
+        <!-- Transformer -->
+        <line x1="50" y1="190" x2="50" y2="130" stroke="#1a3c6e" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="10" y="90" width="80" height="40" rx="6" fill="#1a3c6e"/>
+        <text x="50" y="108" text-anchor="middle" font-size="9" fill="white" font-weight="600">Transformer</text>
+        <text x="50" y="121" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">Google · 2017.06</text>
+
+        <!-- GPT-1 -->
+        <line x1="120" y1="190" x2="120" y2="130" stroke="#e8913a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="85" y="90" width="70" height="40" rx="6" fill="#e8913a"/>
+        <text x="120" y="108" text-anchor="middle" font-size="9" fill="white" font-weight="600">GPT-1</text>
+        <text x="120" y="121" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">OpenAI · 2018.06</text>
+
+        <!-- BERT -->
+        <line x1="160" y1="190" x2="160" y2="255" stroke="#4285f4" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="125" y="255" width="70" height="40" rx="6" fill="#4285f4"/>
+        <text x="160" y="273" text-anchor="middle" font-size="9" fill="white" font-weight="600">BERT</text>
+        <text x="160" y="286" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">Google · 2018.10</text>
+
+        <!-- GPT-2 -->
+        <line x1="220" y1="190" x2="220" y2="130" stroke="#e8913a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="185" y="90" width="70" height="40" rx="6" fill="#e8913a"/>
+        <text x="220" y="108" text-anchor="middle" font-size="9" fill="white" font-weight="600">GPT-2</text>
+        <text x="220" y="121" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">OpenAI · 2019.02</text>
+
+        <!-- GPT-3 -->
+        <line x1="310" y1="190" x2="310" y2="255" stroke="#e8913a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="275" y="255" width="70" height="40" rx="6" fill="#e8913a"/>
+        <text x="310" y="273" text-anchor="middle" font-size="9" fill="white" font-weight="600">GPT-3</text>
+        <text x="310" y="286" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">175B · 2020.05</text>
+
+        <!-- ChatGPT -->
+        <line x1="370" y1="190" x2="370" y2="130" stroke="#c53030" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="335" y="80" width="76" height="48" rx="6" fill="#c53030"/>
+        <text x="373" y="100" text-anchor="middle" font-size="9" fill="white" font-weight="700">⭐ ChatGPT</text>
+        <text x="373" y="113" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">RLHF · 2022.11</text>
+        <text x="373" y="123" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.7)">2个月破亿用户</text>
+
+        <!-- GPT-4 -->
+        <line x1="440" y1="190" x2="440" y2="255" stroke="#e8913a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="405" y="255" width="70" height="40" rx="6" fill="#e8913a"/>
+        <text x="440" y="273" text-anchor="middle" font-size="9" fill="white" font-weight="600">GPT-4</text>
+        <text x="440" y="286" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">多模态 · 2023.03</text>
+
+        <!-- Claude 3 -->
+        <line x1="520" y1="190" x2="520" y2="130" stroke="#6b21a8" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="485" y="90" width="70" height="40" rx="6" fill="#6b21a8"/>
+        <text x="520" y="108" text-anchor="middle" font-size="9" fill="white" font-weight="600">Claude 3</text>
+        <text x="520" y="121" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">Anthropic · 2024</text>
+
+        <!-- DeepSeek-R1 -->
+        <line x1="640" y1="190" x2="640" y2="255" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="598" y="255" width="88" height="48" rx="6" fill="#dc2626"/>
+        <text x="642" y="273" text-anchor="middle" font-size="9" fill="white" font-weight="700">⭐ DeepSeek R1</text>
+        <text x="642" y="286" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">MIT · 仅$6M训练</text>
+        <text x="642" y="296" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.7)">AI界斯普特尼克</text>
+
+        <!-- GPT-5 -->
+        <line x1="690" y1="190" x2="690" y2="130" stroke="#e8913a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="655" y="90" width="70" height="40" rx="6" fill="#e8913a"/>
+        <text x="690" y="108" text-anchor="middle" font-size="9" fill="white" font-weight="600">GPT-5</text>
+        <text x="690" y="121" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">OpenAI · 2025.08</text>
+
+        <!-- LLaMA events below -->
+        <line x1="420" y1="190" x2="420" y2="140" stroke="#1a7a3a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="385" y="100" width="70" height="40" rx="6" fill="#1a7a3a"/>
+        <text x="420" y="118" text-anchor="middle" font-size="9" fill="white" font-weight="600">LLaMA</text>
+        <text x="420" y="131" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">Meta · 2023.02</text>
+
+        <!-- Qwen3 -->
+        <line x1="650" y1="190" x2="650" y2="140" stroke="#1a7a3a" stroke-width="1.5" stroke-dasharray="3,2"/>
+
+        <!-- LLaMA 4 -->
+        <line x1="610" y1="190" x2="610" y2="130" stroke="#1a7a3a" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <rect x="575" y="80" width="70" height="40" rx="6" fill="#1a7a3a"/>
+        <text x="610" y="98" text-anchor="middle" font-size="9" fill="white" font-weight="600">LLaMA 4</text>
+        <text x="610" y="111" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.8)">MoE · 2025.04</text>
+
+        <!-- Qwen3 label -->
+        <rect x="615" y="130" width="70" height="30" rx="6" fill="#1a7a3a"/>
+        <text x="650" y="145" text-anchor="middle" font-size="9" fill="white" font-weight="600">Qwen3</text>
+        <text x="650" y="156" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.8)">119语言 · 2025</text>
+
+        <!-- Legend -->
+        <rect x="20" y="330" width="12" height="12" rx="2" fill="#e8913a"/>
+        <text x="38" y="341" font-size="10" fill="#64748b">OpenAI (闭源)</text>
+        <rect x="130" y="330" width="12" height="12" rx="2" fill="#4285f4"/>
+        <text x="148" y="341" font-size="10" fill="#64748b">Google</text>
+        <rect x="210" y="330" width="12" height="12" rx="2" fill="#1a7a3a"/>
+        <text x="228" y="341" font-size="10" fill="#64748b">开源模型</text>
+        <rect x="310" y="330" width="12" height="12" rx="2" fill="#6b21a8"/>
+        <text x="328" y="341" font-size="10" fill="#64748b">Anthropic</text>
+        <rect x="410" y="330" width="12" height="12" rx="2" fill="#dc2626"/>
+        <text x="428" y="341" font-size="10" fill="#64748b">DeepSeek</text>
+        <rect x="510" y="330" width="12" height="12" rx="2" fill="#c53030"/>
+        <text x="528" y="341" font-size="10" fill="#64748b">里程碑事件 ⭐</text>
+    </svg>
+    </div>
+</div>
+
+<!-- GPT 系列 -->
+<h2>GPT 系列（OpenAI）：从文本生成到通用智能</h2>
+
+<p>GPT（Generative Pre-trained Transformer）是推动大模型浪潮的"头号功臣"。它的发展路径，就是 AI 从"工具"到"伙伴"的进化史。</p>
+
+<h3><span class="icon" style="background:#e8913a;color:white">1</span> GPT-1（2018年6月 · 1.17亿参数）</h3>
+<div class="model-card">
+    <span class="tag">预训练+微调</span>
+    <span class="tag green">OpenAI</span>
+    <p>GPT-1 首次提出了"<span class="highlight">预训练 + 微调</span>"的范式——先让模型在大量书籍上自学"猜下一个词"，再针对具体任务做小幅调整。打个比方，就像先让一个人博览群书，再让他去考某个专业考试。</p>
+    <p>这在当时是革命性的：此前 NLP 领域主要依赖人工标注数据，GPT-1 证明了"先自学再专攻"这条路行得通。在 GLUE 基准上，它以 72.8 分大幅超越此前最优的 68.9 分。</p>
+</div>
+
+<h3><span class="icon" style="background:#e8913a;color:white">2</span> GPT-2（2019年2月 · 15亿参数）</h3>
+<div class="model-card">
+    <span class="tag">零样本学习</span>
+    <span class="tag green">规模扩展</span>
+    <p>GPT-2 证明了"<span class="highlight">扩大规模就能变强</span>"。模型大到一定程度后，竟然不用教它怎么做翻译、写摘要，只要用自然语言"说"一下需求就行——这就是<span class="highlight">零样本学习</span>。</p>
+    <p>有趣的是，OpenAI 当时因担心"被用来生成假新闻"而延迟发布了完整模型，这在 AI 社区引发了关于开放性的激烈争论。</p>
+</div>
+
+<h3><span class="icon" style="background:#e8913a;color:white">3</span> GPT-3（2020年5月 · 1750亿参数）</h3>
+<div class="model-card">
+    <span class="tag">少样本学习</span>
+    <span class="tag orange">175B参数</span>
+    <p>GPT-3 是真正的分水岭。1750 亿参数意味着给它几个示例，它就能学会从未见过的任务——<span class="highlight">少样本学习（Few-shot）</span>。GitHub Copilot 就是基于它诞生的，从此程序员有了 AI 结对编程伙伴。</p>
+    <p>训练成本估计约 460 万美元（单 GPU 需要 355 年），这也是 OpenAI 首次选择不开源模型权重。</p>
+</div>
+
+<h3><span class="icon" style="background:#c53030;color:white">⭐</span> ChatGPT / GPT-3.5（2022年11月）</h3>
+<div class="model-card">
+    <span class="tag red">RLHF对齐</span>
+    <span class="tag red">引爆全球AI热潮</span>
+    <p>ChatGPT 引入了 <span class="highlight">RLHF（基于人类反馈的强化学习）</span>，让模型学会了"好好说话"——遵循指令、拒绝有害请求、减少胡说八道。发布两个月用户破亿，成为史上增长最快的消费应用，彻底引爆了全球 AI 热潮。</p>
+</div>
+
+<h3><span class="icon" style="background:#e8913a;color:white">4</span> GPT-4（2023年3月）→ GPT-4o（2024年5月）→ GPT-5（2025年8月）</h3>
+<div class="model-card">
+    <span class="tag">多模态</span>
+    <span class="tag purple">全模态实时</span>
+    <span class="tag orange">Agent能力</span>
+    <p><strong>GPT-4</strong> 升级为多模态模型，能"看图说话"。它在律师资格考试中位列前 10%，医学执照考试超过及格线 20 分以上——AI 首次在专业领域达到人类水平。</p>
+    <p><strong>GPT-4o</strong>（"o"代表 omni/全能）实现了文本、音频、图像在单一模型中实时处理，语音响应延迟仅 320 毫秒。</p>
+    <p><strong>GPT-5</strong> 引入统一路由系统，根据任务复杂度自动选择"快速回答"还是"深度思考"，并具备自主浏览网页、操作桌面的 Agent 能力。</p>
+</div>
+
+<!-- GPT 参数增长图 -->
+<div class="chart-container">
+    <div class="chart-title">📊 GPT 系列参数规模与核心创新演进</div>
+    <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Grid lines -->
+        <line x1="80" y1="40" x2="80" y2="230" stroke="#e2e8f0" stroke-width="1"/>
+        <line x1="80" y1="230" x2="730" y2="230" stroke="#94a3b8" stroke-width="1.5"/>
+        
+        <!-- Y axis labels -->
+        <text x="75" y="235" text-anchor="end" font-size="10" fill="#94a3b8">0</text>
+        <text x="75" y="195" text-anchor="end" font-size="10" fill="#94a3b8">50B</text>
+        <text x="75" y="155" text-anchor="end" font-size="10" fill="#94a3b8">100B</text>
+        <text x="75" y="115" text-anchor="end" font-size="10" fill="#94a3b8">150B</text>
+        <text x="75" y="75" text-anchor="end" font-size="10" fill="#94a3b8">200B</text>
+        <line x1="80" y1="190" x2="730" y2="190" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        <line x1="80" y1="150" x2="730" y2="150" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        <line x1="80" y1="110" x2="730" y2="110" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        <line x1="80" y1="70" x2="730" y2="70" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        
+        <!-- Bars -->
+        <!-- GPT-1: 0.117B → height ~1 -->
+        <rect x="110" y="228" width="60" height="3" rx="2" fill="#e8913a"/>
+        <text x="140" y="222" text-anchor="middle" font-size="10" fill="#e8913a" font-weight="600">117M</text>
+        <text x="140" y="250" text-anchor="middle" font-size="10" fill="#475569">GPT-1</text>
+        <text x="140" y="265" text-anchor="middle" font-size="8" fill="#94a3b8">2018.06</text>
+        <text x="140" y="280" text-anchor="middle" font-size="8" fill="#1a3c6e">预训练+微调</text>
+
+        <!-- GPT-2: 1.5B → height ~3 -->
+        <rect x="210" y="225" width="60" height="6" rx="2" fill="#e8913a"/>
+        <text x="240" y="219" text-anchor="middle" font-size="10" fill="#e8913a" font-weight="600">1.5B</text>
+        <text x="240" y="250" text-anchor="middle" font-size="10" fill="#475569">GPT-2</text>
+        <text x="240" y="265" text-anchor="middle" font-size="8" fill="#94a3b8">2019.02</text>
+        <text x="240" y="280" text-anchor="middle" font-size="8" fill="#1a3c6e">零样本学习</text>
+
+        <!-- GPT-3: 175B → height ~140 -->
+        <rect x="310" y="90" width="60" height="141" rx="4" fill="url(#gptGrad)"/>
+        <defs><linearGradient id="gptGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8913a"/><stop offset="100%" stop-color="#f0a850"/></linearGradient></defs>
+        <text x="340" y="83" text-anchor="middle" font-size="11" fill="#e8913a" font-weight="700">175B</text>
+        <text x="340" y="250" text-anchor="middle" font-size="10" fill="#475569" font-weight="600">GPT-3</text>
+        <text x="340" y="265" text-anchor="middle" font-size="8" fill="#94a3b8">2020.05</text>
+        <text x="340" y="280" text-anchor="middle" font-size="8" fill="#1a3c6e">少样本学习</text>
+
+        <!-- ChatGPT: ~175B -->
+        <rect x="410" y="90" width="60" height="141" rx="4" fill="#c53030"/>
+        <text x="440" y="83" text-anchor="middle" font-size="11" fill="#c53030" font-weight="700">~175B</text>
+        <text x="440" y="250" text-anchor="middle" font-size="10" fill="#475569" font-weight="600">ChatGPT</text>
+        <text x="440" y="265" text-anchor="middle" font-size="8" fill="#94a3b8">2022.11</text>
+        <text x="440" y="280" text-anchor="middle" font-size="8" fill="#1a3c6e">RLHF对齐</text>
+
+        <!-- GPT-4: undisclosed -->
+        <rect x="510" y="60" width="60" height="171" rx="4" fill="url(#gpt4Grad)" stroke="#e8913a" stroke-width="1" stroke-dasharray="4,3"/>
+        <defs><linearGradient id="gpt4Grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef3e2"/><stop offset="100%" stop-color="#fde8c8"/></linearGradient></defs>
+        <text x="540" y="53" text-anchor="middle" font-size="10" fill="#e8913a" font-weight="600">未公开</text>
+        <text x="540" y="145" text-anchor="middle" font-size="9" fill="#b35c00">?</text>
+        <text x="540" y="250" text-anchor="middle" font-size="10" fill="#475569" font-weight="600">GPT-4</text>
+        <text x="540" y="265" text-anchor="middle" font-size="8" fill="#94a3b8">2023.03</text>
+        <text x="540" y="280" text-anchor="middle" font-size="8" fill="#1a3c6e">多模态</text>
+
+        <!-- GPT-5: undisclosed -->
+        <rect x="620" y="50" width="60" height="181" rx="4" fill="url(#gpt5Grad)" stroke="#6b21a8" stroke-width="1" stroke-dasharray="4,3"/>
+        <defs><linearGradient id="gpt5Grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0e8fe"/><stop offset="100%" stop-color="#e0d0fe"/></linearGradient></defs>
+        <text x="650" y="43" text-anchor="middle" font-size="10" fill="#6b21a8" font-weight="600">未公开</text>
+        <text x="650" y="140" text-anchor="middle" font-size="9" fill="#6b21a8">?+</text>
+        <text x="650" y="250" text-anchor="middle" font-size="10" fill="#475569" font-weight="600">GPT-5</text>
+        <text x="650" y="265" text-anchor="middle" font-size="8" fill="#94a3b8">2025.08</text>
+        <text x="650" y="280" text-anchor="middle" font-size="8" fill="#1a3c6e">路由+Agent</text>
+
+        <!-- Arrow showing growth -->
+        <path d="M140,215 C250,200 350,120 540,80" fill="none" stroke="#e8913a" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+    </svg>
+</div>
+
+<!-- BERT -->
+<h2>BERT（Google，2018年10月）：理解型 AI 的基石</h2>
+
+<p>如果说 GPT 是"会写文章的人"，BERT 就是"善于阅读理解的人"。</p>
+
+<div class="model-card">
+    <span class="tag" style="background:#e3f2fd;color:#1565c0">双向理解</span>
+    <span class="tag green">Google AI</span>
+    <span class="tag">110M / 340M 参数</span>
+    <p>BERT 的核心创新是<span class="highlight">双向掩码语言模型（MLM）</span>：随机遮住句子中 15% 的词，让模型根据上下文去"填空"。这就像做英语考试的完形填空——你必须同时看前面和后面的内容才能选对答案。而 GPT 只能从左往右读，相当于只能看前面的内容。</p>
+    <p>BERT 迅速成为 NLP 的通用基线模型，2019 年被 Google 部署到搜索引擎中，覆盖 70 多种语言。它还催生了"BERT 学"（BERTology）这一专门研究领域，以及 RoBERTa、DistilBERT、DeBERTa 等一系列变体。</p>
+</div>
+
+<div class="insight-box">
+    <div class="title">💡 GPT vs BERT：两条路线之争</div>
+    <p style="font-size:14px;">BERT 是编码器架构（擅长理解），GPT 是解码器架构（擅长生成）。最终，<strong>生成式路线（GPT）在与理解式路线（BERT）的竞争中胜出</strong>，成为主流方向。原因是：一个"会写作"的模型，通过巧妙设计提示，同样可以完成"阅读理解"任务；但一个只会"阅读理解"的模型，很难学会"写作"。</p>
+</div>
+
+<!-- LLaMA -->
+<h2>LLaMA（Meta，2023年至今）：开源生态的开创者</h2>
+
+<p>LLaMA 系列的故事，就是一部"<span class="highlight">从封闭走向开放</span>"的进化史。</p>
+
+<div class="model-card">
+    <span class="tag green">开源</span>
+    <h4>LLaMA 1（2023年2月）</h4>
+    <p>用 13B 参数打败了 GPT-3 的 175B——证明"精心训练的小模型可以匹敌大模型"。权重泄露后社区疯传，催生了 Alpaca、Vicuna 等大量微调版本，被类比为"LLM 界的 Stable Diffusion 时刻"。</p>
+
+    <h4>LLaMA 2（2023年7月）</h4>
+    <p>首次允许商业使用，真正将大模型"开放"给了商业世界。与微软合作在 Azure 上发布。</p>
+
+    <h4>LLaMA 3（2024年4月）/ 3.1（2024年7月）</h4>
+    <p>8B 模型几乎达到 LLaMA 2 70B 的性能。3.1 版发布 405B 模型，是当时最大的开源模型。</p>
+
+    <h4>LLaMA 4（2025年4月）</h4>
+    <p>首次采用 MoE（混合专家）架构。Scout 版本支持 <span class="highlight">1000 万 token</span> 的超长上下文窗口——相当于一次性阅读 20 本书。</p>
+</div>
+
+<!-- LLaMA 四代对比图 -->
+<div class="chart-container">
+    <div class="chart-title">📊 LLaMA 四代模型演进对比</div>
+    <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Background -->
+        <rect x="0" y="0" width="700" height="260" rx="8" fill="white"/>
+        
+        <!-- Cards for each version -->
+        <!-- LLaMA 1 -->
+        <rect x="20" y="20" width="150" height="220" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+        <text x="95" y="48" text-anchor="middle" font-size="14" fill="#166534" font-weight="700">LLaMA 1</text>
+        <text x="95" y="66" text-anchor="middle" font-size="10" fill="#64748b">2023年2月</text>
+        <line x1="40" y1="76" x2="150" y2="76" stroke="#86efac" stroke-width="0.8"/>
+        <text x="95" y="96" text-anchor="middle" font-size="11" fill="#166534" font-weight="600">7B - 65B</text>
+        <text x="95" y="116" text-anchor="middle" font-size="10" fill="#64748b">1-1.4T tokens</text>
+        <text x="95" y="136" text-anchor="middle" font-size="10" fill="#64748b">2K 上下文</text>
+        <rect x="35" y="150" width="120" height="24" rx="4" fill="#dcfce7"/>
+        <text x="95" y="166" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">13B 打败 GPT-3 175B</text>
+        <rect x="35" y="180" width="120" height="24" rx="4" fill="#dcfce7"/>
+        <text x="95" y="196" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">🔓 开源生态起点</text>
+        <rect x="35" y="210" width="120" height="20" rx="4" fill="#fef3c7"/>
+        <text x="95" y="224" text-anchor="middle" font-size="8" fill="#92400e">仅学术研究许可</text>
+
+        <!-- LLaMA 2 -->
+        <rect x="190" y="20" width="150" height="220" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+        <text x="265" y="48" text-anchor="middle" font-size="14" fill="#166534" font-weight="700">LLaMA 2</text>
+        <text x="265" y="66" text-anchor="middle" font-size="10" fill="#64748b">2023年7月</text>
+        <line x1="210" y1="76" x2="320" y2="76" stroke="#86efac" stroke-width="0.8"/>
+        <text x="265" y="96" text-anchor="middle" font-size="11" fill="#166534" font-weight="600">7B - 70B</text>
+        <text x="265" y="116" text-anchor="middle" font-size="10" fill="#64748b">2T tokens</text>
+        <text x="265" y="136" text-anchor="middle" font-size="10" fill="#64748b">4K 上下文</text>
+        <rect x="205" y="150" width="120" height="24" rx="4" fill="#dcfce7"/>
+        <text x="265" y="166" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">✅ 首次允许商用</text>
+        <rect x="205" y="180" width="120" height="24" rx="4" fill="#dcfce7"/>
+        <text x="265" y="196" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">与 Microsoft 合作</text>
+        <rect x="205" y="210" width="120" height="20" rx="4" fill="#dcfce7"/>
+        <text x="265" y="224" text-anchor="middle" font-size="8" fill="#166534">自定义商业许可</text>
+
+        <!-- LLaMA 3 -->
+        <rect x="360" y="20" width="150" height="220" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+        <text x="435" y="48" text-anchor="middle" font-size="14" fill="#166534" font-weight="700">LLaMA 3/3.1</text>
+        <text x="435" y="66" text-anchor="middle" font-size="10" fill="#64748b">2024年4-7月</text>
+        <line x1="380" y1="76" x2="490" y2="76" stroke="#86efac" stroke-width="0.8"/>
+        <text x="435" y="96" text-anchor="middle" font-size="11" fill="#166534" font-weight="600">8B - 405B</text>
+        <text x="435" y="116" text-anchor="middle" font-size="10" fill="#64748b">~15T tokens</text>
+        <text x="435" y="136" text-anchor="middle" font-size="10" fill="#64748b">128K 上下文</text>
+        <rect x="375" y="150" width="120" height="24" rx="4" fill="#dcfce7"/>
+        <text x="435" y="166" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">8B ≈ 上代70B性能</text>
+        <rect x="375" y="180" width="120" height="24" rx="4" fill="#dcfce7"/>
+        <text x="435" y="196" text-anchor="middle" font-size="9" fill="#166534" font-weight="600">最大开源模型之一</text>
+        <rect x="375" y="210" width="120" height="20" rx="4" fill="#dcfce7"/>
+        <text x="435" y="224" text-anchor="middle" font-size="8" fill="#166534">Meta Llama 3 许可</text>
+
+        <!-- LLaMA 4 -->
+        <rect x="530" y="20" width="150" height="220" rx="10" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="605" y="48" text-anchor="middle" font-size="14" fill="#92400e" font-weight="700">LLaMA 4</text>
+        <text x="605" y="66" text-anchor="middle" font-size="10" fill="#64748b">2025年4月</text>
+        <line x1="550" y1="76" x2="660" y2="76" stroke="#fbbf24" stroke-width="0.8"/>
+        <text x="605" y="96" text-anchor="middle" font-size="11" fill="#92400e" font-weight="600">109B - 2T</text>
+        <text x="605" y="116" text-anchor="middle" font-size="10" fill="#64748b">MoE 架构</text>
+        <text x="605" y="136" text-anchor="middle" font-size="10" fill="#64748b">10M 上下文</text>
+        <rect x="545" y="150" width="120" height="24" rx="4" fill="#fef9c3"/>
+        <text x="605" y="166" text-anchor="middle" font-size="9" fill="#92400e" font-weight="600">🆕 首次MoE架构</text>
+        <rect x="545" y="180" width="120" height="24" rx="4" fill="#fef9c3"/>
+        <text x="605" y="196" text-anchor="middle" font-size="9" fill="#92400e" font-weight="600">千万级上下文窗口</text>
+        <rect x="545" y="210" width="120" height="20" rx="4" fill="#fef9c3"/>
+        <text x="605" y="224" text-anchor="middle" font-size="8" fill="#92400e">Community License</text>
+
+        <!-- Arrows between versions -->
+        <path d="M172,130 L188,130" fill="none" stroke="#166534" stroke-width="2" marker-end="url(#arrowG)"/>
+        <path d="M342,130 L358,130" fill="none" stroke="#166534" stroke-width="2" marker-end="url(#arrowG)"/>
+        <path d="M512,130 L528,130" fill="none" stroke="#92400e" stroke-width="2" marker-end="url(#arrowO)"/>
+        <defs>
+            <marker id="arrowG" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#166534"/></marker>
+            <marker id="arrowO" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#92400e"/></marker>
+        </defs>
+    </svg>
+</div>
+
+<!-- Qwen -->
+<h2>Qwen / 通义千问（阿里巴巴）：多语言全能选手</h2>
+
+<div class="model-card">
+    <span class="tag green">开源 · Apache 2.0</span>
+    <span class="tag">119种语言</span>
+    <span class="tag orange">双模式思考</span>
+    <p>Qwen 的独特定位是"<span class="highlight">全球化多语言模型</span>"。从初代（2023年8月）支持中英双语，到 Qwen2（2024年6月）覆盖 29 种语言，再到 Qwen3（2025年4月）支持 <strong>119 种语言和方言</strong>——包括粤语、闽南语等小众语种，这在所有大模型中无人能及。</p>
+    <p>Qwen3 还引入了<strong>双模式思考</strong>：思考模式（逐步推理，类似 o1）和非思考模式（快速响应）可自由切换。更惊人的是，Qwen3-4B 这个小模型的性能竟然匹敌 Qwen2.5-72B-Instruct，体现了"小模型大能力"的趋势。</p>
+</div>
+
+<!-- Claude -->
+<h2>Claude（Anthropic）：安全优先的 AI 领航者</h2>
+
+<div class="model-card">
+    <span class="tag purple">Anthropic</span>
+    <span class="tag">Constitutional AI</span>
+    <span class="tag red">安全第一</span>
+    <p>Anthropic 由 7 名前 OpenAI 员工于 2021 年创立，以 AI 安全研究为核心使命。Claude 最核心的技术创新是 <span class="highlight">Constitutional AI（宪法 AI）</span>：给模型一套"行为准则"（类似宪法），让 AI 自己批评和修改回答，再通过强化学习对齐。</p>
+    <p>Claude 3（2024年3月）推出 Haiku/Sonnet/Opus 三级产品策略。Claude 4（2025年5月）引入了 MCP 连接器和 Claude Code 工具，全面拥抱 Agent 生态。</p>
+</div>
+
+<!-- DeepSeek -->
+<h2>DeepSeek（深度求索）：效率革命的发起者</h2>
+
+<p>如果说其他模型在比"谁更大"，DeepSeek 在比"<span class="highlight">谁更省钱</span>"。</p>
+
+<div class="model-card">
+    <span class="tag red">MIT License</span>
+    <span class="tag">MoE + MLA</span>
+    <span class="tag orange">成本仅 $6M</span>
+    <p><strong>DeepSeek-V3</strong>（2024年12月）的训练成本仅 <span class="highlight">600 万美元</span>——是 GPT-4 的约 1/16，但性能毫不逊色。核心武器是 MLA（多头潜在注意力），用低秩近似大幅降低推理时的内存开销。</p>
+    <p><strong>DeepSeek-R1</strong>（2025年1月）更是一枚重磅炸弹。这个开源推理模型仅通过纯强化学习就训练出了媲美 OpenAI o1 的推理能力——训练中模型甚至自发产生了"顿悟时刻"（aha moment）。发布当天登顶美国 App Store，英伟达市值蒸发 6000 亿美元，被媒体称为"<strong>AI 界的斯普特尼克时刻</strong>"。</p>
+</div>
+
+<!-- 训练成本对比图 -->
+<div class="chart-container">
+    <div class="chart-title">📊 主要模型训练成本对比（估算）</div>
+    <svg viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Bars (horizontal) -->
+        <!-- GPT-4: ~$100M -->
+        <text x="120" y="55" text-anchor="end" font-size="12" fill="#475569" font-weight="600">GPT-4</text>
+        <rect x="130" y="38" width="480" height="28" rx="6" fill="#e8913a"/>
+        <text x="620" y="57" text-anchor="start" font-size="11" fill="#e8913a" font-weight="700">~$100M</text>
+
+        <!-- LLaMA 3.1: ~$100M -->
+        <text x="120" y="105" text-anchor="end" font-size="12" fill="#475569" font-weight="600">LLaMA 3.1</text>
+        <rect x="130" y="88" width="480" height="28" rx="6" fill="#1a7a3a"/>
+        <text x="620" y="107" text-anchor="start" font-size="11" fill="#1a7a3a" font-weight="700">~$100M</text>
+
+        <!-- Claude 3: undisclosed but high -->
+        <text x="120" y="155" text-anchor="end" font-size="12" fill="#475569" font-weight="600">Claude 3</text>
+        <rect x="130" y="138" width="380" height="28" rx="6" fill="#6b21a8" opacity="0.7"/>
+        <text x="520" y="157" text-anchor="start" font-size="11" fill="#6b21a8" font-weight="600">未公开 (估计$50M+)</text>
+
+        <!-- Qwen3: mid -->
+        <text x="120" y="205" text-anchor="end" font-size="12" fill="#475569" font-weight="600">Qwen3</text>
+        <rect x="130" y="188" width="200" height="28" rx="6" fill="#2563eb"/>
+        <text x="340" y="207" text-anchor="start" font-size="11" fill="#2563eb" font-weight="600">估计 $20-30M</text>
+
+        <!-- DeepSeek-V3: $6M -->
+        <text x="120" y="255" text-anchor="end" font-size="12" fill="#475569" font-weight="600">DeepSeek V3</text>
+        <rect x="130" y="238" width="29" height="28" rx="6" fill="#dc2626"/>
+        <text x="169" y="257" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">仅 $6M 🔥</text>
+
+        <!-- Scale annotation -->
+        <text x="350" y="278" text-anchor="middle" font-size="9" fill="#94a3b8">DeepSeek-V3 用 GPT-4 的 1/16 成本达到了竞争力性能</text>
+    </svg>
+</div>
+
+<!-- 总结 -->
+<h2>总结：趋势与启示</h2>
+
+<table class="trend-table">
+    <tr><th>趋势</th><th>早期（2017-2020）</th><th>中期（2021-2023）</th><th>当前（2024-2026）</th></tr>
+    <tr><td><strong>架构</strong></td><td>Dense Transformer</td><td>MoE 初现</td><td>MoE + 混合推理</td></tr>
+    <tr><td><strong>训练理念</strong></td><td>大模型 + 少数据</td><td>等比例扩展</td><td>小模型 + 充分训练</td></tr>
+    <tr><td><strong>对齐方式</strong></td><td>无对齐</td><td>RLHF</td><td>RLHF + Constitutional AI + GRPO</td></tr>
+    <tr><td><strong>开源程度</strong></td><td>基本闭源</td><td>部分开源</td><td>全面开源（MIT / Apache 2.0）</td></tr>
+    <tr><td><strong>能力边界</strong></td><td>文本生成</td><td>多模态理解</td><td>Agent 自主行动</td></tr>
+</table>
+
+<h3>三条核心启示</h3>
+
+<div class="insight-box">
+    <div class="title">1️⃣ "大"不是唯一的路</div>
+    <p style="font-size:14px;">Scaling Laws 曾让人以为"模型越大越强"，但 Chinchilla（2022）证明数据量同样重要，DeepSeek-V3 更是用 $6M 训练成本打平 $100M 的 GPT-4。未来的竞争不是比谁"烧钱多"，而是比谁的算法更聪明。</p>
+</div>
+
+<div class="insight-box">
+    <div class="title">2️⃣ 开源正在重塑格局</div>
+    <p style="font-size:14px;">从 LLaMA 泄露到 Mistral、Qwen3、DeepSeek-R1 全面 MIT/Apache 2.0 开源，开源模型已经能与闭源模型正面对抗。对于开发者来说，这意味着你可以在自己的服务器上运行世界级的 AI 模型。</p>
+</div>
+
+<div class="insight-box">
+    <div class="title">3️⃣ 从"会说话"到"会做事"</div>
+    <p style="font-size:14px;">GPT-3 能写文章，GPT-4 能看图，GPT-5 能自己上网搜索并操作电脑。模型正在从"语言工具"进化为"自主 Agent"——这将是下一个十年的主旋律。</p>
+</div>
+
+<div style="margin-top:48px;padding-top:24px;border-top:2px solid #e2e8f0;">
+    <h2 style="border-bottom:none;margin-top:0;">📚 参考资料</h2>
+    <ol style="padding-left:24px;font-size:13px;line-height:2.2;color:#475569;">
+        <li>Kaplan, J. et al. <em>"Scaling Laws for Neural Language Models"</em>, OpenAI, 2020. <a href="https://arxiv.org/abs/2001.08361" style="color:#1565c0;">https://arxiv.org/abs/2001.08361</a></li>
+        <li>Hoffmann, J. et al. <em>"Training Compute-Optimal Large Language Models"</em> (Chinchilla), DeepMind, 2022. <a href="https://arxiv.org/abs/2203.15556" style="color:#1565c0;">https://arxiv.org/abs/2203.15556</a></li>
+        <li>Ouyang, L. et al. <em>"Training language models to follow instructions with human feedback"</em> (InstructGPT), OpenAI, 2022. <a href="https://arxiv.org/abs/2203.02155" style="color:#1565c0;">https://arxiv.org/abs/2203.02155</a></li>
+        <li>DeepSeek AI. <em>"DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning"</em>, 2025. <a href="https://arxiv.org/abs/2501.12948" style="color:#1565c0;">https://arxiv.org/abs/2501.12948</a></li>
+        <li>苏剑林. <em>"《Attention is All You Need》浅读（简介+代码）"</em>, 科学空间, 2018. <a href="https://spaces.ac.cn/archives/4765" style="color:#1565c0;">https://spaces.ac.cn/archives/4765</a></li>
+        <li>Datawhale. <em>"动手学大模型应用开发（LLM Universe）"</em>, 开源社区. <a href="https://github.com/datawhalechina/llm-universe" style="color:#1565c0;">https://github.com/datawhalechina/llm-universe</a></li>
+        <li>Datawhale. <em>"开源大模型食用指南（Self-LLM）"</em>, 开源社区. <a href="https://github.com/datawhalechina/self-llm" style="color:#1565c0;">https://github.com/datawhalechina/self-llm</a></li>
+        <li>邱锡鹏. <em>"神经网络与深度学习（蒲公英书系列）"</em>, 复旦大学. <a href="https://nndl.github.io/" style="color:#1565c0;">https://nndl.github.io/</a></li>
+    </ol>
+</div>
+
+<div class="footer-note">
+    <p>大模型应用开发学习大纲 V2.0 · 模块一 · 第 1.1 节</p>
+</div>
+
+</body>
+</html>

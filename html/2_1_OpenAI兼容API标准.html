@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.1 OpenAI 兼容 API 标准</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            line-height: 1.8; color: #333; max-width: 900px; margin: 0 auto; padding: 40px 20px; background: #fafafa;
+        }
+        h1 { font-size: 28px; color: #1a1a1a; margin-bottom: 8px; border-bottom: 3px solid #4A90D9; padding-bottom: 12px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
+        h2 { font-size: 22px; color: #2c3e50; margin: 35px 0 15px; padding-left: 12px; border-left: 4px solid #4A90D9; }
+        h3 { font-size: 18px; color: #34495e; margin: 25px 0 10px; }
+        p { margin: 12px 0; text-align: justify; }
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;
+            padding: 20px 25px; border-radius: 12px; margin: 20px 0;
+        }
+        .highlight-box h3 { color: white; margin-top: 0; }
+        .highlight-box p { color: rgba(255,255,255,0.95); }
+        .concept-card {
+            background: white; border-radius: 12px; padding: 20px; margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #4A90D9;
+        }
+        .concept-card.streaming { border-left-color: #27ae60; }
+        .concept-card.func { border-left-color: #e74c3c; }
+        .concept-card.response { border-left-color: #f39c12; }
+        .concept-card h3 { margin-top: 0; }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin: 3px 3px 3px 0; }
+        .tag-easy { background: #e8f5e9; color: #2e7d32; }
+        .tag-medium { background: #fff3e0; color: #e65100; }
+        .tag-hard { background: #fce4ec; color: #c62828; }
+        pre {
+            background: #282c34; border-radius: 8px; padding: 20px; overflow-x: auto;
+            margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        pre code {
+            font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Menlo', monospace;
+            font-size: 13px; line-height: 1.7; color: #abb2bf; white-space: pre-wrap; word-break: break-word;
+        }
+        .kw { color: #c678dd; } .str { color: #98c379; } .cmt { color: #5c6370; font-style: italic; }
+        .dec { color: #e5c07b; } .cls { color: #61afef; } .num { color: #d19a66; }
+        .op { color: #56b6c2; } .slf { color: #e06c75; } .fn { color: #61afef; } .bi { color: #e5c07b; }
+        .diagram-container {
+            text-align: center; margin: 25px 0; padding: 20px;
+            background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .diagram-caption { font-size: 14px; color: #666; margin-top: 10px; }
+        table {
+            width: 100%; border-collapse: collapse; margin: 20px 0;
+            background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        th { background: #4A90D9; color: white; padding: 12px 15px; text-align: left; font-weight: 600; }
+        td { padding: 10px 15px; border-bottom: 1px solid #eee; }
+        tr:hover td { background: #f8f9fa; }
+        .summary-box {
+            background: #f0f7ff; border: 2px solid #4A90D9; border-radius: 12px; padding: 25px; margin: 30px 0;
+        }
+        .summary-box h2 { border-left: none; padding-left: 0; margin-top: 0; }
+        .references {
+            background: white; border-radius: 12px; padding: 20px; margin: 30px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .references h2 { border-left: none; padding-left: 0; margin-top: 0; font-size: 18px; }
+        .references ol { padding-left: 20px; }
+        .references li { margin: 8px 0; font-size: 14px; }
+        .references a { color: #4A90D9; text-decoration: none; }
+        .references a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<h1>2.1 OpenAI 兼容 API 标准</h1>
+<p class="subtitle">Chat Completions · Streaming · Function Calling · Responses API — 一套标准，万物互联</p>
+
+<div class="highlight-box">
+    <h3>💡 核心洞察</h3>
+    <p>OpenAI 的 API 格式已经成为大模型行业的<strong>事实标准</strong>。通义千问、DeepSeek、智谱、Moonshot、Mistral 等国内外主流模型全部兼容这套接口。掌握一套 API，就能调用所有模型——这就是"OpenAI 兼容"的力量。</p>
+</div>
+
+<h2>一、为什么需要统一标准？</h2>
+
+<p>在 2023 年之前，每家大模型厂商都有自己的 API 格式：调用通义千问用一种方式，调用文心一言用另一种方式，调用智谱 GLM 又是不同的方式。开发者如果想切换模型或做多模型对比，就得写完全不同的对接代码。这种碎片化严重拖慢了开发效率。</p>
+
+<p>OpenAI 的 Chat Completions API 凭借其简洁的设计和强大的功能，逐渐成为行业标杆。2024 年以来，几乎所有新发布的大模型都宣称"兼容 OpenAI API 格式"。这意味着你只要学会了 OpenAI 的 <code>openai</code> Python 库，就能用<strong>同一套代码</strong>调用市面上绝大多数模型。</p>
+
+<p>这种"一次学习，到处运行"的体验，就像 SQL 之于数据库、HTTP 之于 Web——标准统一带来了巨大的生态红利。开发者不再被单一厂商绑定，可以自由切换模型、做 A/B 测试、构建多模型网关，灵活性大大增强。</p>
+
+<p>从技术架构的角度看，OpenAI 兼容 API 遵循 RESTful 设计原则：使用标准 HTTP 方法（POST）、JSON 格式的请求和响应体、以及明确的 HTTP 状态码。认证方式统一采用 <code>Authorization: Bearer &lt;api_key&gt;</code> 的 HTTP Header 方式。这种简洁的设计降低了接入门槛，让任何支持 HTTP 的编程语言都能轻松对接。</p>
+
+<p>Python 开发者最常用的工具是官方的 <code>openai</code> 库。这个库封装了所有 API 调用的细节，提供了类型安全的接口和完善的错误处理。安装只需 <code>pip install openai</code>，然后创建 <code>OpenAI</code> 客户端实例即可开始调用。值得注意的是，国内模型同样支持这个库——只需修改 <code>base_url</code> 参数指向自己的 API 地址。</p>
+
+<h2>二、Chat Completions API — 对话的核心</h2>
+
+<div class="concept-card">
+    <h3>💬 Chat Completions API</h3>
+    <p><span class="tag tag-easy">基础接口</span><span class="tag tag-easy">所有模型支持</span><span class="tag tag-easy">RESTful</span></p>
+    <p>Chat Completions 是大模型对话的核心接口。你发送一组消息（messages），模型返回一个完整的回复。接口地址固定为 <code>/v1/chat/completions</code>。</p>
+</div>
+
+<p>一个标准的 Chat Completions 请求包含以下核心元素：</p>
+
+<table>
+    <tr><th>参数</th><th>类型</th><th>说明</th><th>示例</th></tr>
+    <tr><td><strong>model</strong></td><td>string</td><td>模型名称</td><td><code>qwen-plus</code>, <code>gpt-4o</code></td></tr>
+    <tr><td><strong>messages</strong></td><td>array</td><td>消息列表（核心）</td><td>包含 system/user/assistant 消息</td></tr>
+    <tr><td><strong>temperature</strong></td><td>float</td><td>随机性控制（0~2）</td><td>0.7（平衡创造性和准确性）</td></tr>
+    <tr><td><strong>max_tokens</strong></td><td>int</td><td>最大输出 token 数</td><td>500</td></tr>
+    <tr><td><strong>stream</strong></td><td>bool</td><td>是否流式输出</td><td>false（默认）</td></tr>
+</table>
+
+<p>消息（messages）是 Chat Completions 的灵魂。每条消息有一个 <code>role</code>（角色）和 <code>content</code>（内容）：</p>
+
+<table>
+    <tr><th>角色</th><th>用途</th><th>使用场景</th></tr>
+    <tr><td><strong>system</strong></td><td>设定 AI 的行为准则和角色定位</td><td>对话最前面，定义 AI 的身份和规则</td></tr>
+    <tr><td><strong>user</strong></td><td>用户的输入</td><td>每轮用户说的话</td></tr>
+    <tr><td><strong>assistant</strong></td><td>AI 的历史回复</td><td>多轮对话时，记录 AI 说过的话</td></tr>
+    <tr><td><strong>tool</strong></td><td>工具调用的返回结果</td><td>Function Calling 中使用</td></tr>
+</table>
+
+<!-- SVG: Chat Completions 请求响应流程 -->
+<div class="diagram-container">
+    <svg width="800" height="200" viewBox="0 0 800 200">
+        <!-- 客户端 -->
+        <rect x="20" y="60" width="140" height="80" rx="10" fill="#4A90D9"/>
+        <text x="90" y="95" text-anchor="middle" fill="white" font-size="13" font-weight="bold">客户端</text>
+        <text x="90" y="115" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="11">Python / HTTP</text>
+
+        <!-- 请求 -->
+        <line x1="160" y1="85" x2="320" y2="85" stroke="#333" stroke-width="2" marker-end="url(#arr1)"/>
+        <defs><marker id="arr1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#333"/></marker></defs>
+        <text x="240" y="75" text-anchor="middle" fill="#e74c3c" font-size="11" font-weight="bold">POST /v1/chat/completions</text>
+        <rect x="170" y="92" width="140" height="25" rx="4" fill="#fff3e0" stroke="#f39c12"/>
+        <text x="240" y="109" text-anchor="middle" fill="#e65100" font-size="10">messages + model + params</text>
+
+        <!-- API 网关 -->
+        <rect x="320" y="50" width="160" height="100" rx="10" fill="#27ae60"/>
+        <text x="400" y="85" text-anchor="middle" fill="white" font-size="13" font-weight="bold">OpenAI 兼容 API</text>
+        <text x="400" y="105" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">统一接口标准</text>
+        <text x="400" y="125" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">Qwen/DeepSeek/GLM/...</text>
+
+        <!-- 响应 -->
+        <line x1="480" y1="115" x2="640" y2="115" stroke="#333" stroke-width="2" marker-end="url(#arr1)"/>
+        <text x="560" y="105" text-anchor="middle" fill="#27ae60" font-size="11" font-weight="bold">Response</text>
+        <rect x="500" y="122" width="130" height="25" rx="4" fill="#e8f5e9" stroke="#27ae60"/>
+        <text x="565" y="139" text-anchor="middle" fill="#2e7d32" font-size="10">choices + usage</text>
+
+        <!-- 响应结构 -->
+        <rect x="640" y="50" width="140" height="100" rx="10" fill="#9b59b6"/>
+        <text x="710" y="80" text-anchor="middle" fill="white" font-size="12" font-weight="bold">响应结构</text>
+        <text x="710" y="100" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">choices[0].message</text>
+        <text x="710" y="118" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">usage (token 统计)</text>
+        <text x="710" y="136" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">finish_reason</text>
+    </svg>
+    <p class="diagram-caption">图 1：Chat Completions API 请求-响应流程</p>
+</div>
+
+<h2>三、流式输出（Streaming）— SSE 的艺术</h2>
+
+<div class="concept-card streaming">
+    <h3>🌊 流式输出（Streaming）</h3>
+    <p><span class="tag tag-medium">SSE 协议</span><span class="tag tag-medium">逐 token 返回</span><span class="tag tag-easy">用户体验关键</span></p>
+    <p>非流式模式下，模型生成完整回复后一次性返回。用户需要等待数秒甚至十几秒才能看到结果。流式模式让模型<strong>边生成边返回</strong>，用户几乎实时看到文字"打"出来——就像 ChatGPT 那样。</p>
+</div>
+
+<p>流式输出的底层技术是 <strong>SSE（Server-Sent Events）</strong>。SSE 是一种基于 HTTP 的单向通信协议：服务器通过一个持久连接，持续向客户端推送事件。每个事件以 <code>data: </code> 开头，以 <code>\n\n</code> 结尾。</p>
+
+<p>在 Python 的 <code>openai</code> 库中，流式模式的用法非常简洁。设置 <code>stream=True</code> 后，API 返回的不是一个完整的 Response 对象，而是一个<strong>迭代器</strong>。每个迭代元素是一个 <code>chunk</code>（数据块），其中包含一个 <code>delta</code>（增量），代表本次新生成的那部分文本。</p>
+
+<pre><code><span class="cmt"># 流式输出示例 — 核心代码只需 3 步</span>
+
+<span class="cmt"># 1. 开启 stream=True</span>
+stream = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"介绍 GIL"</span>}],
+    stream=<kw>True</kw>,  <span class="cmt"># 开启流式</span>
+)
+
+<span class="cmt"># 2. 逐块读取增量</span>
+<span class="kw">for</span> chunk <span class="kw">in</span> stream:
+    delta = chunk.choices[<num>0</num>].delta
+    <span class="kw">if</span> delta.content:
+        <span class="bi">print</span>(delta.content, end=<span class="str">""</span>, flush=<kw>True</kw>)
+
+    <span class="cmt"># 3. 检查是否结束</span>
+    <span class="kw">if</span> chunk.choices[<num>0</num>].finish_reason:
+        <span class="bi">print</span>(<span class="str">f"\n完成: <span class="op">{</span>chunk.choices[0].finish_reason<span class="op">}</span>"</span>)</code></pre>
+
+<p>流式与非流式的核心区别在于<strong>响应的数据结构</strong>不同。非流式返回完整的 <code>message</code>（包含完整 content），流式返回 <code>delta</code>（只包含本次增量）。此外，流式模式下的 <code>usage</code>（token 统计）信息通常在最后一个 chunk 中返回，有些提供商可能不返回。</p>
+
+<p>在生产环境中，流式输出有几个需要注意的要点：<strong>错误处理</strong>——流式过程中网络中断可能导致数据不完整，需要实现超时和重试机制；<strong>背压控制</strong>——如果客户端处理速度跟不上生成速度，缓冲区可能溢出；<strong>结束标记</strong>——OpenAI 标准的流式响应以 <code>data: [DONE]</code> 标记结束，Python 的 openai 库会自动处理这个标记。</p>
+
+<p>流式输出还有一个重要的应用场景：<strong>长文本生成的用户体验优化</strong>。当模型需要生成几千字的长文时，非流式模式可能让用户等待 10-30 秒才看到结果，而流式模式让用户在第一个 token 生成时（通常 &lt;1 秒）就能看到内容。这种"即时反馈"对用户体验的提升是显著的。</p>
+
+<!-- SVG: 流式 vs 非流式 -->
+<div class="diagram-container">
+    <svg width="780" height="220" viewBox="0 0 780 220">
+        <text x="390" y="20" text-anchor="middle" fill="#4A90D9" font-size="14" font-weight="bold">流式 vs 非流式输出对比</text>
+
+        <!-- 非流式 -->
+        <text x="60" y="60" fill="#333" font-size="12" font-weight="bold">非流式：</text>
+        <rect x="60" y="70" width="120" height="30" rx="5" fill="#e74c3c" opacity="0.2" stroke="#e74c3c"/>
+        <text x="120" y="90" text-anchor="middle" fill="#e74c3c" font-size="10">请求</text>
+        <line x1="180" y1="85" x2="200" y2="85" stroke="#999" stroke-width="1.5"/>
+        <rect x="200" y="70" width="350" height="30" rx="5" fill="#ccc" stroke="#999"/>
+        <text x="375" y="90" text-anchor="middle" fill="#666" font-size="10">等待模型生成（3~10秒）...</text>
+        <line x1="550" y1="85" x2="570" y2="85" stroke="#999" stroke-width="1.5"/>
+        <rect x="570" y="70" width="150" height="30" rx="5" fill="#4A90D9" stroke="#4A90D9"/>
+        <text x="645" y="90" text-anchor="middle" fill="white" font-size="10">一次性返回完整回复</text>
+
+        <!-- 流式 -->
+        <text x="60" y="140" fill="#333" font-size="12" font-weight="bold">流式：</text>
+        <rect x="60" y="150" width="120" height="30" rx="5" fill="#27ae60" opacity="0.2" stroke="#27ae60"/>
+        <text x="120" y="170" text-anchor="middle" fill="#27ae60" font-size="10">请求</text>
+        <line x1="180" y1="165" x2="200" y2="165" stroke="#999" stroke-width="1.5"/>
+
+        <rect x="200" y="150" width="70" height="30" rx="5" fill="#27ae60"/>
+        <text x="235" y="170" text-anchor="middle" fill="white" font-size="9">chunk 1</text>
+        <rect x="280" y="150" width="70" height="30" rx="5" fill="#27ae60"/>
+        <text x="315" y="170" text-anchor="middle" fill="white" font-size="9">chunk 2</text>
+        <rect x="360" y="150" width="70" height="30" rx="5" fill="#27ae60"/>
+        <text x="395" y="170" text-anchor="middle" fill="white" font-size="9">chunk 3</text>
+        <rect x="440" y="150" width="50" height="30" rx="5" fill="#27ae60" opacity="0.7"/>
+        <text x="465" y="170" text-anchor="middle" fill="white" font-size="9">...</text>
+        <rect x="500" y="150" width="70" height="30" rx="5" fill="#27ae60"/>
+        <text x="535" y="170" text-anchor="middle" fill="white" font-size="9">chunk N</text>
+        <rect x="580" y="150" width="80" height="30" rx="5" fill="#f39c12"/>
+        <text x="620" y="170" text-anchor="middle" fill="white" font-size="9">[DONE]</text>
+
+        <!-- 时间线标注 -->
+        <text x="390" y="210" text-anchor="middle" fill="#888" font-size="11">流式：每个 chunk 包含一个 delta 增量，用户实时看到文字逐步生成</text>
+    </svg>
+    <p class="diagram-caption">图 2：流式 vs 非流式输出模式对比</p>
+</div>
+
+<h2>四、Function Calling — 让模型调用外部工具</h2>
+
+<div class="concept-card func">
+    <h3>🔧 Function Calling（函数调用）</h3>
+    <p><span class="tag tag-hard">高级功能</span><span class="tag tag-hard">工具集成</span><span class="tag tag-medium">Agent 基础</span></p>
+    <p>Function Calling 让模型不再只是"回答问题"，而是能<strong>调用外部函数</strong>来获取实时信息、执行操作。这是构建 Agent 系统的基石。</p>
+</div>
+
+<p>Function Calling 的核心思想是：你定义一组<strong>工具描述</strong>（JSON Schema 格式），告诉模型"你可以调用这些函数"。模型在收到用户请求后，<strong>自主判断</strong>是否需要调用工具，如果需要，它会返回一个工具调用请求（包含函数名和参数），而不是直接生成文本回复。</p>
+
+<p>完整的 Function Calling 流程分四步：</p>
+
+<table>
+    <tr><th>步骤</th><th>角色</th><th>做什么</th></tr>
+    <tr><td>❶ 定义工具</td><td>开发者</td><td>用 JSON Schema 描述函数名、参数、用途</td></tr>
+    <tr><td>❷ 模型决策</td><td>AI 模型</td><td>判断是否需要调用工具，返回 <code>tool_calls</code></td></tr>
+    <tr><td>❸ 执行函数</td><td>开发者</td><td>调用实际函数，获取结果</td></tr>
+    <tr><td>❹ 返回结果</td><td>AI 模型</td><td>根据函数结果生成最终回复</td></tr>
+</table>
+
+<!-- SVG: Function Calling 流程 -->
+<div class="diagram-container">
+    <svg width="800" height="260" viewBox="0 0 800 260">
+        <text x="400" y="20" text-anchor="middle" fill="#e74c3c" font-size="14" font-weight="bold">Function Calling 完整流程</text>
+
+        <!-- 用户 -->
+        <rect x="20" y="40" width="100" height="40" rx="8" fill="#4A90D9"/>
+        <text x="70" y="65" text-anchor="middle" fill="white" font-size="12">用户提问</text>
+        <line x1="120" y1="60" x2="170" y2="60" stroke="#333" stroke-width="1.5" marker-end="url(#arr1)"/>
+
+        <!-- 步骤1 -->
+        <rect x="170" y="40" width="150" height="40" rx="8" fill="#9b59b6"/>
+        <text x="245" y="56" text-anchor="middle" fill="white" font-size="11" font-weight="bold">❶ 定义工具</text>
+        <text x="245" y="72" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">JSON Schema</text>
+        <line x1="320" y1="60" x2="370" y2="60" stroke="#333" stroke-width="1.5" marker-end="url(#arr1)"/>
+
+        <!-- 步骤2 -->
+        <rect x="370" y="40" width="150" height="40" rx="8" fill="#e74c3c"/>
+        <text x="445" y="56" text-anchor="middle" fill="white" font-size="11" font-weight="bold">❷ 模型决策</text>
+        <text x="445" y="72" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">返回 tool_calls</text>
+
+        <!-- 分支 -->
+        <line x1="520" y1="60" x2="570" y2="60" stroke="#333" stroke-width="1.5" marker-end="url(#arr1)"/>
+
+        <!-- 步骤3 -->
+        <rect x="570" y="40" width="150" height="40" rx="8" fill="#f39c12"/>
+        <text x="645" y="56" text-anchor="middle" fill="white" font-size="11" font-weight="bold">❸ 执行函数</text>
+        <text x="645" y="72" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">开发者调用实际 API</text>
+
+        <!-- 步骤4 -->
+        <line x1="645" y1="80" x2="645" y2="120" stroke="#333" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <rect x="570" y="120" width="150" height="40" rx="8" fill="#27ae60"/>
+        <text x="645" y="136" text-anchor="middle" fill="white" font-size="11" font-weight="bold">❹ 返回结果</text>
+        <text x="645" y="152" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">tool message</text>
+
+        <!-- 最终回复 -->
+        <line x1="570" y1="140" x2="520" y2="140" stroke="#333" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <rect x="370" y="120" width="150" height="40" rx="8" fill="#1abc9c"/>
+        <text x="445" y="136" text-anchor="middle" fill="white" font-size="11" font-weight="bold">模型生成回复</text>
+        <text x="445" y="152" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="9">基于工具结果</text>
+
+        <!-- 用户收到 -->
+        <line x1="370" y1="140" x2="120" y2="140" stroke="#333" stroke-width="1.5" marker-end="url(#arr1)"/>
+        <rect x="20" y="120" width="100" height="40" rx="8" fill="#34495e"/>
+        <text x="70" y="145" text-anchor="middle" fill="white" font-size="12">用户收到</text>
+
+        <!-- 底部说明 -->
+        <text x="400" y="200" text-anchor="middle" fill="#666" font-size="11">模型不会执行函数！它只是告诉你"该调用哪个函数、传什么参数"</text>
+        <text x="400" y="220" text-anchor="middle" fill="#666" font-size="11">真正的函数执行由开发者完成，结果再返回给模型</text>
+    </svg>
+    <p class="diagram-caption">图 3：Function Calling 四步流程</p>
+</div>
+
+<p>Function Calling 的关键代码是<strong>工具定义</strong>。工具描述使用 JSON Schema 格式，需要指定函数名（<code>name</code>）、功能描述（<code>description</code>）和参数结构（<code>parameters</code>）。参数描述越清晰，模型的调用准确性越高。</p>
+
+<p>关于 Function Calling 有几个重要的实践要点：</p>
+
+<p>• <strong>tool_choice 参数</strong>：设为 <code>"auto"</code>（默认）时模型自行决定是否调用；设为 <code>"required"</code> 时强制调用；设为 <code>"none"</code> 时禁止调用。还可以指定具体函数名强制调用特定工具。<br>
+• <strong>并行调用</strong>：部分模型（如 GPT-4o、Qwen-Max）支持在一次响应中返回多个 tool_calls，开发者需要逐个执行并返回结果。<br>
+• <strong>安全性</strong>：模型只返回"要调用什么"，实际执行由开发者控制。务必对模型传入的参数做校验和过滤，防止注入攻击。<br>
+• <strong>错误处理</strong>：函数执行失败时，应将错误信息作为 tool message 返回给模型，让模型理解失败原因并尝试其他方式。</p>
+
+<pre><code><span class="cmt"># Function Calling 工具定义示例</span>
+
+tools = [{
+    <span class="str">"type"</span>: <span class="str">"function"</span>,
+    <span class="str">"function"</span>: {
+        <span class="str">"name"</span>: <span class="str">"get_weather"</span>,
+        <span class="str">"description"</span>: <span class="str">"获取指定城市的当前天气信息"</span>,
+        <span class="str">"parameters"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>,
+            <span class="str">"properties"</span>: {
+                <span class="str">"city"</span>: {
+                    <span class="str">"type"</span>: <span class="str">"string"</span>,
+                    <span class="str">"description"</span>: <span class="str">"城市名称，如：北京、上海"</span>,
+                },
+                <span class="str">"unit"</span>: {
+                    <span class="str">"type"</span>: <span class="str">"string"</span>,
+                    <span class="str">"enum"</span>: [<span class="str">"celsius"</span>, <span class="str">"fahrenheit"</span>],
+                },
+            },
+            <span class="str">"required"</span>: [<span class="str">"city"</span>],
+        },
+    },
+}]
+
+<span class="cmt"># 发送请求时带上 tools</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"北京天气怎么样？"</span>}],
+    tools=tools,
+    tool_choice=<span class="str">"auto"</span>,  <span class="cmt"># auto=模型自行决定是否调用</span>
+)</code></pre>
+
+<h2>五、Responses API — 新一代接口</h2>
+
+<div class="concept-card response">
+    <h3>🚀 Responses API</h3>
+    <p><span class="tag tag-hard">最新标准</span><span class="tag tag-medium">2025 年推出</span><span class="tag tag-medium">内置工具</span></p>
+    <p>Responses API 是 OpenAI 在 2025 年推出的新一代接口标准，旨在统一对话、工具调用和内置能力。接口地址为 <code>/v1/responses</code>，用更简洁的方式实现 Chat Completions + Function Calling 的全部功能。</p>
+</div>
+
+<p>Responses API 相比 Chat Completions 有三个核心改进：</p>
+
+<p>• <strong>统一的消息模型</strong>：不再区分 messages 和 tool_calls，所有输入输出都是统一的 <code>input</code>/<code>output</code> 格式<br>
+• <strong>内置工具</strong>：原生支持 web_search（网页搜索）、file_search（文件检索）、code_interpreter（代码执行）等内置工具，无需自己实现<br>
+• <strong>多步推理</strong>：原生支持模型在一次请求中多次调用工具、多步推理后给出最终答案</p>
+
+<p>不过需要注意的是，Responses API 目前只有 OpenAI 官方支持，国内模型尚未跟进。在实际项目中，Chat Completions 仍然是最通用的选择。了解 Responses API 有助于把握未来趋势。</p>
+
+<h2>六、多轮对话与上下文管理</h2>
+
+<p>Chat Completions API 本身是<strong>无状态</strong>的——每次请求都是独立的，模型不会自动记住上一次对话的内容。要实现多轮对话，开发者需要在每次请求中携带完整的消息历史（messages 列表）。</p>
+
+<p>这意味着每轮对话都需要把之前的所有消息（system + 历次 user/assistant 交互）一起发送给模型。随着对话轮次增加，消息列表会越来越长，token 消耗也会线性增长。当消息总长度接近模型的上下文窗口限制时，就需要进行<strong>上下文管理</strong>。</p>
+
+<table>
+    <tr><th>策略</th><th>做法</th><th>优点</th><th>缺点</th></tr>
+    <tr><td><strong>全量保留</strong></td><td>所有消息原样传递</td><td>信息完整无丢失</td><td>token 消耗大，可能超限</td></tr>
+    <tr><td><strong>滑动窗口</strong></td><td>只保留最近 N 轮对话</td><td>简单可控</td><td>早期信息丢失</td></tr>
+    <tr><td><strong>摘要压缩</strong></td><td>用 LLM 把旧消息压缩成摘要</td><td>保留关键信息</td><td>额外调用成本</td></tr>
+    <tr><td><strong>Token 预算</strong></td><td>按 token 预算裁剪消息</td><td>精确控制</td><td>实现复杂</td></tr>
+</table>
+
+<p>在实际项目中，推荐的做法是：保留 system 消息（始终在最前面）+ 最近 5~10 轮对话。如果对话特别长，可以用一个小模型（如 qwen-flash）对更早的对话做摘要压缩，将摘要作为一条 system 消息插入。这种混合策略在保证上下文完整性的同时，有效控制了 token 消耗。</p>
+
+<h2>七、模型切换：一套代码调用所有模型</h2>
+
+<p>OpenAI 兼容 API 的最大价值在于<strong>模型无关性</strong>。同一套代码，只需修改 <code>base_url</code> 和 <code>api_key</code>，就能切换到不同的模型：</p>
+
+<table>
+    <tr><th>模型</th><th>base_url</th><th>默认模型名</th></tr>
+    <tr><td><strong>通义千问</strong></td><td><code>dashscope.aliyuncs.com/compatible-mode/v1</code></td><td>qwen-plus</td></tr>
+    <tr><td><strong>DeepSeek</strong></td><td><code>api.deepseek.com/v1</code></td><td>deepseek-chat</td></tr>
+    <tr><td><strong>智谱 GLM</strong></td><td><code>open.bigmodel.cn/api/paas/v4</code></td><td>glm-4</td></tr>
+    <tr><td><strong>Moonshot</strong></td><td><code>api.moonshot.cn/v1</code></td><td>moonshot-v1-8k</td></tr>
+    <tr><td><strong>OpenAI</strong></td><td><code>api.openai.com/v1</code></td><td>gpt-4o</td></tr>
+</table>
+
+<p>这种设计模式通常被称为"<strong>适配器模式</strong>"。在实际项目中，建议封装一个统一的 <code>LLMClient</code> 类，内部根据配置切换到不同的 <code>base_url</code>。这样业务代码完全不感知底层模型的变化，切换模型只需改一行配置。</p>
+
+<h2>八、总结与实践建议</h2>
+
+<div class="summary-box">
+    <h2>📋 核心要点回顾</h2>
+    <p><strong>1. OpenAI API 是事实标准。</strong>几乎所有主流大模型都兼容 Chat Completions 接口格式。</p>
+    <p><strong>2. 四个核心能力。</strong>Chat Completions（对话）、Streaming（流式）、Function Calling（工具调用）、Responses API（新一代标准）。</p>
+    <p><strong>3. 流式输出是用户体验关键。</strong>设置 stream=True，逐 chunk 读取 delta 增量，实时展示生成过程。</p>
+    <p><strong>4. Function Calling 是 Agent 基石。</strong>模型决定调用 → 开发者执行 → 结果返回 → 模型生成回复。</p>
+    <p><strong>5. 一套代码切换模型。</strong>只改 base_url + api_key，即可无缝切换通义千问、DeepSeek、GLM 等模型。</p>
+</div>
+
+<p>掌握了 OpenAI 兼容 API 标准，你就拥有了调用几乎所有大模型的"万能钥匙"。下一节我们将深入国内各主流模型的 API 接入细节，了解每家在兼容标准之外的独特能力和注意事项。</p>
+
+<div class="references">
+    <h2>📚 参考资料</h2>
+    <ol>
+        <li>阿里云开发者社区, <a href="https://developer.aliyun.com/article/1596311" target="_blank">OpenAI 兼容接口最佳实践</a> — 中文，详解 OpenAI API 标准与国内模型对接</li>
+        <li>阿里云百炼文档, <a href="https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api" target="_blank">通义千问 API 调用指南</a> — 中文，通义千问 OpenAI 兼容模式的官方文档</li>
+        <li>LiteLLM 文档, <a href="https://docs.litellm.ai/docs/providers/openai" target="_blank">OpenAI Provider</a> — 英文，多模型统一调用的开源框架</li>
+        <li>MDN Web Docs, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events" target="_blank">Server-Sent Events (SSE)</a> — 英文，SSE 协议标准文档</li>
+        <li>Qwen 官方文档, <a href="https://qwen.readthedocs.io" target="_blank">Qwen Documentation</a> — 英文，通义千问开源模型的完整文档</li>
+    </ol>
+</div>
+
+</body>
+</html>

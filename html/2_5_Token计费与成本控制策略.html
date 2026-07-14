@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.5 Token计费与成本控制策略</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; line-height: 1.8; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 28px; color: #1a1a2e; margin-bottom: 8px; border-left: 5px solid #e17055; padding-left: 16px; }
+h2 { font-size: 22px; color: #2d3436; margin: 36px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #dfe6e9; }
+h3 { font-size: 17px; color: #636e72; margin: 20px 0 10px; }
+p { margin: 10px 0; }
+.subtitle { color: #636e72; font-size: 14px; margin-bottom: 30px; }
+.intro { background: linear-gradient(135deg, #e17055 0%, #d63031 100%); color: white; padding: 24px; border-radius: 12px; margin-bottom: 32px; }
+.intro h2 { color: white; border-bottom-color: rgba(255,255,255,0.3); }
+.summary { background: #fff5f5; border-left: 4px solid #e17055; padding: 20px; border-radius: 0 8px 8px 0; margin: 24px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+th { background: #e17055; color: white; padding: 10px 14px; text-align: left; }
+td { padding: 10px 14px; border-bottom: 1px solid #eee; }
+tr:nth-child(even) { background: #f8f9fa; }
+pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 8px; overflow-x: auto; font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace; font-size: 13px; line-height: 1.7; margin: 16px 0; white-space: pre-wrap; word-wrap: break-word; }
+code { font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace; }
+.kw { color: #c678dd; }
+.str { color: #98c379; }
+.cmt { color: #5c6370; font-style: italic; }
+.dec { color: #e5c07b; }
+.cls { color: #61afef; }
+.num { color: #d19a66; }
+.op { color: #56b6c2; }
+.self { color: #e06c75; }
+.fn { color: #61afef; }
+.tip { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; }
+.warn { background: #fff3e0; border-left: 4px solid #ff9800; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; }
+.refs { background: white; padding: 20px; border-radius: 8px; margin-top: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.refs a { color: #e17055; text-decoration: none; }
+.refs a:hover { text-decoration: underline; }
+.nav { text-align: center; margin-top: 40px; }
+.nav a { color: #e17055; text-decoration: none; font-size: 14px; margin: 0 12px; }
+.code-label { background: #1e2127; color: #888; padding: 6px 14px; border-radius: 8px 8px 0 0; font-size: 12px; font-family: monospace; margin-bottom: -1px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>2.5 Token计费与成本控制策略</h1>
+<p class="subtitle">大模型应用开发 · 第二阶段：API调用实战 · 第5节</p>
+
+<div class="intro">
+<h2>📌 本节导读</h2>
+<p>大模型API按token计费，看似便宜（每百万token才几美元），但日积月累或并发量大时，费用可能迅速失控。本节将从token的基本概念出发，教你掌握<strong>费用计算、预算控制、prompt优化和用量监控</strong>的全套成本控制方案。</p>
+</div>
+
+<div class="summary">
+<strong>🎯 本节你将学到：</strong>
+<table>
+<tr><th>知识点</th><th>掌握程度</th><th>实战价值</th></tr>
+<tr><td>Token概念与计数</td><td>精确计算</td><td>预估成本</td></tr>
+<tr><td>多模型定价对比</td><td>全面了解</td><td>选择性价比模型</td></tr>
+<tr><td>预算控制器</td><td>生产级方案</td><td>防止费用超支</td></tr>
+<tr><td>Prompt优化</td><td>实用技巧</td><td>降低30-50%费用</td></tr>
+<tr><td>用量监控与告警</td><td>完整系统</td><td>实时追踪消费</td></tr>
+</table>
+</div>
+
+<!-- ========== 第一部分：Token基础概念 ========== -->
+<h2>一、什么是Token？</h2>
+
+<p>Token是大模型处理文本的最小单位。它不是字符，也不是单词，而是由tokenizer（分词器）将文本切分后得到的片段。</p>
+
+<h3>1.1 Token与字符的关系</h3>
+<table>
+<tr><th>文本类型</th><th>示例</th><th>字符数</th><th>Token数</th><th>比率</th></tr>
+<tr><td>英文短句</td><td>"Hello, how are you?"</td><td>21</td><td>6</td><td>3.5字符/token</td></tr>
+<tr><td>中文短句</td><td>"你好，最近怎么样？"</td><td>9</td><td>7</td><td>1.3字符/token</td></tr>
+<tr><td>代码</td><td>"def hello():"</td><td>13</td><td>5</td><td>2.6字符/token</td></tr>
+<tr><td>混合文本</td><td>"Python是一门好语言"</td><td>12</td><td>8</td><td>1.5字符/token</td></tr>
+</table>
+
+<div class="warn">⚠️ <strong>重要</strong>：中文文本的token密度比英文高得多。同样含义的内容，中文大约消耗1.5-2倍的token。这意味着面向中文用户的应用，API成本通常更高。</div>
+
+<h3>1.2 输入 vs 输出定价</h3>
+<p>大模型API的一个重要特点：<strong>输出token的价格通常是输入的3-5倍</strong>。这是因为生成文本比理解文本需要更多计算资源。</p>
+
+<table>
+<tr><th>模型</th><th>输入价格（/百万token）</th><th>输出价格（/百万token）</th><th>输入:输出比</th></tr>
+<tr><td>GPT-4o</td><td>$2.50</td><td>$10.00</td><td>1:4</td></tr>
+<tr><td>GPT-4o-mini</td><td>$0.15</td><td>$0.60</td><td>1:4</td></tr>
+<tr><td>DeepSeek-Chat</td><td>$0.27</td><td>$1.10</td><td>1:4</td></tr>
+<tr><td>Qwen-Turbo</td><td>$0.10</td><td>$0.30</td><td>1:3</td></tr>
+<tr><td>Claude Sonnet 4</td><td>$3.00</td><td>$15.00</td><td>1:5</td></tr>
+</table>
+
+<div class="tip">💡 <strong>省钱技巧</strong>：控制输出长度比控制输入长度更有效。设置合理的 <code>max_tokens</code> 参数，避免模型"话痨"。</div>
+
+<h3>1.3 实际费用计算案例</h3>
+<p>假设你开发了一个AI客服机器人，每天处理1000次对话，每次对话平均消耗800个输入token和300个输出token：</p>
+
+<table>
+<tr><th>模型</th><th>单次费用</th><th>每日费用（1000次）</th><th>每月费用（30天）</th></tr>
+<tr><td>GPT-4o</td><td>$0.0050</td><td>$5.00</td><td>$150.00</td></tr>
+<tr><td>GPT-4o-mini</td><td>$0.0003</td><td>$0.30</td><td>$9.00</td></tr>
+<tr><td>DeepSeek-Chat</td><td>$0.0005</td><td>$0.55</td><td>$16.50</td></tr>
+<tr><td>Qwen-Turbo</td><td>$0.0002</td><td>$0.17</td><td>$5.10</td></tr>
+</table>
+
+<div class="warn">⚠️ <strong>注意</strong>：以上仅为单次对话的费用。多轮对话时，历史消息会累积，实际费用可能是单次的3-10倍！</div>
+
+<!-- SVG 费用构成图 -->
+<h3>一次API调用的费用构成</h3>
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:800px;margin:16px auto;display:block;">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#6c5ce7"/><stop offset="100%" style="stop-color:#a29bfe"/></linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#e17055"/><stop offset="100%" style="stop-color:#fab1a0"/></linearGradient>
+  </defs>
+  <!-- 输入token -->
+  <rect x="20" y="40" width="320" height="50" rx="8" fill="url(#g1)"/>
+  <text x="180" y="65" text-anchor="middle" fill="white" font-size="13" font-weight="bold">📥 输入Token</text>
+  <text x="180" y="82" text-anchor="middle" fill="#ddd" font-size="10">System Prompt + 历史消息 + 用户消息</text>
+  <!-- 箭头 -->
+  <text x="370" y="70" fill="#636e72" font-size="20">→</text>
+  <!-- 模型处理 -->
+  <rect x="400" y="30" width="100" height="70" rx="8" fill="#2d3436"/>
+  <text x="450" y="60" text-anchor="middle" fill="#dfe6e9" font-size="12">🤖 模型</text>
+  <text x="450" y="80" text-anchor="middle" fill="#b2bec3" font-size="10">推理计算</text>
+  <!-- 箭头 -->
+  <text x="530" y="70" fill="#636e72" font-size="20">→</text>
+  <!-- 输出token -->
+  <rect x="560" y="40" width="220" height="50" rx="8" fill="url(#g2)"/>
+  <text x="670" y="65" text-anchor="middle" fill="white" font-size="13" font-weight="bold">📤 输出Token</text>
+  <text x="670" y="82" text-anchor="middle" fill="#ddd" font-size="10">模型生成的回复文本</text>
+  <!-- 价格标签 -->
+  <text x="180" y="120" text-anchor="middle" fill="#6c5ce7" font-size="12" font-weight="bold">单价: $0.15/百万</text>
+  <text x="670" y="120" text-anchor="middle" fill="#e17055" font-size="12" font-weight="bold">单价: $0.60/百万（4倍！）</text>
+  <!-- 总费用公式 -->
+  <text x="400" y="170" text-anchor="middle" fill="#2d3436" font-size="14" font-weight="bold">💰 总费用 = 输入Token × 输入单价 + 输出Token × 输出单价</text>
+</svg>
+
+<!-- ========== 第二部分：Token计数 ========== -->
+<h2>二、精确计算Token数量</h2>
+
+<p>要控制成本，首先得知道每次调用消耗了多少token。OpenAI开源的<strong>tiktoken</strong>库是目前最准确的token计数工具。</p>
+
+<h3>2.1 安装与基本用法</h3>
+<div class="code-label">📄 Token计数基础</div>
+<pre>
+<span class="cmt"># 安装：pip install tiktoken</span>
+<span class="kw">import</span> tiktoken
+
+<span class="cmt"># 获取指定模型的tokenizer</span>
+<span class="cmt"># GPT-4o 使用 o200k_base 编码</span>
+<span class="cmt"># GPT-4/GPT-3.5 使用 cl100k_base 编码</span>
+encoder = tiktoken.get_encoding(<span class="str">"o200k_base"</span>)
+
+<span class="cmt"># 编码文本 → token列表</span>
+tokens = encoder.encode(<span class="str">"Hello, how are you?"</span>)
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"Token数: {len(tokens)}"</span>)  <span class="cmt"># 输出: 6</span>
+
+<span class="cmt"># 中文文本的token数更多</span>
+cn_tokens = encoder.encode(<span class="str">"你好，最近怎么样？"</span>)
+<span class="kw">print</span>(<span class="kw">f</span><span class="str">"中文Token数: {len(cn_tokens)}"</span>)  <span class="cmt"># 输出: 约7-9</span>
+</pre>
+
+<h3>2.2 封装为可复用的计数器</h3>
+<div class="code-label">📄 token_counter.py</div>
+<pre>
+<span class="kw">import</span> tiktoken
+<span class="kw">from</span> typing <span class="kw">import</span> Dict, List
+
+
+<span class="kw">class</span> <span class="cls">TokenCounter</span>:
+    <span class="str">"""Token计数器 - 支持多模型的token计数
+
+    封装tiktoken库，提供单条文本和消息列表的token计数。
+    使用缓存避免重复加载tokenizer（加载较慢）。
+    """</span>
+
+    <span class="cmt"># 模型到tokenizer编码的映射</span>
+    MODEL_ENCODINGS: Dict[<span class="cls">str</span>, <span class="cls">str</span>] = {
+        <span class="str">"gpt-4o"</span>: <span class="str">"o200k_base"</span>,
+        <span class="str">"gpt-4o-mini"</span>: <span class="str">"o200k_base"</span>,
+        <span class="str">"gpt-4"</span>: <span class="str">"cl100k_base"</span>,
+        <span class="str">"gpt-3.5-turbo"</span>: <span class="str">"cl100k_base"</span>,
+        <span class="str">"deepseek-chat"</span>: <span class="str">"cl100k_base"</span>,
+    }
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>):
+        <span class="self">self</span>.encoders: Dict[<span class="cls">str</span>, tiktoken.Encoding] = {}
+
+    <span class="kw">def</span> <span class="fn">_get_encoder</span>(<span class="self">self</span>, model: <span class="cls">str</span>) -> tiktoken.Encoding:
+        <span class="str">"""获取或创建tokenizer（带缓存）"""</span>
+        <span class="kw">if</span> model <span class="kw">not in</span> <span class="self">self</span>.encoders:
+            enc_name = <span class="self">self</span>.MODEL_ENCODINGS.get(model, <span class="str">"cl100k_base"</span>)
+            <span class="self">self</span>.encoders[model] = tiktoken.get_encoding(enc_name)
+        <span class="kw">return</span> <span class="self">self</span>.encoders[model]
+
+    <span class="kw">def</span> <span class="fn">count_tokens</span>(<span class="self">self</span>, text: <span class="cls">str</span>, model: <span class="cls">str</span> = <span class="str">"gpt-4o-mini"</span>) -> <span class="cls">int</span>:
+        <span class="str">"""计算文本的token数量"""</span>
+        encoder = <span class="self">self</span>._get_encoder(model)
+        <span class="kw">return</span> len(encoder.encode(text))
+
+    <span class="kw">def</span> <span class="fn">count_messages</span>(
+        <span class="self">self</span>,
+        messages: List[Dict[<span class="cls">str</span>, <span class="cls">str</span>]],
+        model: <span class="cls">str</span> = <span class="str">"gpt-4o-mini"</span>,
+    ) -> <span class="cls">int</span>:
+        <span class="str">"""计算消息列表的token数（含格式开销）
+
+        每条消息额外消耗约3个token（role标记+分隔符）。
+        """</span>
+        encoder = <span class="self">self</span>._get_encoder(model)
+        total = <span class="num">0</span>
+
+        <span class="kw">for</span> msg <span class="kw">in</span> messages:
+            total += <span class="num">3</span>  <span class="cmt"># 消息格式开销</span>
+            total += len(encoder.encode(msg[<span class="str">"role"</span>]))
+            total += len(encoder.encode(msg[<span class="str">"content"</span>]))
+
+        total += <span class="num">3</span>  <span class="cmt"># 回复预填充</span>
+        <span class="kw">return</span> total
+</pre>
+
+<p>完整的Token计数器实现请查看：<a href="workspace/02_api_basics/05_token_cost/token_counter.py" target="_blank">📂 token_counter.py</a></p>
+
+<!-- ========== 第三部分：费用计算 ========== -->
+<h2>三、多模型费用对比与计算</h2>
+
+<p>不同模型的定价差异巨大，选择合适的模型是控制成本的第一步。以下是2025年主流模型的定价对比：</p>
+
+<h3>3.1 主流模型定价表（每百万token，美元）</h3>
+<table>
+<tr><th>提供商</th><th>模型</th><th>输入价格</th><th>输出价格</th><th>适用场景</th></tr>
+<tr><td>OpenAI</td><td>GPT-4o</td><td>$2.50</td><td>$10.00</td><td>复杂推理、专业任务</td></tr>
+<tr><td>OpenAI</td><td>GPT-4o-mini</td><td>$0.15</td><td>$0.60</td><td>日常对话、简单任务</td></tr>
+<tr><td>DeepSeek</td><td>DeepSeek-Chat</td><td>$0.27</td><td>$1.10</td><td>通用对话、性价比高</td></tr>
+<tr><td>DeepSeek</td><td>DeepSeek-Reasoner</td><td>$0.55</td><td>$2.19</td><td>复杂推理任务</td></tr>
+<tr><td>阿里云</td><td>Qwen-Plus</td><td>$0.40</td><td>$1.20</td><td>中文优化场景</td></tr>
+<tr><td>阿里云</td><td>Qwen-Turbo</td><td>$0.10</td><td>$0.30</td><td>高并发、低成本</td></tr>
+<tr><td>Anthropic</td><td>Claude Sonnet 4</td><td>$3.00</td><td>$15.00</td><td>长文本、代码生成</td></tr>
+<tr><td>Anthropic</td><td>Claude Haiku 3.5</td><td>$0.80</td><td>$4.00</td><td>快速响应场景</td></tr>
+</table>
+
+<h3>3.2 费用计算器实现</h3>
+<div class="code-label">📄 费用计算核心逻辑</div>
+<pre>
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> typing <span class="kw">import</span> Dict, List
+
+
+<span class="dec">@dataclass</span>
+<span class="kw">class</span> <span class="cls">ModelPricing</span>:
+    <span class="str">"""模型定价信息"""</span>
+    model_name: <span class="cls">str</span>
+    input_price: <span class="cls">float</span>   <span class="cmt"># 每百万token，美元</span>
+    output_price: <span class="cls">float</span>  <span class="cmt"># 每百万token，美元</span>
+    provider: <span class="cls">str</span> = <span class="str">""</span>
+
+
+<span class="kw">class</span> <span class="cls">CostCalculator</span>:
+    <span class="str">"""API费用计算器 - 预估和追踪调用成本"""</span>
+
+    <span class="cmt"># 模型定价表（2025年最新价格）</span>
+    PRICING: Dict[<span class="cls">str</span>, ModelPricing] = {
+        <span class="str">"gpt-4o"</span>: ModelPricing(
+            <span class="str">"gpt-4o"</span>, <span class="num">2.50</span>, <span class="num">10.00</span>, <span class="str">"OpenAI"</span>
+        ),
+        <span class="str">"gpt-4o-mini"</span>: ModelPricing(
+            <span class="str">"gpt-4o-mini"</span>, <span class="num">0.15</span>, <span class="num">0.60</span>, <span class="str">"OpenAI"</span>
+        ),
+        <span class="str">"deepseek-chat"</span>: ModelPricing(
+            <span class="str">"deepseek-chat"</span>, <span class="num">0.27</span>, <span class="num">1.10</span>, <span class="str">"DeepSeek"</span>
+        ),
+    }
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>):
+        <span class="self">self</span>.usage_history: List[dict] = []
+
+    <span class="kw">def</span> <span class="fn">estimate_cost</span>(
+        <span class="self">self</span>,
+        model: <span class="cls">str</span>,
+        input_tokens: <span class="cls">int</span>,
+        output_tokens: <span class="cls">int</span>,
+    ) -> <span class="cls">float</span>:
+        <span class="str">"""预估单次调用费用（美元）"""</span>
+        pricing = <span class="self">self</span>.PRICING[model]
+        input_cost = (input_tokens / <span class="num">1_000_000</span>) * pricing.input_price
+        output_cost = (output_tokens / <span class="num">1_000_000</span>) * pricing.output_price
+        <span class="kw">return</span> input_cost + output_cost
+
+    <span class="kw">def</span> <span class="fn">compare_models</span>(
+        <span class="self">self</span>,
+        input_tokens: <span class="cls">int</span>,
+        output_tokens: <span class="cls">int</span>,
+    ) -> List[dict]:
+        <span class="str">"""多模型费用对比（按费用排序）"""</span>
+        results = []
+        <span class="kw">for</span> name, pricing <span class="kw">in</span> <span class="self">self</span>.PRICING.items():
+            cost = <span class="self">self</span>.estimate_cost(name, input_tokens, output_tokens)
+            results.append({
+                <span class="str">"model"</span>: name,
+                <span class="str">"provider"</span>: pricing.provider,
+                <span class="str">"cost"</span>: cost,
+            })
+        <span class="kw">return</span> sorted(results, key=<span class="kw">lambda</span> x: x[<span class="str">"cost"</span>])
+</pre>
+
+<p>完整费用计算器请查看：<a href="workspace/02_api_basics/05_token_cost/cost_calculator.py" target="_blank">📂 cost_calculator.py</a></p>
+
+<!-- ========== 第四部分：预算控制 ========== -->
+<h2>四、预算控制器：防止费用失控</h2>
+
+<p>在生产环境中，API费用可能因以下原因失控：恶意用户发送超长prompt、代码bug导致无限循环调用、并发量激增超出预期。我们需要多层预算控制机制。</p>
+
+<h3>4.1 多层预算控制策略</h3>
+<table>
+<tr><th>控制层级</th><th>目的</th><th>典型限制</th></tr>
+<tr><td>单次请求</td><td>防止超长prompt</td><td>最大4000 token/次</td></tr>
+<tr><td>用户级别</td><td>防止单用户滥用</td><td>$5/天、$50/月</td></tr>
+<tr><td>全局级别</td><td>控制总成本</td><td>$100/天</td></tr>
+<tr><td>速率限制</td><td>防止恶意刷接口</td><td>60次/分钟</td></tr>
+</table>
+
+<h3>4.2 预算控制器实现</h3>
+<div class="code-label">📄 budget_controller.py</div>
+<pre>
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> typing <span class="kw">import</span> Dict, Optional
+<span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+<span class="kw">import</span> time
+
+
+<span class="dec">@dataclass</span>
+<span class="kw">class</span> <span class="cls">BudgetConfig</span>:
+    <span class="str">"""预算配置"""</span>
+    max_tokens_per_request: <span class="cls">int</span> = <span class="num">4000</span>
+    daily_budget_per_user: <span class="cls">float</span> = <span class="num">5.0</span>      <span class="cmt"># 美元</span>
+    monthly_budget_per_user: <span class="cls">float</span> = <span class="num">50.0</span>    <span class="cmt"># 美元</span>
+    global_daily_budget: <span class="cls">float</span> = <span class="num">100.0</span>      <span class="cmt"># 美元</span>
+    max_requests_per_minute: <span class="cls">int</span> = <span class="num">60</span>
+
+
+<span class="kw">class</span> <span class="cls">BudgetExceededError</span>(Exception):
+    <span class="str">"""预算超限异常"""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>, reason: <span class="cls">str</span>, current: <span class="cls">float</span>, limit: <span class="cls">float</span>):
+        <span class="self">self</span>.reason = reason
+        <span class="kw">super</span>().__init__(<span class="kw">f</span><span class="str">"预算超限: {reason} (当前: ${current:.4f}, 限额: ${limit:.4f})"</span>)
+
+
+<span class="kw">class</span> <span class="cls">BudgetController</span>:
+    <span class="str">"""预算控制器 - 多层预算检查
+
+    在每次API调用前检查预算状态，超限时抛出异常阻止调用。
+    """</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>, config: Optional[BudgetConfig] = <span class="kw">None</span>):
+        <span class="self">self</span>.config = config <span class="kw">or</span> BudgetConfig()
+        <span class="self">self</span>.daily_usage: Dict[<span class="cls">str</span>, <span class="cls">float</span>] = defaultdict(<span class="cls">float</span>)
+        <span class="self">self</span>.global_daily_usage: <span class="cls">float</span> = <span class="num">0.0</span>
+        <span class="self">self</span>.request_timestamps: Dict[<span class="cls">str</span>, list] = defaultdict(list)
+
+    <span class="kw">def</span> <span class="fn">check_budget</span>(<span class="self">self</span>, user_id: <span class="cls">str</span>, estimated_cost: <span class="cls">float</span>) -> <span class="kw">None</span>:
+        <span class="str">"""调用前检查预算是否充足"""</span>
+        <span class="cmt"># 检查用户每日预算</span>
+        daily_used = <span class="self">self</span>.daily_usage[user_id]
+        <span class="kw">if</span> daily_used + estimated_cost > <span class="self">self</span>.config.daily_budget_per_user:
+            <span class="kw">raise</span> BudgetExceededError(
+                <span class="kw">f</span><span class="str">"用户 {user_id} 每日预算超限"</span>,
+                daily_used, <span class="self">self</span>.config.daily_budget_per_user
+            )
+
+        <span class="cmt"># 检查全局预算</span>
+        <span class="kw">if</span> <span class="self">self</span>.global_daily_usage + estimated_cost > <span class="self">self</span>.config.global_daily_budget:
+            <span class="kw">raise</span> BudgetExceededError(
+                <span class="str">"系统全局每日预算超限"</span>,
+                <span class="self">self</span>.global_daily_usage, <span class="self">self</span>.config.global_daily_budget
+            )
+
+    <span class="kw">def</span> <span class="fn">record_cost</span>(<span class="self">self</span>, user_id: <span class="cls">str</span>, cost: <span class="cls">float</span>) -> <span class="kw">None</span>:
+        <span class="str">"""记录实际消费"""</span>
+        <span class="self">self</span>.daily_usage[user_id] += cost
+        <span class="self">self</span>.global_daily_usage += cost
+
+    <span class="kw">def</span> <span class="fn">check_rate_limit</span>(<span class="self">self</span>, user_id: <span class="cls">str</span>) -> <span class="kw">None</span>:
+        <span class="str">"""检查请求频率限制（滑动窗口算法）"""</span>
+        now = time.time()
+        window_start = now - <span class="num">60</span>  <span class="cmt"># 60秒窗口</span>
+
+        <span class="cmt"># 清理过期记录</span>
+        <span class="self">self</span>.request_timestamps[user_id] = [
+            ts <span class="kw">for</span> ts <span class="kw">in</span> <span class="self">self</span>.request_timestamps[user_id]
+            <span class="kw">if</span> ts > window_start
+        ]
+
+        current_count = len(<span class="self">self</span>.request_timestamps[user_id])
+        <span class="kw">if</span> current_count >= <span class="self">self</span>.config.max_requests_per_minute:
+            <span class="kw">raise</span> BudgetExceededError(
+                <span class="str">"请求频率超限"</span>, current_count,
+                <span class="self">self</span>.config.max_requests_per_minute
+            )
+
+        <span class="self">self</span>.request_timestamps[user_id].append(now)
+</pre>
+
+<p>完整预算控制器请查看：<a href="workspace/02_api_basics/05_token_cost/budget_controller.py" target="_blank">📂 budget_controller.py</a></p>
+
+<div class="warn">⚠️ <strong>生产环境注意</strong>：本示例使用内存存储用量数据，重启后会丢失。生产环境应使用Redis或数据库持久化存储。</div>
+
+<!-- ========== 第五部分：Prompt优化 ========== -->
+<h2>五、Prompt优化：减少不必要的Token消耗</h2>
+
+<p>除了选择便宜的模型，优化prompt本身也能大幅降低成本。常见浪费包括：过长的system prompt、重复的历史消息、冗余的few-shot示例等。</p>
+
+<h3>5.1 对话历史裁剪</h3>
+<p>多轮对话时，历史消息会不断累积，每次都会计费。需要在token预算内保留最近的消息，裁剪掉最早的历史。</p>
+
+<div class="code-label">📄 对话历史裁剪策略</div>
+<pre>
+<span class="kw">from</span> typing <span class="kw">import</span> List, Dict, Callable
+
+
+<span class="kw">class</span> <span class="cls">PromptOptimizer</span>:
+    <span class="str">"""Prompt优化工具 - 减少token消耗
+
+    核心策略：
+    1. 始终保留system消息
+    2. 从最新消息开始保留
+    3. 超出token预算时裁剪最早的消息
+    """</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>, max_context_tokens: <span class="cls">int</span> = <span class="num">4000</span>):
+        <span class="self">self</span>.max_context_tokens = max_context_tokens
+
+    <span class="kw">def</span> <span class="fn">trim_history</span>(
+        <span class="self">self</span>,
+        messages: List[Dict[<span class="cls">str</span>, <span class="cls">str</span>]],
+        token_counter: Callable[[<span class="cls">str</span>], <span class="cls">int</span>],
+        reserved_for_output: <span class="cls">int</span> = <span class="num">500</span>,
+    ) -> List[Dict[<span class="cls">str</span>, <span class="cls">str</span>]]:
+        <span class="str">"""裁剪对话历史，保留最新消息"""</span>
+        available = <span class="self">self</span>.max_context_tokens - reserved_for_output
+
+        <span class="cmt"># 始终保留system消息</span>
+        system_msg = <span class="kw">None</span>
+        <span class="kw">if</span> messages <span class="kw">and</span> messages[<span class="num">0</span>][<span class="str">"role"</span>] == <span class="str">"system"</span>:
+            system_msg = messages[<span class="num">0</span>]
+            available -= token_counter(system_msg[<span class="str">"content"</span>])
+            messages = messages[<span class="num">1</span>:]
+
+        <span class="cmt"># 从最新消息开始，向前保留</span>
+        kept = []
+        used = <span class="num">0</span>
+        <span class="kw">for</span> msg <span class="kw">in</span> reversed(messages):
+            msg_tokens = token_counter(msg[<span class="str">"content"</span>]) + <span class="num">3</span>
+            <span class="kw">if</span> used + msg_tokens > available:
+                <span class="kw">break</span>
+            kept.insert(<span class="num">0</span>, msg)
+            used += msg_tokens
+
+        <span class="kw">return</span> ([system_msg] + kept) <span class="kw">if</span> system_msg <span class="kw">else</span> kept
+</pre>
+
+<h3>5.2 其他省钱技巧</h3>
+<table>
+<tr><th>技巧</th><th>说明</th><th>预计节省</th></tr>
+<tr><td>精简System Prompt</td><td>去除冗余描述，保留核心指令</td><td>10-20%</td></tr>
+<tr><td>限制输出长度</td><td>设置合理的max_tokens参数</td><td>20-50%</td></tr>
+<tr><td>使用缓存</td><td>相同问题直接返回缓存结果</td><td>视场景而定</td></tr>
+<tr><td>批量处理</td><td>合并多个请求为一次调用</td><td>15-30%</td></tr>
+<tr><td>选择小模型</td><td>简单任务用GPT-4o-mini而非GPT-4o</td><td>90%+</td></tr>
+</table>
+
+<p>完整Prompt优化工具请查看：<a href="workspace/02_api_basics/05_token_cost/prompt_optimizer.py" target="_blank">📂 prompt_optimizer.py</a></p>
+
+<h3>5.3 成本控制决策树</h3>
+<p>在实际项目中，面对不同的需求场景，如何选择合适的成本控制策略？</p>
+
+<table>
+<tr><th>场景</th><th>日调用量</th><th>推荐策略</th><th>预计月费</th></tr>
+<tr><td>内部工具（低并发）</td><td>&lt;100次</td><td>选便宜模型 + 基础预算</td><td>&lt;$5</td></tr>
+<tr><td>C端产品（中并发）</td><td>1000-10000次</td><td>小模型为主 + 历史裁剪 + 用户预算</td><td>$50-200</td></tr>
+<tr><td>企业级服务（高并发）</td><td>&gt;10000次</td><td>模型路由 + 缓存 + 全局预算 + 告警</td><td>$200-2000+</td></tr>
+<tr><td>批处理任务</td><td>按需</td><td>最便宜模型 + max_tokens限制</td><td>按量</td></tr>
+</table>
+
+<div class="tip">💡 <strong>经验法则</strong>：80%的日常对话任务可以用GPT-4o-mini或DeepSeek-Chat完成，不需要用GPT-4o。先用小模型，效果不够再升级。</div>
+
+<!-- ========== 第六部分：用量监控 ========== -->
+<h2>六、用量监控与告警</h2>
+
+<p>生产环境需要持续监控API使用情况，及时发现异常（费用突然飙升、某用户消费远超其他人、接近预算上限等）。</p>
+
+<h3>6.1 监控系统核心功能</h3>
+<table>
+<tr><th>功能</th><th>说明</th><th>实现方式</th></tr>
+<tr><td>实时记录</td><td>每次调用都记录用量</td><td>在API调用后记录</td></tr>
+<tr><td>多维聚合</td><td>按用户、模型、时间统计</td><td>内存聚合或数据库查询</td></tr>
+<tr><td>阈值告警</td><td>超过阈值时触发通知</td><td>回调函数 + 冷却时间</td></tr>
+<tr><td>报告导出</td><td>生成用量报告</td><td>JSON/CSV格式</td></tr>
+</table>
+
+<h3>6.2 监控器核心实现</h3>
+<div class="code-label">📄 用量监控核心逻辑</div>
+<pre>
+<span class="kw">from</span> typing <span class="kw">import</span> Dict, List, Callable
+<span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">import</span> time
+
+
+<span class="kw">class</span> <span class="cls">UsageMonitor</span>:
+    <span class="str">"""用量监控器 - 实时追踪API消费
+
+    支持多维度统计聚合和自定义告警规则。
+    """</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="self">self</span>):
+        <span class="self">self</span>.cost_by_user: Dict[<span class="cls">str</span>, <span class="cls">float</span>] = defaultdict(<span class="cls">float</span>)
+        <span class="self">self</span>.cost_by_model: Dict[<span class="cls">str</span>, <span class="cls">float</span>] = defaultdict(<span class="cls">float</span>)
+        <span class="self">self</span>.total_cost: <span class="cls">float</span> = <span class="num">0.0</span>
+        <span class="self">self</span>.total_requests: <span class="cls">int</span> = <span class="num">0</span>
+        <span class="self">self</span>.alerts: List[dict] = []
+
+    <span class="kw">def</span> <span class="fn">record</span>(
+        <span class="self">self</span>,
+        user_id: <span class="cls">str</span>,
+        model: <span class="cls">str</span>,
+        input_tokens: <span class="cls">int</span>,
+        output_tokens: <span class="cls">int</span>,
+        cost: <span class="cls">float</span>,
+    ) -> <span class="kw">None</span>:
+        <span class="str">"""记录一次API调用"""</span>
+        <span class="self">self</span>.cost_by_user[user_id] += cost
+        <span class="self">self</span>.cost_by_model[model] += cost
+        <span class="self">self</span>.total_cost += cost
+        <span class="self">self</span>.total_requests += <span class="num">1</span>
+
+        <span class="cmt"># 检查告警</span>
+        <span class="self">self</span>._check_alerts()
+
+    <span class="kw">def</span> <span class="fn">add_alert</span>(
+        <span class="self">self</span>,
+        name: <span class="cls">str</span>,
+        threshold: <span class="cls">float</span>,
+        callback: Callable,
+    ) -> <span class="kw">None</span>:
+        <span class="str">"""添加告警规则"""</span>
+        <span class="self">self</span>.alerts.append({
+            <span class="str">"name"</span>: name,
+            <span class="str">"threshold"</span>: threshold,
+            <span class="str">"callback"</span>: callback,
+            <span class="str">"last_triggered"</span>: <span class="num">0</span>,
+        })
+
+    <span class="kw">def</span> <span class="fn">_check_alerts</span>(<span class="self">self</span>) -> <span class="kw">None</span>:
+        <span class="str">"""检查是否触发告警"""</span>
+        now = time.time()
+        <span class="kw">for</span> alert <span class="kw">in</span> <span class="self">self</span>.alerts:
+            <span class="cmt"># 冷却时间：5分钟</span>
+            <span class="kw">if</span> now - alert[<span class="str">"last_triggered"</span>] < <span class="num">300</span>:
+                <span class="kw">continue</span>
+
+            <span class="kw">if</span> <span class="self">self</span>.total_cost > alert[<span class="str">"threshold"</span>]:
+                alert[<span class="str">"callback"</span>](
+                    <span class="kw">f</span><span class="str">"⚠️ {alert['name']}: 总费用${self.total_cost:.4f}"</span>
+                )
+                alert[<span class="str">"last_triggered"</span>] = now
+
+    <span class="kw">def</span> <span class="fn">get_summary</span>(<span class="self">self</span>) -> dict:
+        <span class="str">"""获取用量摘要"""</span>
+        <span class="kw">return</span> {
+            <span class="str">"total_requests"</span>: <span class="self">self</span>.total_requests,
+            <span class="str">"total_cost"</span>: round(<span class="self">self</span>.total_cost, <span class="num">6</span>),
+            <span class="str">"cost_by_user"</span>: dict(<span class="self">self</span>.cost_by_user),
+            <span class="str">"cost_by_model"</span>: dict(<span class="self">self</span>.cost_by_model),
+            <span class="str">"avg_cost_per_request"</span>: round(
+                <span class="self">self</span>.total_cost / max(<span class="self">self</span>.total_requests, <span class="num">1</span>), <span class="num">6</span>
+            ),
+        }
+</pre>
+
+<p>完整用量监控系统请查看：<a href="workspace/02_api_basics/05_token_cost/usage_monitor.py" target="_blank">📂 usage_monitor.py</a></p>
+
+<!-- ========== 第七部分：总结 ========== -->
+<h2>七、本节小结</h2>
+
+<div class="summary">
+<strong>🎓 核心要点回顾</strong>
+<table>
+<tr><th>知识点</th><th>关键内容</th></tr>
+<tr><td>Token概念</td><td>中文约1.5-2字符/token，输出价格是输入的3-5倍</td></tr>
+<tr><td>Token计数</td><td>使用tiktoken精确计算，注意消息格式开销</td></tr>
+<tr><td>费用计算</td><td>不同模型价格差异巨大，按需选择性价比最高的</td></tr>
+<tr><td>预算控制</td><td>多层控制：单次请求 + 用户级别 + 全局级别 + 速率限制</td></tr>
+<tr><td>Prompt优化</td><td>裁剪历史消息、精简system prompt、限制输出长度</td></tr>
+<tr><td>用量监控</td><td>实时记录 + 多维聚合 + 阈值告警</td></tr>
+</table>
+</div>
+
+<div class="tip">💡 <strong>成本控制的核心原则</strong>：先测量（Token计数）→ 再预估（费用计算）→ 后控制（预算限制）→ 持续监控（用量告警）。</div>
+
+<!-- ========== 参考资料 ========== -->
+<div class="refs">
+<h2>📚 参考资料</h2>
+<ol>
+<li><a href="https://help.aliyun.com/zh/model-studio/getting-started/models" target="_blank">阿里云百炼：模型列表与定价</a> - 通义千问官方文档</li>
+<li><a href="https://help.aliyun.com/zh/model-studio/billing-for-model-studio" target="_blank">阿里云百炼：计费说明</a> - 详细计费规则</li>
+<li><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/be-direct" target="_blank">Anthropic: Prompt Engineering Guide</a> - 官方prompt优化指南</li>
+<li><a href="https://docs.litellm.ai/docs/proxy/cost_tracking" target="_blank">LiteLLM: Cost Tracking</a> - 多模型费用追踪方案</li>
+</ol>
+</div>
+
+<!-- ========== 导航 ========== -->
+<div class="nav">
+<a href="index.html">← 返回大纲</a>
+<a href="2_4_流式输出SSE的原理与实现.html">← 上一节</a>
+<a href="2_6_多模型网关设计.html">下一节 →</a>
+</div>
+
+</div>
+</body>
+</html>

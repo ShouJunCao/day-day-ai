@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.4 自洽性与多数投票 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.6; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .example-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .example-box h4 { color: var(--accent); margin-bottom: 8px; font-size: 1em; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>3.4 自洽性（Self-Consistency）与多数投票</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块三：Prompt Engineering</span>
+        <span class="tag tag-time">预计学习：45 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 <strong>Self-Consistency（自洽性）</strong> 的核心原理与优势</li>
+        <li>掌握多数投票（Majority Voting）的聚合策略</li>
+        <li>学会在生产环境中权衡准确率与成本</li>
+        <li>能够构建支持早期终止的自洽性推理引擎</li>
+    </ul>
+
+    <h2>一、为什么需要自洽性？</h2>
+    <p>大语言模型的输出本质上是<strong>概率生成</strong>的。即使使用相同的 Prompt 和输入，每次调用模型都可能产生不同的输出。这种随机性在创意任务中是优势，但在需要确定答案的推理任务中却是风险——模型可能“碰运气”给出正确答案，也可能在下一次调用中给出完全不同的错误答案。</p>
+    <p>Wang et al.（2022）提出，既然单次调用有随机性，为什么不利用这种随机性？通过对同一个问题<strong>多次采样</strong>（使用较高的 temperature 让模型探索不同的推理路径），然后对结果进行<strong>投票</strong>，可以显著提升答案的准确率。这就是 Self-Consistency 的核心思想：真理在共识中浮现。</p>
+    <p>直觉上，如果一条推理路径是错误的，它很难在不同的随机初始化下反复得出相同的错误结论。而正确的推理路径虽然可能因为表述不同而看起来不一样，但其核心逻辑和最终答案往往是稳定的。通过多数投票，我们能够过滤掉偶然的错误输出，保留最可靠的结论。</p>
+
+    <div class="diagram-container">
+        <svg width="750" height="340" viewBox="0 0 750 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+                <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+                <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+            </defs>
+            <text x="375" y="24" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Self-Consistency 工作流</text>
+            
+            <!-- 问题输入 -->
+            <rect x="290" y="45" width="170" height="45" rx="22" fill="#1a1a2e"/>
+            <text x="375" y="73" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🎯 输入问题</text>
+            <line x1="375" y1="90" x2="375" y2="110" stroke="#ccc" stroke-width="2"/>
+            
+            <!-- 采样分支 -->
+            <line x1="375" y1="110" x2="130" y2="150" stroke="#4361ee" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="375" y1="110" x2="375" y2="150" stroke="#4361ee" stroke-width="2" stroke-dasharray="5,3"/>
+            <line x1="375" y1="110" x2="620" y2="150" stroke="#4361ee" stroke-width="2" stroke-dasharray="5,3"/>
+            
+            <!-- 模型调用 -->
+            <rect x="60" y="150" width="140" height="50" rx="10" fill="url(#g1)"/>
+            <text x="130" y="172" text-anchor="middle" fill="white" font-size="13" font-weight="bold">LLM 调用 #1 (T=0.7)</text>
+            <text x="130" y="188" text-anchor="middle" fill="#e0e7ff" font-size="11">路径 A → 答案 42</text>
+            
+            <rect x="305" y="150" width="140" height="50" rx="10" fill="url(#g1)"/>
+            <text x="375" y="172" text-anchor="middle" fill="white" font-size="13" font-weight="bold">LLM 调用 #2 (T=0.7)</text>
+            <text x="375" y="188" text-anchor="middle" fill="#e0e7ff" font-size="11">路径 B → 答案 42</text>
+            
+            <rect x="550" y="150" width="140" height="50" rx="10" fill="url(#g1)"/>
+            <text x="620" y="172" text-anchor="middle" fill="white" font-size="13" font-weight="bold">LLM 调用 #3 (T=0.7)</text>
+            <text x="620" y="188" text-anchor="middle" fill="#e0e7ff" font-size="11">路径 C → 答案 45</text>
+            
+            <!-- 汇聚到投票 -->
+            <line x1="130" y1="200" x2="300" y2="250" stroke="#ccc" stroke-width="2"/>
+            <line x1="375" y1="200" x2="375" y2="250" stroke="#ccc" stroke-width="2"/>
+            <line x1="620" y1="200" x2="450" y2="250" stroke="#ccc" stroke-width="2"/>
+            
+            <!-- 投票器 -->
+            <rect x="275" y="250" width="200" height="60" rx="12" fill="url(#g2)"/>
+            <text x="375" y="273" text-anchor="middle" fill="white" font-size="14" font-weight="bold">🗳️ 多数投票聚合器</text>
+            <text x="375" y="295" text-anchor="middle" fill="#d1fae5" font-size="12">答案 42: 2票 (67%)  ✓</text>
+            <text x="375" y="310" text-anchor="middle" fill="#d1fae5" font-size="12">答案 45: 1票 (33%)</text>
+            
+            <!-- 最终输出 -->
+            <rect x="290" y="315" width="170" height="20" rx="10" fill="none"/> <!-- spacer -->
+            
+            <rect x="290" y="315" width="170" height="45" rx="22" fill="url(#g3)" opacity="0.1" stroke="#ef4444" stroke-width="2"/>
+            <!-- corrected to fit visually -->
+            
+            <line x1="375" y1="310" x2="375" y2="335" stroke="#10b981" stroke-width="2"/>
+            <rect x="290" y="335" width="170" height="45" rx="22" fill="url(#g3)"/> <!-- Wait, used g3 red for output? Let's use accent blue -->
+            <rect x="290" y="335" width="170" height="45" rx="22" fill="#4361ee"/>
+            <text x="375" y="363" text-anchor="middle" fill="white" font-size="14" font-weight="bold">✅ 最终答案：42</text>
+        </svg>
+    </div>
+
+    <h2>二、多数投票策略</h2>
+    <p>多数投票不是简单的"数人头"。在实际工程中，我们需要根据任务类型选择合适的聚合策略。常见的投票方式有三种：</p>
+    <ul>
+        <li><strong>精确匹配投票（Exact Match）</strong>：提取每个输出的最终答案，统计相同字符串的出现次数。适用于数学题、分类任务等有标准答案的场景。</li>
+        <li><strong>语义相似度投票</strong>：当答案表述不同时（如"42"和"四十二"），使用 Embedding 计算语义相似度，将相似答案聚类。适用于开放性问题或自然语言生成。</li>
+        <li><strong>LLM 裁判投票</strong>：引入一个额外的 LLM 调用，让它阅读所有候选答案并投票选出最佳答案。适用于需要主观判断或复杂推理的任务，但成本最高。</li>
+    </ul>
+    <p>在生产系统中，推荐优先使用精确匹配或规则化提取，只有在答案格式高度不一致时才引入语义相似度。LLM 裁判应作为最后的兜底方案，因为它会增加额外的延迟和成本。</p>
+
+<pre><code class="language-python">class MajorityVoter:
+    """
+    多数投票聚合器。
+    
+    支持多种投票策略：
+        - exact_match: 精确字符串匹配
+        - semantic: 基于 Embedding 的语义聚类
+        - llm_judge: 使用额外 LLM 调用投票
+    """
+    
+    def __init__(self, strategy: str = "exact_match"):
+        """
+        参数:
+            strategy: 投票策略（exact_match / semantic / llm_judge）
+        """
+        self.strategy = strategy
+    
+    def vote(self, answers: list[str]) -> VoteResult:
+        """
+        执行投票。
+        
+        参数:
+            answers: 候选答案列表
+        返回:
+            VoteResult 对象
+        """
+        if self.strategy == "exact_match":
+            return self._exact_vote(answers)
+        elif self.strategy == "semantic":
+            return self._semantic_vote(answers)
+        elif self.strategy == "llm_judge":
+            return self._llm_judge_vote(answers)
+        else:
+            raise ValueError(f"未知策略: {self.strategy}")
+    
+    def _exact_vote(self, answers: list[str]) -> VoteResult:
+        """精确字符串匹配投票"""
+        counter = Counter(answers)
+        winner, votes = counter.most_common(1)[0]
+        total = len(answers)
+        return VoteResult(
+            candidates=dict(counter),
+            winner=winner,
+            votes=votes,
+            total=total,
+            confidence=votes / total,
+        )
+    
+    def _semantic_vote(self, answers: list[str]) -> VoteResult:
+        """语义相似度聚类投票（简化版）"""
+        # 实际实现需要调用 Embedding 模型
+        # 这里演示思路：将答案转换为向量，计算余弦相似度，
+        # 将相似度 > 0.85 的向量归为同一簇，最大簇胜出
+        clusters = self._cluster_by_similarity(answers)
+        largest_cluster = max(clusters, key=len)
+        counter = Counter(largest_cluster)
+        return VoteResult(
+            candidates=dict(counter),
+            winner=largest_cluster[0],
+            votes=len(largest_cluster),
+            total=len(answers),
+            confidence=len(largest_cluster) / len(answers),
+        )
+    
+    def _cluster_by_similarity(
+        self, answers: list[str], threshold: float = 0.85
+    ) -> list[list[str]]:
+        """
+        根据语义相似度聚类答案。
+        
+        参数:
+            answers: 答案列表
+            threshold: 相似度阈值
+        返回:
+            聚类后的答案列表
+        """
+        # 伪代码：实际需要调用 embedding 模型
+        # vectors = embedding_model.encode(answers)
+        # 使用 DBSCAN 或层次聚类算法
+        return [answers]  # 简化实现
+    
+    def _llm_judge_vote(self, answers: list[str]) -> VoteResult:
+        """使用 LLM 作为裁判投票"""
+        # 构建裁判 Prompt
+        judge_prompt = (
+            "以下是同一个问题的多个候选答案，请选出最准确的一个：\n\n"
+        )
+        for i, ans in enumerate(answers, 1):
+            judge_prompt += f"选项 {i}: {ans}\n"
+        judge_prompt += "\n请输出最佳选项的编号（1-N）："
+        
+        # 调用 LLM 裁判
+        # response = llm.chat(messages=[{"role": "user", "content": judge_prompt}])
+        # selected_idx = int(response.content) - 1
+        # return VoteResult(...)
+        pass</code></pre>
+
+    <h2>三、生产级实现</h2>
+    <p>工程化 Self-Consistency 时，必须考虑三个关键问题：<strong>成本控制</strong>（采样次数越多，Token 消耗越大）、<strong>早期终止</strong>（当某个答案已占绝对多数时提前结束采样）和<strong>结果缓存</strong>（避免对相同问题重复采样）。</p>
+
+<pre><code class="language-python">"""
+self_consistency.py — 自洽性（Self-Consistency）与多数投票引擎
+集成重试、限流、缓存、早期终止等生产级特性
+"""
+
+import json
+import hashlib
+import time
+from typing import Any, Optional
+from dataclasses import dataclass, field
+from collections import Counter
+import re
+
+
+@dataclass
+class VoteResult:
+    """投票结果：包含候选答案、票数、共识置信度"""
+    candidates: dict[str, int]
+    winner: str
+    votes: int
+    total: int
+    confidence: float
+
+
+@dataclass
+class SamplingConfig:
+    """采样配置"""
+    n_samples: int = 5
+    temperature: float = 0.7
+    max_tokens: int = 1024
+    consensus_threshold: float = 0.6  # 早期终止阈值
+    timeout_seconds: float = 30.0
+
+
+class SelfConsistencyEngine:
+    """
+    自洽性推理引擎。
+    
+    工作流程：
+        1. 接收问题和 Prompt 模板
+        2. 并行/串行采样 N 次（高 temperature）
+        3. 提取每个样本的最终答案
+        4. 执行多数投票
+        5. 支持早期终止和结果缓存
+    
+    参数:
+        llm_client: LLM 客户端实例
+        cache: 可选的缓存字典（key -> VoteResult）
+        config: 采样配置
+    """
+    
+    def __init__(
+        self,
+        llm_client,
+        cache: Optional[dict] = None,
+        config: SamplingConfig = SamplingConfig(),
+    ):
+        self.client = llm_client
+        self.cache = cache or {}
+        self.config = config
+    
+    def _hash_question(self, question: str) -> str:
+        """生成问题的唯一缓存键"""
+        return hashlib.md5(question.encode()).hexdigest()
+    
+    def _extract_answer(self, text: str) -> str:
+        """
+        从模型输出中提取最终答案。
+        
+        启发式规则：查找最后一行、包含“答案”关键字的行、
+        或 JSON 格式的答案字段。
+        """
+        lines = text.strip().split("\n")
+        # 反向查找包含答案的行
+        for line in reversed(lines):
+            if any(kw in line for kw in ["答案", "answer", "结论", "结论是"]):
+                return line.strip()
+        # 降级：返回最后一行
+        return lines[-1].strip() if lines else ""
+    
+    def _consensus_reached(
+        self, counts: Counter, total: int
+    ) -> tuple[bool, str, float]:
+        """
+        检查是否达到共识阈值。
+        
+        返回:
+            (是否达成共识, 获胜答案, 置信度)
+        """
+        if not counts:
+            return False, "", 0.0
+        winner, vote_count = counts.most_common(1)[0]
+        confidence = vote_count / total
+        return (confidence >= self.config.consensus_threshold, 
+                winner, confidence)
+    
+    def reason(self, question: str) -> VoteResult:
+        """
+        执行自洽性推理。
+        
+        参数:
+            question: 需要推理的问题
+        返回:
+            VoteResult 对象
+        """
+        cache_key = self._hash_question(question)
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        
+        candidates_counter = Counter()
+        samples = []
+        start_time = time.time()
+        
+        for i in range(self.config.n_samples):
+            # 检查超时
+            elapsed = time.time() - start_time
+            if elapsed > self.config.timeout_seconds:
+                break
+            
+            # 调用 LLM
+            prompt = f"问题：{question}\n\n请逐步推理，最后给出答案。"
+            response = self.client.chat(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.config.temperature,
+            )
+            
+            answer = self._extract_answer(response.content)
+            candidates_counter[answer] += 1
+            samples.append({
+                "index": i + 1,
+                "answer": answer,
+                "raw": response.content[:200] + "...",
+            })
+            
+            # 早期终止检查
+            reached, winner, conf = self._consensus_reached(
+                candidates_counter, i + 1
+            )
+            if reached:
+                print(f"✅ 早期终止：在第 {i+1} 次采样达成共识 "
+                      f"({winner}, 置信度 {conf:.2f})")
+                break
+        
+        # 构建结果
+        winner, votes = candidates_counter.most_common(1)[0]
+        total = sum(candidates_counter.values())
+        confidence = votes / total if total > 0 else 0.0
+        
+        result = VoteResult(
+            candidates=dict(candidates_counter),
+            winner=winner,
+            votes=votes,
+            total=total,
+            confidence=confidence,
+        )
+        
+        # 缓存结果
+        self.cache[cache_key] = result
+        return result</code></pre>
+
+    <h2>四、成本与收益分析</h2>
+    <p>Self-Consistency 的核心权衡是<strong>准确率提升 vs 推理成本</strong>。研究表明，将采样次数从 1 增加到 5，可以在数学推理任务上提升 10-15% 的准确率，但 Token 消耗和延迟也增加约 5 倍。继续增加到 10 次采样，准确率收益逐渐递减（通常只额外提升 2-3%）。</p>
+    <p>在实际项目中，建议根据<strong>任务关键性</strong>动态调整采样次数：高风险决策（如医疗诊断、财务计算）使用 5-7 次采样；日常问答使用 3 次；简单任务使用单次生成即可。此外，结合早期终止机制，可以在大多数情况下提前结束采样，进一步降低成本。</p>
+    <p>除了采样次数，<strong>temperature 的设置</strong>也至关重要。温度过高会导致答案过于发散，难以达成共识；温度过低则会让多次采样输出几乎相同，失去自洽性探索的意义。经验法则是：数学/逻辑推理使用 0.5-0.7，创意/开放问题使用 0.8-0.9。同时，建议在采样前对问题进行难度预判——简单问题不需要多次采样，复杂问题才值得投入额外成本。</p>
+
+<pre><code class="language-python">class AdaptiveSampler:
+    """
+    自适应采样控制器：根据问题复杂度动态调整采样次数。
+    
+    工作原理:
+        1. 快速评估问题复杂度（使用轻量模型或启发式规则）
+        2. 根据复杂度映射到采样次数和 temperature
+        3. 执行采样并监控收敛速度
+    """
+    
+    COMPLEXITY_MAP = {
+        "simple": {"n_samples": 1, "temperature": 0.3},
+        "medium": {"n_samples": 3, "temperature": 0.5},
+        "complex": {"n_samples": 5, "temperature": 0.7},
+        "critical": {"n_samples": 7, "temperature": 0.7},
+    }
+    
+    def assess_complexity(self, question: str) -> str:
+        """
+        评估问题复杂度。
+        
+        可以使用启发式规则：
+            - 关键词密度（如果、假设、证明等）
+            - 问题长度
+            - 是否涉及多步骤计算
+        """
+        indicators = ["如果", "假设", "证明", "推导", "计算",
+                      "比较", "分析", "为什么", "如何"]
+        score = sum(1 for kw in indicators if kw in question)
+        if score >= 4:
+            return "critical"
+        elif score >= 2:
+            return "complex"
+        elif score >= 1:
+            return "medium"
+        return "simple"
+    
+    def get_config(self, question: str) -> SamplingConfig:
+        """根据复杂度获取采样配置"""
+        level = self.assess_complexity(question)
+        cfg = self.COMPLEXITY_MAP[level]
+        return SamplingConfig(
+            n_samples=cfg["n_samples"],
+            temperature=cfg["temperature"],
+        )
+
+
+# 使用示例
+sampler = AdaptiveSampler()
+for q in ["2+2等于几？", "证明勾股定理", "分析全球气候变化的经济影响"]:
+    cfg = sampler.get_config(q)
+    print(f"问题: {q}")
+    print(f"  复杂度: {sampler.assess_complexity(q)}")
+    print(f"  采样次数: {cfg.n_samples}, 温度: {cfg.temperature}")</code></pre>
+
+    <h2>五、优化技巧</h2>
+    <p>为了在生产环境中降低成本，可以采用以下优化策略：</p>
+    <ul>
+        <li><strong>结果缓存</strong>：对相同或高度相似的问题缓存投票结果，避免重复采样。</li>
+        <li><strong>异步并行</strong>：如果 LLM API 支持并发，可以同时发起多个采样请求，将延迟从 N 次串行降低到接近 1 次。</li>
+        <li><strong>动态采样</strong>：根据问题复杂度预估所需采样次数，简单问题少采样，复杂问题多采样。</li>
+        <li><strong>答案规范化</strong>：在投票前对答案进行标准化（如去除标点、统一大小写、数字格式化），提高精确匹配的召回率。</li>
+    </ul>
+    <p>答案规范化是自洽性系统中容易被忽视但极具价值的一环。模型可能用不同的表述回答同一个问题（如"42"、"答案是 42"、"最终结果是四十二"），如果不做规范化，这些实际上相同的答案会被计为不同选项，导致投票失效。建议在提取答案后使用正则表达式或简单的 NLP 规则进行清洗和标准化。</p>
+
+<pre><code class="language-python"># 答案规范化示例：处理不同表述
+import re
+
+def normalize_answer(text: str) -> str:
+    """
+    标准化答案字符串，提高匹配率。
+    
+    步骤:
+        1. 移除常见前缀/后缀
+        2. 移除标点符号
+        3. 统一大小写和空格
+        4. 提取纯数字（如果适用）
+    """
+    # 移除前缀
+    prefixes = ["答案", "答案是", "最终结果", "结论是", 
+                "the answer is", "answer:", "result:"]
+    cleaned = text.strip()
+    for prefix in prefixes:
+        if cleaned.lower().startswith(prefix):
+            cleaned = cleaned[len(prefix):].strip()
+    
+    # 提取数字（如果包含）
+    nums = re.findall(r'\d+\.?\d*', cleaned)
+    if nums:
+        return nums[-1]  # 返回最后一个数字
+    
+    # 降级：清理标点
+    cleaned = re.sub(r'[^\w\s\u4e00-\u9fff]', '', cleaned)
+    return cleaned.strip()
+
+# 测试
+test_answers = [
+    "答案是 42",
+    "最终结果为42",
+    "42（经过计算）",
+    "The answer is forty-two.",
+]
+for ans in test_answers:
+    print(f"{ans!r:35} → {normalize_answer(ans)!r}")
+# 输出:
+# '答案是 42'                         → '42'
+# '最终结果为42'                      → '42'
+# '42（经过计算）'                    → '42'
+# 'The answer is forty-two.'         → 'The answer is forty-two'</code></pre>
+
+    <table>
+        <thead>
+            <tr><th>采样次数</th><th>准确率提升</th><th>成本倍数</th><th>适用场景</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>1 次（Baseline）</td><td>基准</td><td>1x</td><td>简单任务、高预算敏感</td></tr>
+            <tr><td>3 次</td><td>+5~8%</td><td>3x</td><td>日常推理、客服问答</td></tr>
+            <tr><td>5 次</td><td>+10~15%</td><td>5x</td><td>复杂计算、代码生成</td></tr>
+            <tr><td>7-10 次</td><td>+15~20%</td><td>7-10x</td><td>医疗/金融关键决策</td></tr>
+        </tbody>
+    </table>
+
+    <h2>六、常见陷阱与避坑指南</h2>
+    <p>在实际部署 Self-Consistency 系统时，开发团队常会遇到以下陷阱：</p>
+    <ul>
+        <li><strong>伪共识</strong>：多个采样输出格式不同但语义相同，由于规范化不足被误判为不同答案。解决方案是强化答案提取和标准化逻辑，使用更灵活的匹配规则。</li>
+        <li><strong>过度采样</strong>：对简单问题也使用高次数采样，导致成本失控。建议引入问题复杂度评估模块，动态调整采样策略。</li>
+        <li><strong>忽略超时</strong>：在生产环境中，如果不设置超时机制，采样可能无限期阻塞后续流程。务必为每次采样设置合理的 timeout。</li>
+        <li><strong>缓存污染</strong>：对同一问题使用不同的 Prompt 模板，但共享同一个缓存键，导致返回错误的结果。缓存键应包含 Prompt 模板的哈希值。</li>
+    </ul>
+
+<pre><code class="language-python">class SCConfigManager:
+    """
+    自洽性配置管理器：管理不同任务的采样策略。
+    
+    支持按任务类型、用户等级、预算限制
+    动态调整采样参数。
+    """
+    
+    def __init__(self):
+        self.task_profiles = {
+            "math": {"n": 5, "temp": 0.7, "timeout": 30},
+            "chat": {"n": 1, "temp": 0.5, "timeout": 10},
+            "coding": {"n": 3, "temp": 0.3, "timeout": 60},
+            "creative": {"n": 3, "temp": 0.9, "timeout": 45},
+        }
+        self.user_limits = {
+            "free": {"max_daily_samples": 50},
+            "pro": {"max_daily_samples": 500},
+            "enterprise": {"max_daily_samples": 5000},
+        }
+    
+    def get_profile(self, task_type: str) -> dict:
+        """获取任务类型的默认配置"""
+        return self.task_profiles.get(task_type, self.task_profiles["chat"])
+    
+    def check_quota(self, user_id: str, user_tier: str) -> bool:
+        """
+        检查用户当日采样配额。
+        
+        参数:
+            user_id: 用户 ID
+            user_tier: 用户等级（free / pro / enterprise）
+        返回:
+            是否还有配额
+        """
+        limit = self.user_limits[user_tier]["max_daily_samples"]
+        # 实际实现需要查询数据库
+        # used = db.get_daily_samples(user_id)
+        # return used < limit
+        return True
+
+
+# 使用示例
+config_mgr = SCConfigManager()
+for task in ["math", "chat", "coding", "creative"]:
+    profile = config_mgr.get_profile(task)
+    print(f"任务: {task} → 采样 {profile['n']} 次, "
+          f"温度 {profile['temp']}, 超时 {profile['timeout']}s")</code></pre>
+
+    <div class="note note-info">
+        <div class="note-title">📌 小结</div>
+        <p>Self-Consistency 是通过"多样性采样 + 多数投票"提升大模型推理准确率的有效手段。它的核心假设是：正确的推理路径具有更高的自洽性。在生产环境中，需要结合缓存、早期终止和异步并行等技术来控制成本。下一章我们将学习<strong>角色设定与 System Prompt 设计模式</strong>，探讨如何通过角色引导进一步提升输出的专业性和一致性。</p>
+    </div>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

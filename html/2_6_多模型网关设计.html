@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.6 多模型网关设计 - 大模型应用开发学习大纲</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.8; color: #333; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 32px; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 15px; margin-bottom: 30px; }
+        h2 { font-size: 24px; color: #34495e; margin-top: 40px; margin-bottom: 20px; padding-left: 15px; border-left: 4px solid #3498db; }
+        h3 { font-size: 18px; color: #555; margin-top: 25px; margin-bottom: 15px; }
+        p { margin-bottom: 15px; text-align: justify; }
+        .summary-box { background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 30px 0; }
+        .key-point { background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0; }
+        .warning { background: #fff3e0; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
+        th { background: #3498db; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        
+        .kw { color: #c678dd; }
+        .str { color: #98c379; }
+        .cmt { color: #5c6370; font-style: italic; }
+        .dec { color: #e5c07b; }
+        .cls { color: #61afef; }
+        .num { color: #d19a66; }
+        .op { color: #56b6c2; }
+        .self { color: #e06c75; }
+        .fn { color: #61afef; }
+        pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 6px; overflow-x: auto; margin: 20px 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+        code { font-family: 'Consolas', 'Monaco', 'Courier New', monospace; background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 14px; color: #e74c3c; }
+        pre code { background: transparent; color: inherit; padding: 0; }
+        .file-tree { background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; margin: 20px 0; }
+        .file-tree div { margin: 5px 0; }
+        .highlight { background: #fffacd; padding: 2px 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>2.6 多模型网关设计</h1>
+        
+        <div class="summary-box">
+            <h3>📋 本节导读</h3>
+            <p>在实际生产环境中，我们通常需要接入多个大模型提供商（OpenAI、DeepSeek、通义千问等），并且需要实现智能路由、故障转移、预算控制等功能。多模型网关就是为了解决这些问题而设计的统一中间层。</p>
+        </div>
+
+        <h2>一、为什么需要多模型网关？</h2>
+        
+        <h3>1.1 单一模型的局限性</h3>
+        <p>直接使用单一模型提供商存在以下问题：</p>
+        <ul style="margin: 15px 0 15px 30px;">
+            <li><strong>单点故障</strong>：如果该模型服务不可用，整个应用瘫痪</li>
+            <li><strong>成本不透明</strong>：无法在不同价格模型间智能切换</li>
+            <li><strong>API差异</strong>：不同提供商的API格式可能不同</li>
+            <li><strong>缺乏控制</strong>：难以实现统一的预算限制和访问控制</li>
+        </ul>
+
+        <h3>1.2 网关的核心价值</h3>
+        <p>多模型网关作为应用的中间层，提供以下能力：</p>
+        <table>
+            <tr>
+                <th>能力</th>
+                <th>说明</th>
+                <th>业务价值</th>
+            </tr>
+            <tr>
+                <td>统一接口</td>
+                <td>所有模型使用相同的OpenAI兼容API格式</td>
+                <td>应用代码无需修改即可切换模型</td>
+            </tr>
+            <tr>
+                <td>智能路由</td>
+                <td>根据成本、质量、可用性自动选择模型</td>
+                <td>优化成本和性能</td>
+            </tr>
+            <tr>
+                <td>故障转移</td>
+                <td>模型故障时自动切换到备选模型</td>
+                <td>提高系统可靠性</td>
+            </tr>
+            <tr>
+                <td>预算控制</td>
+                <td>全局和用户级别的费用限制</td>
+                <td>防止费用失控</td>
+            </tr>
+            <tr>
+                <td>监控日志</td>
+                <td>记录所有请求、响应、费用</td>
+                <td>便于问题排查和成本分析</td>
+            </tr>
+        </table>
+
+        <div class="key-point">
+            <strong>💡 核心洞察：</strong>多模型网关本质上是一个<strong>API代理层</strong>，它将复杂的模型管理逻辑封装在内部，对外提供简洁统一的接口。这种设计模式在微服务架构中非常常见。
+        </div>
+
+        <h2>二、项目架构设计</h2>
+
+        <h3>2.1 整体架构</h3>
+        <p>我们的网关采用分层架构设计：</p>
+        <div class="file-tree">
+            <div>┌─────────────────────────────────────┐</div>
+            <div>│         应用层 (FastAPI)             │</div>
+            <div>│  /v1/chat/completions  /v1/models   │</div>
+            <div>├─────────────────────────────────────┤</div>
+            <div>│         中间件层 (Middleware)        │</div>
+            <div>│  日志 | 限流 | 预算控制 | 认证      │</div>
+            <div>├─────────────────────────────────────┤</div>
+            <div>│         核心网关层 (Gateway)         │</div>
+            <div>│  路由策略 | 故障转移 | 负载均衡     │</div>
+            <div>├─────────────────────────────────────┤</div>
+            <div>│         模型注册表 (Registry)        │</div>
+            <div>│  模型配置 | 客户端管理 | 健康检查   │</div>
+            <div>└─────────────────────────────────────┘</div>
+            <div>              ↓ ↓ ↓</div>
+            <div>    OpenAI | DeepSeek | 通义千问</div>
+        </div>
+
+        <h3>2.2 项目文件结构</h3>
+        <p>完整的生产级项目包含以下文件：</p>
+        <div class="file-tree">
+            <div><strong>06_model_gateway/</strong></div>
+            <div>├── main.py                  <span style="color:#666;"># FastAPI应用入口（312行）</span></div>
+            <div>├── config.yaml              <span style="color:#666;"># 配置文件（模型、路由、预算）</span></div>
+            <div>├── requirements.txt         <span style="color:#666;"># Python依赖</span></div>
+            <div>├── Dockerfile               <span style="color:#666;"># Docker镜像构建</span></div>
+            <div>├── docker-compose.yml       <span style="color:#666;"># Docker编排</span></div>
+            <div>├── .env.example             <span style="color:#666;"># 环境变量示例</span></div>
+            <div>├── .gitignore               <span style="color:#666;"># Git忽略规则</span></div>
+            <div>├── README.md                <span style="color:#666;"># 项目文档</span></div>
+            <div>└── <strong>gateway/</strong>                <span style="color:#666;"># 核心网关模块</span></div>
+            <div>    ├── __init__.py          <span style="color:#666;"># 模块初始化（28行）</span></div>
+            <div>    ├── config.py            <span style="color:#666;"># 配置管理（102行）</span></div>
+            <div>    ├── registry.py          <span style="color:#666;"># 模型注册表（127行）</span></div>
+            <div>    ├── router.py            <span style="color:#666;"># 智能路由（202行）</span></div>
+            <div>    └── middleware.py        <span style="color:#666;"># 中间件（205行）</span></div>
+        </div>
+
+        <p><strong>代码统计：</strong>共976行Python代码，13个配置文件和文档</p>
+
+        <h3>2.3 核心模块职责</h3>
+        <table>
+            <tr>
+                <th>模块</th>
+                <th>职责</th>
+                <th>关键功能</th>
+            </tr>
+            <tr>
+                <td><code>config.py</code></td>
+                <td>配置管理</td>
+                <td>YAML解析、环境变量替换、配置验证</td>
+            </tr>
+            <tr>
+                <td><code>registry.py</code></td>
+                <td>模型注册表</td>
+                <td>模型客户端管理、健康检查、状态追踪</td>
+            </tr>
+            <tr>
+                <td><code>router.py</code></td>
+                <td>智能路由</td>
+                <td>路由策略、故障转移、模型选择</td>
+            </tr>
+            <tr>
+                <td><code>middleware.py</code></td>
+                <td>中间件</td>
+                <td>请求日志、速率限制、预算控制</td>
+            </tr>
+            <tr>
+                <td><code>main.py</code></td>
+                <td>应用入口</td>
+                <td>FastAPI路由、生命周期管理、请求处理</td>
+            </tr>
+        </table>
+
+        <h2>三、核心功能实现</h2>
+
+        <h3>3.1 配置管理（config.py）</h3>
+        <p>使用Pydantic进行类型安全的配置管理，支持YAML文件和环境变量：</p>
+        <pre><span class="cmt"># 配置模型定义</span>
+<span class="kw">class</span> <span class="cls">ModelConfig</span>(<span class="cls">BaseModel</span>):
+    name: <span class="cls">str</span>
+    provider: <span class="cls">str</span>
+    api_key: <span class="cls">str</span>
+    base_url: <span class="cls">str</span>
+    input_price: <span class="cls">float</span>  <span class="cmt"># 每百万token</span>
+    output_price: <span class="cls">float</span>
+    enabled: <span class="cls">bool</span> = <span class="kw">True</span>
+
+<span class="kw">class</span> <span class="cls">GatewayConfig</span>(<span class="cls">BaseModel</span>):
+    gateway: <span class="cls">GatewaySettings</span>
+    models: <span class="cls">List</span>[<span class="cls">ModelConfig</span>]
+    routing: <span class="cls">RoutingConfig</span>
+    budget: <span class="cls">BudgetConfig</span>
+    
+    <span class="dec">@classmethod</span>
+    <span class="kw">def</span> from_yaml(cls, path: <span class="cls">str</span>) -> <span class="str">"GatewayConfig"</span>:
+        <span class="str">"""从YAML文件加载配置，支持环境变量替换"""</span>
+        <span class="kw">with</span> open(path, <span class="str">'r'</span>, encoding=<span class="str">'utf-8'</span>) <span class="kw">as</span> f:
+            raw = yaml.<span class="fn">safe_load</span>(f)
+        raw = cls.<span class="fn">_resolve_env_vars</span>(raw)  <span class="cmt"># 替换 ${VAR} 格式</span>
+        <span class="kw">return</span> cls(**raw)</pre>
+
+        <div class="key-point">
+            <strong>✨ 设计亮点：</strong>使用<code>${ENV_VAR}</code>语法引用环境变量，避免将API Key硬编码。例如：<code>api_key: "${OPENAI_API_KEY}"</code>
+        </div>
+
+        <h3>3.2 模型注册表（registry.py）</h3>
+        <p>管理所有模型的客户端实例和健康状态：</p>
+        <pre><span class="kw">class</span> <span class="cls">ModelRegistry</span>:
+    <span class="str">"""模型注册表 - 管理所有可用模型"""</span>
+    
+    <span class="kw">def</span> __init__(<span class="self">self</span>, model_configs: <span class="cls">List</span>[<span class="cls">ModelConfig</span>]):
+        <span class="self">self</span>.<span class="fn">configs</span>: <span class="cls">Dict</span>[<span class="cls">str</span>, <span class="cls">ModelConfig</span>] = {}
+        <span class="self">self</span>.<span class="fn">clients</span>: <span class="cls">Dict</span>[<span class="cls">str</span>, <span class="cls">AsyncOpenAI</span>] = {}
+        <span class="self">self</span>.<span class="fn">health_status</span>: <span class="cls">Dict</span>[<span class="cls">str</span>, <span class="cls">bool</span>] = {}
+        
+        <span class="kw">for</span> config <span class="kw">in</span> model_configs:
+            <span class="kw">if</span> config.<span class="fn">enabled</span>:
+                <span class="self">self</span>.<span class="fn">register</span>(config)
+    
+    <span class="kw">def</span> register(<span class="self">self</span>, config: <span class="cls">ModelConfig</span>):
+        <span class="str">"""注册模型并创建客户端"""</span>
+        <span class="self">self</span>.<span class="fn">configs</span>[config.<span class="fn">name</span>] = config
+        <span class="self">self</span>.<span class="fn">clients</span>[config.<span class="fn">name</span>] = <span class="cls">AsyncOpenAI</span>(
+            api_key=config.<span class="fn">api_key</span>,
+            base_url=config.<span class="fn">base_url</span>,
+            timeout=<span class="cls">float</span>(config.<span class="fn">timeout</span>),
+        )
+        <span class="self">self</span>.<span class="fn">health_status</span>[config.<span class="fn">name</span>] = <span class="kw">True</span>
+    
+    <span class="kw">def</span> mark_unhealthy(<span class="self">self</span>, model_name: <span class="cls">str</span>):
+        <span class="str">"""标记模型为不健康（触发故障转移）"""</span>
+        <span class="self">self</span>.<span class="fn">health_status</span>[model_name] = <span class="kw">False</span></pre>
+
+        <h3>3.3 智能路由（router.py）</h3>
+        <p>支持多种路由策略，自动选择最佳模型：</p>
+        <pre><span class="kw">class</span> <span class="cls">ModelRouter</span>:
+    <span class="str">"""智能路由器 - 根据策略选择模型"""</span>
+    
+    <span class="kw">def</span> select_model(<span class="self">self</span>, preferred: <span class="cls">str</span> = <span class="kw">None</span>, 
+                     max_cost: <span class="cls">float</span> = <span class="kw">None</span>) -> <span class="cls">str</span>:
+        <span class="str">"""选择最佳模型</span>
+        
+        策略：cost_first | quality_first | round_robin
+        <span class="str">"""</span>
+        <span class="kw">if</span> preferred <span class="kw">and</span> <span class="self">self</span>.<span class="fn">_is_available</span>(preferred, max_cost):
+            <span class="kw">return</span> preferred
+        
+        available = <span class="self">self</span>.<span class="fn">_get_available_models</span>(max_cost)
+        <span class="kw">if</span> <span class="kw">not</span> available:
+            <span class="kw">raise</span> <span class="cls">ValueError</span>(<span class="str">"没有可用的模型"</span>)
+        
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">config</span>.<span class="fn">strategy</span> == <span class="str">"cost_first"</span>:
+            <span class="kw">return</span> <span class="self">self</span>.<span class="fn">_select_by_cost</span>(available)
+        <span class="kw">elif</span> <span class="self">self</span>.<span class="fn">config</span>.<span class="fn">strategy</span> == <span class="str">"quality_first"</span>:
+            <span class="kw">return</span> <span class="self">self</span>.<span class="fn">_select_by_quality</span>(available)
+        <span class="kw">else</span>:
+            <span class="kw">return</span> <span class="self">self</span>.<span class="fn">_select_round_robin</span>(available)
+    
+    <span class="kw">def</span> get_fallback_model(<span class="self">self</span>, failed: <span class="cls">str</span>) -> <span class="cls">str</span>:
+        <span class="str">"""获取故障转移模型"""</span>
+        <span class="kw">for</span> fallback <span class="kw">in</span> <span class="self">self</span>.<span class="fn">config</span>.<span class="fn">fallback_models</span>:
+            <span class="kw">if</span> fallback != failed <span class="kw">and</span> <span class="self">self</span>.<span class="fn">_is_available</span>(fallback):
+                <span class="kw">return</span> fallback
+        <span class="kw">return</span> <span class="kw">None</span></pre>
+
+        <table>
+            <tr>
+                <th>路由策略</th>
+                <th>选择逻辑</th>
+                <th>适用场景</th>
+            </tr>
+            <tr>
+                <td>cost_first</td>
+                <td>按input_price升序，选最便宜的</td>
+                <td>日常对话、简单任务</td>
+            </tr>
+            <tr>
+                <td>quality_first</td>
+                <td>按input_price降序，选最贵的</td>
+                <td>复杂推理、专业任务</td>
+            </tr>
+            <tr>
+                <td>round_robin</td>
+                <td>轮询选择所有可用模型</td>
+                <td>负载均衡、测试</td>
+            </tr>
+        </table>
+
+        <h3>3.4 中间件系统（middleware.py）</h3>
+        <p>使用FastAPI中间件实现横切关注点：</p>
+        <pre><span class="cmt"># 1. 请求日志中间件</span>
+<span class="kw">class</span> <span class="cls">LoggingMiddleware</span>(<span class="cls">BaseHTTPMiddleware</span>):
+    <span class="kw">async</span> <span class="kw">def</span> dispatch(<span class="self">self</span>, request, call_next):
+        start = time.<span class="fn">time</span>()
+        response = <span class="kw">await</span> call_next(request)
+        duration = time.<span class="fn">time</span>() - start
+        logger.<span class="fn">info</span>(<span class="str">f"{request.method} {request.url.path} "</span>
+                   <span class="str">f"- {response.status_code} - {duration:.3f}s"</span>)
+        <span class="kw">return</span> response
+
+<span class="cmt"># 2. 速率限制中间件（滑动窗口算法）</span>
+<span class="kw">class</span> <span class="cls">RateLimitMiddleware</span>(<span class="cls">BaseHTTPMiddleware</span>):
+    <span class="kw">def</span> __init__(<span class="self">self</span>, app, rate_limit: <span class="cls">int</span>):
+        super().<span class="fn">__init__</span>(app)
+        <span class="self">self</span>.<span class="fn">rate_limit</span> = rate_limit
+        <span class="self">self</span>.<span class="fn">timestamps</span>: <span class="cls">Dict</span>[<span class="cls">str</span>, <span class="cls">list</span>] = defaultdict(<span class="cls">list</span>)
+    
+    <span class="kw">async</span> <span class="kw">def</span> dispatch(<span class="self">self</span>, request, call_next):
+        user_id = request.<span class="fn">client</span>.<span class="fn">host</span>
+        <span class="kw">if</span> <span class="kw">not</span> <span class="self">self</span>.<span class="fn">_check_rate_limit</span>(user_id):
+            <span class="kw">return</span> <span class="cls">Response</span>(status_code=<span class="num">429</span>, 
+                          content=<span class="str">"Rate limit exceeded"</span>)
+        <span class="kw">return</span> <span class="kw">await</span> call_next(request)
+
+<span class="cmt"># 3. 预算控制中间件</span>
+<span class="kw">class</span> <span class="cls">BudgetMiddleware</span>(<span class="cls">BaseHTTPMiddleware</span>):
+    <span class="kw">def</span> record_cost(<span class="self">self</span>, user_id: <span class="cls">str</span>, cost: <span class="cls">float</span>):
+        <span class="self">self</span>.<span class="fn">global_daily_cost</span> += cost
+        <span class="self">self</span>.<span class="fn">user_daily_costs</span>[user_id] += cost
+    
+    <span class="kw">def</span> check_budget(<span class="self">self</span>, user_id: <span class="cls">str</span>, estimated: <span class="cls">float</span>) -> <span class="cls">bool</span>:
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">global_daily_cost</span> + estimated > <span class="self">self</span>.<span class="fn">config</span>.<span class="fn">global_daily_limit</span>:
+            <span class="kw">return</span> <span class="kw">False</span>
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">user_daily_costs</span>[user_id] + estimated > <span class="self">self</span>.<span class="fn">config</span>.<span class="fn">user_daily_limit</span>:
+            <span class="kw">return</span> <span class="kw">False</span>
+        <span class="kw">return</span> <span class="kw">True</span></pre>
+
+        <div class="warning">
+            <strong>⚠️ 注意：</strong>中间件执行顺序很重要。FastAPI中先添加的后执行（洋葱模型）。建议顺序：日志 → 限流 → 预算控制。
+        </div>
+
+        <h3>3.5 故障转移实战</h3>
+        <p>故障转移是网关最重要的可靠性保障。当模型调用失败时，网关会自动尝试备选模型：</p>
+        <pre><span class="cmt"># main.py 中的故障转移逻辑</span>
+<span class="dec">@app.post</span>(<span class="str">"/v1/chat/completions"</span>)
+<span class="kw">async</span> <span class="kw">def</span> chat_completions(request: <span class="cls">ChatRequest</span>, http_request: <span class="cls">Request</span>):
+    user_id = http_request.<span class="fn">client</span>.<span class="fn">host</span> <span class="kw">if</span> http_request.<span class="fn">client</span> <span class="kw">else</span> <span class="str">"unknown"</span>
+    
+    <span class="cmt"># 1. 选择模型</span>
+    selected_model = router.<span class="fn">select_model</span>(preferred_model=request.<span class="fn">model</span>)
+    client = registry.<span class="fn">get_client</span>(selected_model)
+    
+    <span class="cmt"># 2. 调用模型API（带故障转移）</span>
+    <span class="kw">try</span>:
+        response = <span class="kw">await</span> client.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(**kwargs)
+    <span class="kw">except</span> <span class="cls">Exception</span> <span class="kw">as</span> e:
+        logger.<span class="fn">error</span>(<span class="str">f"模型 {selected_model} 调用失败: {e}"</span>)
+        
+        <span class="cmt"># 标记模型为不健康</span>
+        registry.<span class="fn">mark_unhealthy</span>(selected_model)
+        
+        <span class="cmt"># 尝试故障转移到备选模型</span>
+        fallback = router.<span class="fn">get_fallback_model</span>(selected_model)
+        <span class="kw">if</span> fallback:
+            logger.<span class="fn">info</span>(<span class="str">f"故障转移: {selected_model} -> {fallback}"</span>)
+            fallback_client = registry.<span class="fn">get_client</span>(fallback)
+            kwargs[<span class="str">"model"</span>] = fallback
+            response = <span class="kw">await</span> fallback_client.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(**kwargs)
+            selected_model = fallback
+        <span class="kw">else</span>:
+            <span class="kw">raise</span> <span class="cls">HTTPException</span>(status_code=<span class="num">503</span>, detail=<span class="str">"所有模型不可用"</span>)</pre>
+
+        <p>故障转移的流程如下：</p>
+        <table>
+            <tr>
+                <th>步骤</th>
+                <th>动作</th>
+                <th>说明</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>调用首选模型</td>
+                <td>根据路由策略选择的模型</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>捕获异常</td>
+                <td>网络超时、API错误等</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>标记不健康</td>
+                <td>后续请求不再路由到该模型</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>选择备选模型</td>
+                <td>从fallback_models列表中选择</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>重试请求</td>
+                <td>使用备选模型重新发起请求</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>返回响应</td>
+                <td>对客户端透明，感知不到切换</td>
+            </tr>
+        </table>
+
+        <div class="key-point">
+            <strong>💡 生产建议：</strong>故障转移时应该记录日志并发送告警通知。如果频繁触发故障转移，说明某个模型可能存在系统性问题，需要运维介入排查。
+        </div>
+
+        <h2>四、安装与启动</h2>
+
+        <h3>4.1 环境准备</h3>
+        <pre><span class="cmt"># 1. 进入项目目录</span>
+cd workspace/<span class="num">02_</span>api_basics/<span class="num">06_</span>model_gateway
+
+<span class="cmt"># 2. 安装依赖</span>
+pip install -r requirements.<span class="fn">txt</span>
+
+<span class="cmt"># 3. 配置环境变量</span>
+cp .<span class="fn">env</span>.<span class="fn">example</span> .<span class="fn">env</span>
+<span class="cmt"># 编辑 .env 文件，填入你的API Keys</span>
+
+<span class="cmt"># 4. 启动服务</span>
+python main.<span class="fn">py</span>
+
+<span class="cmt"># 或使用uvicorn（生产环境推荐）</span>
+uvicorn main:app --host <span class="num">0.0.0.0</span> --port <span class="num">8000</span> --workers <span class="num">4</span></pre>
+
+        <h3>4.2 API使用示例</h3>
+        <pre><span class="cmt"># 列出所有可用模型</span>
+curl http://localhost:<span class="num">8000</span>/v1/models
+
+<span class="cmt"># 发送聊天请求（自动路由）</span>
+curl -<span class="cls">X</span> <span class="cls">POST</span> http://localhost:<span class="num">8000</span>/v1/chat/completions \
+  -<span class="cls">H</span> <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{</span>
+    <span class="str">"messages"</span>: [
+      {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"你好"</span>}
+    ],
+    <span class="str">"temperature"</span>: <span class="num">0.7</span>
+  }<span class="str">'</span>
+
+<span class="cmt"># 指定特定模型</span>
+curl -<span class="cls">X</span> <span class="cls">POST</span> http://localhost:<span class="num">8000</span>/v1/chat/completions \
+  -<span class="cls">H</span> <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{</span>
+    <span class="str">"model"</span>: <span class="str">"deepseek-chat"</span>,
+    <span class="str">"messages"</span>: [
+      {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"解释Python装饰器"</span>}
+    ]
+  }<span class="str">'</span>
+
+<span class="cmt"># 健康检查</span>
+curl http://localhost:<span class="num">8000</span>/health
+
+<span class="cmt"># 查看统计信息</span>
+curl http://localhost:<span class="num">8000</span>/stats</pre>
+
+        <h3>4.3 Python客户端使用</h3>
+        <pre><span class="kw">from</span> openai <span class="kw">import</span> <span class="cls">OpenAI</span>
+
+<span class="cmt"># 指向网关地址</span>
+client = <span class="cls">OpenAI</span>(
+    api_key=<span class="str">"any-key"</span>,  <span class="cmt"># 网关会验证真实的API Key</span>
+    base_url=<span class="str">"http://localhost:8000/v1"</span>
+)
+
+<span class="cmt"># 发送请求（网关会自动选择模型）</span>
+response = client.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(
+    messages=[
+        {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"你好"</span>}
+    ]
+)
+print(response.<span class="fn">choices</span>[<span class="num">0</span>].<span class="fn">message</span>.<span class="fn">content</span>)
+
+<span class="cmt"># 指定特定模型</span>
+response = client.<span class="fn">chat</span>.<span class="fn">completions</span>.<span class="fn">create</span>(
+    model=<span class="str">"deepseek-chat"</span>,
+    messages=[
+        {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"用Python写快速排序"</span>}
+    ]
+)</pre>
+
+        <h2>五、生产环境部署</h2>
+        
+        <h3>5.1 部署架构</h3>
+        <p>生产环境建议使用容器化部署，配合负载均衡和监控：</p>
+        <div class="file-tree">
+            <div>┌──────────────────────────────────────────────┐</div>
+            <div>│              负载均衡器 (Nginx/HAProxy)        │</div>
+            <div>└──────────────────────────────────────────────┘</div>
+            <div>              ↓              ↓              ↓</div>
+            <div>        ┌─────────┐    ┌─────────┐    ┌─────────┐</div>
+            <div>        │ 网关实例1 │    │ 网关实例2 │    │ 网关实例3 │</div>
+            <div>        └─────────┘    └─────────┘    └─────────┘</div>
+            <div>              ↓              ↓              ↓</div>
+            <div>        ┌──────────────────────────────────────┐</div>
+            <div>        │         Redis (会话/限流/缓存)         │</div>
+            <div>        └──────────────────────────────────────┘</div>
+            <div>              ↓              ↓              ↓</div>
+            <div>        ┌─────────┐    ┌─────────┐    ┌─────────┐</div>
+            <div>        │ OpenAI   │    │DeepSeek │    │ 通义千问 │</div>
+            <div>        └─────────┘    └─────────┘    └─────────┘</div>
+        </div>
+
+        <h3>5.2 Docker Compose 部署</h3>
+        <pre><code class="language-yaml"># docker-compose.yml
+version: '3.8'
+services:
+  gateway:
+    build: .

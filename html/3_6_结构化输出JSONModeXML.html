@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.6 结构化输出（JSON Mode、XML） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.6; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>3.6 结构化输出（JSON Mode、XML、Structured Outputs）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块三：Prompt Engineering</span>
+        <span class="tag tag-time">预计学习：45 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解为什么大模型应用需要<strong>结构化输出</strong></li>
+        <li>掌握 <strong>JSON Mode</strong> 的原理与使用方法</li>
+        <li>学会使用 <strong>XML 标签</strong> 强制模型输出特定格式</li>
+        <li>能够构建生产级的结构化输出解析与容错引擎</li>
+    </ul>
+
+    <h2>一、为什么需要结构化输出？</h2>
+    <p>在与大模型交互时，模型默认的输出是自然语言文本。虽然文本易于人类阅读，但对于后续的代码逻辑（如数据库写入、API 调用、前端渲染）来说，非结构化文本难以解析且极不稳定。如果模型在输出中多了一个标点符号、改变了换行习惯或使用了同义词，整个正则表达式或字符串匹配逻辑都可能失效，导致系统崩溃。</p>
+    <p>结构化输出的核心目的是<strong>建立契约</strong>：我们明确告诉模型预期的数据结构（如 JSON Schema 或 XML 格式），模型承诺严格按照该格式输出。这样，后端代码可以像调用标准 API 一样可靠地处理模型的输出结果。这不仅是构建可靠 AI 应用的基石，也是实现 Agent 自主行动（如 Function Calling）的前提。</p>
+    <p>目前主流的解决方案有三种：<strong>JSON Mode</strong>（通过 API 参数强制输出 JSON）、<strong>XML 标签包裹</strong>（在 Prompt 中要求模型用标签包裹内容）以及 <strong>Pydantic 校验</strong>（在代码端进行强类型验证和自动修复）。下面我们将逐一深入探讨。</p>
+    <p>在实际项目中，我们还会遇到一种情况：模型输出了看似合法的 JSON，但其中的字段缺失或类型错误。例如，要求模型输出一个包含 <code>name</code> (str), <code>age</code> (int) 的对象，它却只输出了 <code>{"name": "Alice"}</code>。这种“半结构化”的输出是系统不稳定的主要来源。因此，除了 Prompt 工程，我们在代码侧也需要引入<strong>强类型校验层</strong>，以应对模型的不完美表现。</p>
+
+    <div class="diagram-container">
+        <svg width="750" height="240" viewBox="0 0 750 240" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="g-raw" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#94a3b8"/><stop offset="100%" stop-color="#64748b"/></linearGradient>
+                <linearGradient id="g-json" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+                <linearGradient id="g-xml" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="g-pyd" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient>
+            </defs>
+            <!-- Title -->
+            <text x="375" y="24" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">非结构化 vs 结构化输出对比</text>
+            
+            <!-- Left: Raw Text (Bad) -->
+            <rect x="30" y="50" width="200" height="160" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+            <rect x="40" y="60" width="180" height="140" rx="4" fill="white" stroke="#94a3b8"/>
+            <text x="130" y="85" text-anchor="middle" fill="#1a1a2e" font-size="12" font-family="monospace">
+                <tspan x="130" dy="0">{"name": "张三",</tspan>
+                <tspan x="130" dy="16"> "age": 25}</tspan>
+                <tspan x="130" dy="16">这里还有一些</tspan>
+                <tspan x="130" dy="16">多余的解释文本。</tspan>
+            </text>
+            <text x="130" y="205" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="bold">❌ 难以解析，容易出错</text>
+
+            <!-- Arrow -->
+            <polygon points="240,130 260,120 260,140" fill="#cbd5e1"/>
+
+            <!-- Right: Structured (Good) -->
+            <rect x="280" y="50" width="440" height="160" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            
+            <!-- JSON -->
+            <rect x="295" y="65" width="120" height="50" rx="6" fill="url(#g-json)"/>
+            <text x="355" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">JSON Mode</text>
+            
+            <!-- XML -->
+            <rect x="430" y="65" width="120" height="50" rx="6" fill="url(#g-xml)"/>
+            <text x="490" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">XML Tags</text>
+
+            <!-- Pydantic -->
+            <rect x="565" y="65" width="130" height="50" rx="6" fill="url(#g-pyd)"/>
+            <text x="630" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Pydantic/Schema</text>
+
+            <!-- Result Box -->
+            <rect x="295" y="135" width="400" height="60" rx="6" fill="#1a1a2e"/>
+            <text x="495" y="160" text-anchor="middle" fill="white" font-size="12" font-weight="bold">✅ 纯净的 JSON 数据</text>
+            <text x="495" y="180" text-anchor="middle" fill="#e0e7ff" font-size="11" font-family="monospace">{"name": "张三", "age": 25}</text>
+        </svg>
+    </div>
+
+    <h2>二、JSON Mode 的原理与实践</h2>
+    <p>主流 LLM 提供商（如 OpenAI、Anthropic、Google）都提供了 <code>response_format: {"type": "json_object"}</code> 参数。开启此模式后，模型会在输出时强制生成有效的 JSON 字符串。如果模型无法生成 JSON，API 会直接报错，而不是返回不可用的自然语言。</p>
+    <p>但是，仅仅开启 JSON Mode 是不够的。你仍然需要在 Prompt 中明确提供 <strong>JSON Schema</strong> 示例，告诉模型具体的字段名、类型和嵌套结构。否则，模型可能会生成一个格式正确但内容不符合预期的 JSON（例如输出 <code>{"result": "ok"}</code> 而不是你需要的详细数据）。</p>
+    <p>值得注意的是，JSON Mode 通常会对模型生成过程中的采样逻辑进行约束，这可能会轻微影响模型的创造性或推理能力。因此，对于需要高度创造性的任务，不建议开启 JSON Mode，而对于数据提取、分类、API 调用等任务，则强烈推荐。</p>
+
+<pre><code class="language-python">"""
+structured_output.py — 结构化输出解析引擎
+包含 JSON 解析、XML 提取、重试修复与 Pydantic 验证
+"""
+
+import json
+import re
+import time
+from typing import Optional, Type
+from pydantic import BaseModel, ValidationError
+
+
+class StructuredOutputParser:
+    """
+    结构化输出解析器：处理模型返回的非标准输出。
+    
+    核心功能：
+        1. 自动清洗 JSON（去除 Markdown 标记、截断错误）
+        2. XML 标签提取
+        3. 简单的重试与修复机制
+    """
+    
+    @staticmethod
+    def parse_json(raw_output: str) -> Optional[dict]:
+        """
+        尝试从原始输出中解析 JSON。
+        
+        处理情况：
+            - 标准 JSON
+            - Markdown 包裹的 JSON (```json ... ```)
+            - 包含前后缀文本的 JSON
+        """
+        # 1. 尝试直接解析
+        try:
+            return json.loads(raw_output)
+        except json.JSONDecodeError:
+            pass
+        
+        # 2. 尝试提取 Markdown 代码块
+        json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', raw_output)
+        if json_match:
+            try:
+                return json.loads(json_match.group(1))
+            except json.JSONDecodeError:
+                pass
+        
+        # 3. 尝试寻找第一个 { 和最后一个 }
+        start = raw_output.find('{')
+        end = raw_output.rfind('}')
+        if start != -1 and end != -1:
+            json_str = raw_output[start : end+1]
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                pass
+        
+        return None  # 解析失败
+</code></pre>
+
+    <h2>三、XML 标签包裹法</h2>
+    <p>对于不支持 JSON Mode 的模型，或者需要输出混合内容（部分自然语言，部分结构化数据）的场景，使用 XML 标签是最稳健的方法。通过要求模型使用特定的标签（如 <code>&lt;answer&gt;...&lt;/answer&gt;</code>）包裹关键信息，我们可以利用正则表达式精准提取内容。</p>
+    <p>XML 标签法的优势在于它<strong>不依赖于模型的 JSON 生成能力</strong>。即使模型在标签外输出了一大堆解释性文字，我们仍然可以准确抓取标签内的核心数据。这种方法在构建 Agent 时尤为常用，因为 Agent 经常需要在思考过程（自然语言）和执行动作（结构化工具调用）之间切换。</p>
+    <p>在使用 XML 标签时，标签的选择也有讲究。建议使用语义明确的标签名，如 <code>&lt;thought&gt;</code>, <code>&lt;action&gt;</code>, <code>&lt;result&gt;</code> 等。这不仅让模型更容易理解你的意图，也让代码的可读性更强。此外，当需要处理多层嵌套结构时，虽然 XML 支持嵌套，但如果数据结构过于复杂，建议还是使用 JSON 配合嵌套的 XML 标签（即在 XML 标签内部输出 JSON 字符串）。</p>
+
+<pre><code class="language-python">class XMLExtractor:
+    """
+    基于 XML 标签的内容提取器。
+    """
+    
+    @staticmethod
+    def extract_tag(content: str, tag_name: str) -> Optional[str]:
+        """
+        从内容中提取指定标签的内容。
+        
+        支持自闭合标签、嵌套标签的简单提取。
+        """
+        # 正则表达式匹配 <tag_name>...</tag_name>
+        # re.DOTALL 允许匹配跨行内容
+        pattern = rf'<{tag_name}\s*>(.*?)</{tag_name}\s*>'
+        match = re.search(pattern, content, re.DOTALL)
+        
+        if match:
+            return match.group(1).strip()
+        return None
+    
+    @staticmethod
+    def extract_all_tags(content: str) -> dict:
+        """
+        提取内容中所有定义的标签。
+        返回 {tag_name: content} 字典。
+        """
+        # 匹配所有标签
+        tags = re.findall(r'<(\w+)>(.*?)</\1>', content, re.DOTALL)
+        result = {}
+        for tag_name, tag_content in tags:
+            result[tag_name] = tag_content.strip()
+        return result
+
+
+# 使用示例
+raw_response = """
+好的，我来分析一下这个问题。
+首先，根据用户提供的信息，我们可以确定以下几点：
+<analysis>
+用户想要了解如何解析结构化数据。
+核心难点在于处理模型的随机输出。
+</analysis>
+
+这是我的最终答案：
+<answer>
+使用正则表达式或 JSON 解析库。
+</answer>
+"""
+
+extractor = XMLExtractor()
+analysis = extractor.extract_tag(raw_response, "analysis")
+print(f"分析内容:\n{analysis}")
+# 输出: 用户想要了解如何解析结构化数据。\n核心难点在于处理模型的随机输出。</code></pre>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 最佳实践</div>
+        <p>在使用 XML 标签时，建议在 Prompt 中明确告知模型：“请将你的最终结论包裹在 &lt;answer&gt; 标签中”。同时，为了保险起见，可以要求模型在标签内<strong>只输出核心内容，不要包含解释性文字</strong>，这样可以进一步降低解析失败的概率。</p>
+    </div>
+
+    <h2>四、Pydantic 与强类型校验</h2>
+    <p>在 Python 生态中，<strong>Pydantic</strong> 是处理结构化数据的事实标准。结合大模型使用，我们可以实现<strong>“生成-校验-自动修复”**的闭环。当模型输出的 JSON 不符合预期 Schema 时（例如字段缺失、类型错误），我们可以捕获异常，并将错误信息反馈给模型，要求它重新生成，直到满足要求为止。</p>
+    <p>这种机制在生产环境中至关重要，因为它保证了下游业务逻辑接收到的数据永远是类型安全、格式正确的。这也是 LangChain 等框架底层实现 Structured Output 的核心原理。</p>
+
+<pre><code class="language-python">class PydanticValidator:
+    """
+    基于 Pydantic 的强类型校验与自动修复引擎。
+    """
+    
+    def __init__(self, schema: Type[BaseModel], max_retries: int = 3):
+        """
+        参数:
+            schema: Pydantic 模型类
+            max_retries: 最大重试修复次数
+        """
+        self.schema = schema
+        self.max_retries = max_retries
+    
+    def validate_and_fix(self, data: dict) -> dict:
+        """
+        校验并尝试修复数据。
+        
+        返回:
+            符合 Schema 的字典数据
+        异常:
+            ValidationError: 如果多次修复仍失败
+        """
+        try:
+            # 1. 尝试直接校验
+            instance = self.schema(**data)
+            return instance.model_dump()
+        except ValidationError as e:
+            print(f"校验失败，开始自动修复... 错误: {e.errors()[0]['msg']}")
+            # 在实际应用中，这里会调用 LLM 进行修复
+            # 我们在此处仅做日志记录，
+            # 真正的修复需要构建包含错误信息的 Prompt 并重试
+            raise
+    
+    def get_schema_prompt(self) -> str:
+        """生成用于 Prompt 的 JSON Schema 字符串"""
+        return self.schema.model_json_schema()
+
+
+# 定义数据模型
+class UserResponse(BaseModel):
+    name: str
+    age: int
+    is_active: bool = True
+    tags: list[str]
+
+# 初始化校验器
+validator = PydanticValidator(schema=UserResponse)
+
+# 模拟模型输出（缺少 tags 字段）
+bad_output = {"name": "Alice", "age": 25}
+
+try:
+    result = validator.validate_and_fix(bad_output)
+    print(f"校验通过: {result}")
+except ValidationError as e:
+    print(f"校验最终失败: {e}")
+    # 下一步：构建 "修复 Prompt" -> 调用 LLM -> 再次校验</code></pre>
+
+    <h2>五、三种方案对比</h2>
+    <p>不同的场景适合不同的结构化策略。以下表格帮助你做出选择：</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>JSON Mode</th><th>XML 标签</th><th>Pydantic 校验</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>适用场景</strong></td><td>纯数据返回，API 支持</td><td>混合内容，通用场景</td><td>高可靠性要求，复杂结构</td></tr>
+            <tr><td><strong>模型支持</strong></td><td>OpenAI, Anthropic 等</td><td>所有模型</td><td>所有模型（后端实现）</td></tr>
+            <tr><td><strong>稳定性</strong></td><td>高</td><td>中高</td><td>最高（带重试修复）</td></tr>
+            <tr><td><strong>Token 消耗</strong></td><td>低</td><td>中（标签占位）</td><td>高（重试机制）</td></tr>
+            <tr><td><strong>实现复杂度</strong></td><td>极低（API 参数）</td><td>低（正则提取）</td><td>高（Schema 定义 + 循环）</td></tr>
+            <tr><td><strong>容错能力</strong></td><td>无（API 报错）</td><td>中（正则匹配）</td><td>强（类型检查 + 反馈）</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 常见陷阱</div>
+        <p><strong>不要假设模型总是输出完美 JSON</strong>。即使开启了 JSON Mode，小概率事件下模型仍可能截断输出或格式错误。务必在代码中编写健壮的解析逻辑（如本节的 <code>parse_json</code> 函数），而不是简单粗暴地 <code>json.loads(response.text)</code>。</p>
+    </div>
+
+    <h2>六、生成修复 Prompt</h2>
+    <p>当结构化校验失败时，我们需要构建一个“修复 Prompt"让模型修正错误。这个 Prompt 必须包含<strong>原始输入</strong>、<strong>预期 Schema</strong>以及<strong>具体的错误信息</strong>。</p>
+
+<pre><code class="language-python">def generate_fix_prompt(
+    original_input: str,
+    bad_output: str,
+    schema_desc: str,
+    error_msg: str
+) -> str:
+    """
+    生成用于修复结构化输出的 Prompt。
+    
+    参数:
+        original_input: 用户的原始问题
+        bad_output: 模型生成的错误输出
+        schema_desc: JSON Schema 描述
+        error_msg: 具体的校验错误信息
+    返回:
+        修复 Prompt 字符串
+    """
+    return f"""
+# 任务
+你之前的输出不符合预期的 JSON 格式。请根据错误信息修正你的回答。
+
+# 原始问题
+{original_input}
+
+# 你的错误输出
+{bad_output}
+
+# 预期的 JSON Schema
+{schema_desc}
+
+# 校验错误
+{error_msg}
+
+# 要求
+1. 严格遵循 JSON Schema 格式
+2. 不要包含任何解释性文字，只输出 JSON
+3. 确保所有必填字段都存在且类型正确
+"""
+
+# 使用示例
+fix_prompt = generate_fix_prompt(
+    original_input="分析这段文本的情感",
+    bad_output='{"sentiment": "positive"}', # 假设 Schema 要求包含 'confidence'
+    schema_desc='{"type": "object", "properties": {"sentiment": {"type": "string"}, "confidence": {"type": "number"}}}',
+    error_msg="'confidence' is a required property"
+)
+print(fix_prompt)</code></pre>
+
+    <h2>七、自动重试循环实现</h2>
+    <p>在生产环境中，我们通常会将校验、修复和重试封装在一个循环中。这样可以实现“生成-校验-修复”的闭环，确保最终返回给业务逻辑的数据一定是合法的。</p>
+
+<pre><code class="language-python">class RetryLoop:
+    """
+    自动重试循环：直到输出符合 Schema 或达到最大重试次数。
+    
+    工作流程：
+        1. 调用 LLM 获取输出
+        2. 解析 JSON
+        3. 使用 Pydantic 校验
+        4. 如果失败，构建修复 Prompt -> 再次调用 LLM
+        5. 重复直到成功或超时
+    """
+    
+    def __init__(self, llm_client, schema, max_retries=3):
+        self.client = llm_client
+        self.schema = schema
+        self.max_retries = max_retries
+        self.validator = PydanticValidator(schema=schema)
+    
+    def run(self, original_input: str) -> dict:
+        """
+        执行重试循环。
+        
+        参数:
+            original_input: 用户的原始问题
+        返回:
+            符合 Schema 的字典数据
+        """
+        # 1. 初始 Prompt
+        prompt = f"请回答以下问题，并以 JSON 格式返回结果。\nSchema: {self.validator.get_schema_prompt()}\n\n问题：{original_input}"
+        
+        current_output = ""
+        
+        for attempt in range(self.max_retries):
+            try:
+                # 调用 LLM
+                response = self.client.chat(
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                current_output = response.content
+                
+                # 解析 JSON
+                data = StructuredOutputParser.parse_json(current_output)
+                if not data:
+                    raise ValueError("无法解析 JSON")
+                
+                # 校验
+                return self.validator.validate_and_fix(data)
+                
+            except (ValueError, ValidationError) as e:
+                print(f"第 {attempt+1} 次尝试失败: {e}")
+                
+                # 如果是最后一次，抛出异常
+                if attempt == self.max_retries - 1:
+                    raise Exception(f"达到最大重试次数，最终输出: {current_output}")
+                
+                # 构建修复 Prompt
+                prompt = generate_fix_prompt(
+                    original_input=original_input,
+                    bad_output=current_output,
+                    schema_desc=self.validator.get_schema_prompt(),
+                    error_msg=str(e)
+                )
+                print("构建修复 Prompt，准备重试...")
+        
+        raise Exception("逻辑不应到达此处")
+
+
+# 使用示例
+# retry_loop = RetryLoop(llm_client, UserResponse)
+# result = retry_loop.run("分析以下评论的情感")
+# print(f"最终结果: {result}")</code></pre>
+
+    <div class="note note-info">
+        <div class="note-title">📌 小结</div>
+        <p>结构化输出是将大模型接入生产系统的必经之路。<strong>JSON Mode</strong> 是最便捷的方式，<strong>XML 标签</strong> 提供了极高的通用性，而 <strong>Pydantic 校验</strong> 则是保证数据质量的最后一道防线。在实际开发中，建议结合使用：使用 JSON Mode 或 XML 提示模型输出格式，并在后端使用 Pydantic 进行强类型验证和自动重试修复。下一章我们将学习<strong>Prompt 模板管理与版本控制</strong>，探讨如何在工程中高效维护这些复杂的 Prompt。</p>
+    </div>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

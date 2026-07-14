@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 Transformer 架构核心思想 - 学习内容</title>
+<style>
+@page { size: A4; margin: 2cm 2.5cm; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: #f8f9fb;
+    color: #2c3e50;
+    line-height: 1.8;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+}
+.hero-banner {
+    background: linear-gradient(135deg, #0d47a1 0%, #1565c0 40%, #42a5f5 100%);
+    color: white;
+    padding: 48px 40px;
+    border-radius: 16px;
+    margin-bottom: 36px;
+    position: relative;
+    overflow: hidden;
+}
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -10%;
+    width: 260px;
+    height: 260px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+.hero-banner h1 { font-size: 28px; margin-bottom: 8px; position: relative; z-index: 1; }
+.hero-banner .subtitle { font-size: 16px; opacity: 0.9; position: relative; z-index: 1; }
+.hero-banner .module-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-top: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.summary-box {
+    background: linear-gradient(135deg, #e3f2fd, #e8f0fe);
+    border-left: 4px solid #1565c0;
+    padding: 20px 24px;
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 36px;
+    font-size: 15px;
+}
+.summary-box strong { color: #0d47a1; }
+
+h2 {
+    font-size: 22px;
+    color: #0d47a1;
+    margin: 36px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+}
+h3 {
+    font-size: 18px;
+    color: #1565c0;
+    margin: 28px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+h3 .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    color: white;
+}
+h4 {
+    font-size: 15px;
+    color: #1976d2;
+    margin: 20px 0 8px;
+}
+p { margin-bottom: 14px; font-size: 15px; }
+.card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
+.tag-blue { background: #e3f2fd; color: #0d47a1; }
+.tag-green { background: #e6f7ed; color: #1a7a3a; }
+.tag-orange { background: #fef3e2; color: #b35c00; }
+.tag-purple { background: #f0e8fe; color: #6b21a8; }
+.tag-red { background: #fde8e8; color: #c53030; }
+
+.highlight {
+    background: linear-gradient(180deg, transparent 60%, #dbeafe 60%);
+    padding: 0 2px;
+    font-weight: 600;
+}
+
+.chart-container {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+}
+.chart-container .chart-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0d47a1;
+    margin-bottom: 16px;
+}
+.chart-container svg { max-width: 100%; }
+
+.insight-box {
+    background: #fffbf0;
+    border: 1px solid #f5d98e;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+}
+.insight-box .title {
+    font-weight: 700;
+    color: #b35c00;
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+.insight-box p { font-size: 14px; margin-bottom: 8px; }
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+}
+.comparison-table th {
+    background: #0d47a1;
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+}
+.comparison-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.comparison-table tr:nth-child(even) td { background: #f5f8fc; }
+
+.code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+.code-block .comment { color: #64748b; }
+.code-block .keyword { color: #7dd3fc; }
+.code-block .string { color: #86efac; }
+.code-block .highlight-line { background: rgba(255,255,255,0.08); display: block; margin: 0 -20px; padding: 0 20px; }
+
+blockquote {
+    border-left: 3px solid #1976d2;
+    padding: 12px 16px;
+    margin: 16px 0;
+    background: #f0f7ff;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #37474f;
+}
+code {
+    background: #eef2f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #0d47a1;
+}
+
+.footer-note {
+    text-align: center;
+    color: #8899aa;
+    font-size: 12px;
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+@media print {
+    body { padding: 0; max-width: none; }
+    .hero-banner { break-after: avoid; }
+    .card { break-inside: avoid; }
+    .chart-container { break-inside: avoid; }
+    .insight-box { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hero Banner -->
+<div class="hero-banner">
+    <h1>1.2 Transformer 架构核心思想</h1>
+    <div class="subtitle">Attention 机制 · 位置编码 · 自回归生成</div>
+    <div class="module-tag">📖 模块一 · 大模型原理入门 · 第 2 节</div>
+</div>
+
+<!-- 一句话总结 -->
+<div class="summary-box">
+    <strong>🎯 核心思想：</strong>2017 年，Google 团队发表论文《Attention Is All You Need》，提出了一种完全基于<strong>注意力机制</strong>的架构——Transformer。它彻底抛弃了传统的循环神经网络（RNN），让所有词可以<strong>同时互相关注</strong>，实现了真正的并行计算。这个架构后来成为了 GPT、BERT、LLaMA、DeepSeek 等所有大模型的基石，堪称"<strong>AI 时代的 CPU</strong>"。
+</div>
+
+<!-- 第一部分：故事背景 -->
+<h2>一、一篇改变世界的论文</h2>
+
+<p>2017 年 6 月 12 日，Google Brain 团队的 8 位研究者（Vaswani、Shazeer、Parmar 等）在 arXiv 上提交了一篇论文，标题大胆而自信：<strong>"Attention Is All You Need"</strong>（你需要的只是注意力）——致敬了经典歌曲 "All You Need Is Love"。</p>
+
+<p>在此之前，处理文本序列（如机器翻译）的主流方法是 RNN 和它的改进版 LSTM。这些网络有一个致命缺陷：<span class="highlight">必须逐词顺序处理</span>，第 1 个词处理完才能处理第 2 个词。就像排队传话一样，信息从队头传到队尾，越远越失真，而且无法并行加速。</p>
+
+<p>Transformer 的核心主张极为大胆：<strong>完全抛弃循环结构，仅用注意力机制处理一切</strong>。实验结果令人震惊——翻译质量超越此前最佳模型 2 个 BLEU 分数，训练时间从数周缩短到 3.5 天（8 块 GPU），训练成本降低约 50 倍。</p>
+
+<div class="insight-box">
+    <div class="title">💡 论文作者们的后来</div>
+    <p>这篇论文的 8 位作者堪称"AI 创业梦之队"：<strong>Noam Shazeer</strong> 和 <strong>Niki Parmar</strong> 共同创办了 Character.AI；<strong>Aidan Gomez</strong> 创办了 Cohere（企业级大模型公司）；<strong>Illia Polosukhin</strong> 成为 NEAR Protocol 联合创始人。一篇论文，孵化了多家十亿美元级公司。</p>
+</div>
+
+<!-- 第二部分：自注意力 -->
+<h2>二、自注意力机制：Transformer 的灵魂</h2>
+
+<h3><span class="icon" style="background:#1565c0">🧠</span> 一个直觉类比</h3>
+
+<p>想象你在读这句话：</p>
+<blockquote>"这只<strong>猫</strong>没有过马路，因为<strong>它</strong>太累了"</blockquote>
+<p>当你读到"它"时，大脑会自动回溯判断——"它"指的是"猫"还是"马路"？对人类来说这是本能，但对传统算法很难，因为"猫"和"它"之间隔了好几个词。</p>
+
+<p><span class="highlight">自注意力（Self-Attention）就是 Transformer 解决这个问题的方式</span>：让句子中的每个词都能直接"看到"其他所有词，不管距离多远。</p>
+
+<h3><span class="icon" style="background:#1565c0">🔑</span> Q、K、V：注意力的三把钥匙</h3>
+
+<div class="card">
+    <span class="tag tag-blue">Query（查询）</span>
+    <span class="tag tag-green">Key（键）</span>
+    <span class="tag tag-orange">Value（值）</span>
+    <p>每个词被变换成三个向量：</p>
+    <ul style="padding-left:20px;">
+        <li><strong>Query</strong>："我在找什么信息？"——像你在搜索引擎输入的关键词</li>
+        <li><strong>Key</strong>："我能提供什么信息？"——像每个网页的标题/标签</li>
+        <li><strong>Value</strong>："我的实际内容是什么？"——像网页的实际内容</li>
+    </ul>
+    <p>计算过程：用当前词的 <strong>Query</strong> 去和所有词的 <strong>Key</strong> 做匹配（点积），得到相关性分数，经过 Softmax 归一化后，用分数对 <strong>Value</strong> 加权求和——匹配度高的词贡献更多。</p>
+</div>
+
+<div class="insight-box">
+    <div class="title">🔧 Java 开发者的直觉</div>
+    <p>可以把自注意力想象成一种<strong>软性 HashMap 查找</strong>：Query 是搜索条件，Key 是每个 entry 的键，匹配度高的 value 被加权保留。区别在于 HashMap 是精确匹配（O(1)），而注意力是<strong>模糊匹配</strong>——每个 key 都或多或少地贡献一些。</p>
+</div>
+
+<!-- 自注意力流程图 -->
+<div class="chart-container">
+    <div class="chart-title">📊 自注意力计算流程（以 "猫 没 过 马路 因为 它 累 了" 为例）</div>
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Step labels -->
+        <text x="40" y="20" font-size="12" fill="#0d47a1" font-weight="700">Step 1: 生成 Q, K, V</text>
+        <text x="320" y="20" font-size="12" fill="#0d47a1" font-weight="700">Step 2: 计算注意力分数</text>
+        <text x="600" y="20" font-size="12" fill="#0d47a1" font-weight="700">Step 3: 加权求和</text>
+
+        <!-- Words -->
+        <g font-size="11" text-anchor="middle">
+            <!-- Input words row -->
+            <rect x="30" y="35" width="40" height="24" rx="4" fill="#e3f2fd"/>
+            <text x="50" y="51" fill="#0d47a1" font-weight="600">猫</text>
+            <rect x="80" y="35" width="40" height="24" rx="4" fill="#e3f2fd"/>
+            <text x="100" y="51" fill="#0d47a1" font-weight="600">没</text>
+            <rect x="130" y="35" width="40" height="24" rx="4" fill="#e3f2fd"/>
+            <text x="150" y="51" fill="#0d47a1" font-weight="600">过</text>
+            <rect x="180" y="35" width="56" height="24" rx="4" fill="#e3f2fd"/>
+            <text x="208" y="51" fill="#0d47a1" font-weight="600">马路</text>
+            <rect x="246" y="35" width="40" height="24" rx="4" fill="#e3f2fd"/>
+            <text x="266" y="51" fill="#0d47a1" font-weight="600">它</text>
+        </g>
+
+        <!-- Q K V vectors for "它" -->
+        <g transform="translate(40, 75)">
+            <rect x="0" y="0" width="60" height="22" rx="4" fill="#bbdefb"/>
+            <text x="30" y="15" text-anchor="middle" font-size="10" fill="#0d47a1" font-weight="600">Q: "它"</text>
+            <rect x="70" y="0" width="60" height="22" rx="4" fill="#c8e6c9"/>
+            <text x="100" y="15" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="600">K: "猫"</text>
+            <rect x="140" y="0" width="60" height="22" rx="4" fill="#ffe0b2"/>
+            <text x="170" y="15" text-anchor="middle" font-size="10" fill="#e65100" font-weight="600">V: "猫"</text>
+        </g>
+
+        <!-- Attention score matrix (simplified) -->
+        <g transform="translate(290, 70)">
+            <text x="55" y="-5" text-anchor="middle" font-size="10" fill="#64748b">Q("它") × K(all) → 分数</text>
+            <!-- Score bars -->
+            <rect x="0" y="5" width="110" height="16" rx="3" fill="#e3f2fd"/>
+            <rect x="0" y="5" width="95" height="16" rx="3" fill="#1565c0" opacity="0.8"/>
+            <text x="100" y="16" font-size="9" fill="white" font-weight="600">猫 0.86</text>
+
+            <rect x="0" y="25" width="110" height="16" rx="3" fill="#e3f2fd"/>
+            <rect x="0" y="25" width="12" height="16" rx="3" fill="#1565c0" opacity="0.4"/>
+            <text x="18" y="36" font-size="9" fill="#64748b">没 0.04</text>
+
+            <rect x="0" y="45" width="110" height="16" rx="3" fill="#e3f2fd"/>
+            <rect x="0" y="45" width="8" height="16" rx="3" fill="#1565c0" opacity="0.3"/>
+            <text x="14" y="56" font-size="9" fill="#64748b">过 0.02</text>
+
+            <rect x="0" y="65" width="110" height="16" rx="3" fill="#e3f2fd"/>
+            <rect x="0" y="65" width="6" height="16" rx="3" fill="#1565c0" opacity="0.3"/>
+            <text x="12" y="76" font-size="9" fill="#64748b">马路 0.01</text>
+
+            <rect x="0" y="85" width="110" height="16" rx="3" fill="#e3f2fd"/>
+            <rect x="0" y="85" width="8" height="16" rx="3" fill="#1565c0" opacity="0.3"/>
+            <text x="14" y="96" font-size="9" fill="#64748b">它 0.05</text>
+
+            <text x="120" y="16" font-size="8" fill="#c53030" font-weight="600">← 最高!</text>
+        </g>
+
+        <!-- Arrow to step 3 -->
+        <path d="M420,130 L470,130" fill="none" stroke="#0d47a1" stroke-width="2" marker-end="url(#arrowBlue)"/>
+        <defs><marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#0d47a1"/></marker></defs>
+
+        <!-- Weighted sum result -->
+        <g transform="translate(490, 80)">
+            <text x="70" y="-5" text-anchor="middle" font-size="10" fill="#64748b">加权求和输出</text>
+            <rect x="10" y="5" width="120" height="60" rx="8" fill="linear-gradient(135deg, #e3f2fd, #bbdefb)" stroke="#1565c0" stroke-width="1.5"/>
+            <text x="70" y="28" text-anchor="middle" font-size="10" fill="#0d47a1" font-weight="600">"它" 的新表示</text>
+            <text x="70" y="46" text-anchor="middle" font-size="9" fill="#1565c0">= 0.86×V(猫)</text>
+            <text x="70" y="58" text-anchor="middle" font-size="9" fill="#1565c0">+ 0.14×V(其他)</text>
+
+            <text x="70" y="85" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="600">✅ "它" 现在知道了</text>
+            <text x="70" y="98" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="600">自己指的是 "猫"!</text>
+        </g>
+
+        <!-- RNN vs Attention comparison -->
+        <g transform="translate(0, 200)">
+            <text x="380" y="15" text-anchor="middle" font-size="13" fill="#0d47a1" font-weight="700">RNN vs Self-Attention：信息传递路径对比</text>
+
+            <!-- RNN path -->
+            <text x="50" y="45" font-size="11" fill="#c53030" font-weight="600">RNN (逐词传递)</text>
+            <g>
+                <circle cx="50" cy="75" r="16" fill="#fde8e8" stroke="#c53030" stroke-width="1.5"/>
+                <text x="50" y="79" text-anchor="middle" font-size="9" fill="#c53030">猫</text>
+                <path d="M68,75 L88,75" stroke="#c53030" stroke-width="1.5" marker-end="url(#arrowR)"/>
+                <circle cx="105" cy="75" r="16" fill="#fde8e8" stroke="#c53030" stroke-width="1.5"/>
+                <text x="105" y="79" text-anchor="middle" font-size="9" fill="#c53030">没</text>
+                <path d="M123,75 L143,75" stroke="#c53030" stroke-width="1.5" marker-end="url(#arrowR)"/>
+                <circle cx="160" cy="75" r="16" fill="#fde8e8" stroke="#c53030" stroke-width="1.5"/>
+                <text x="160" y="79" text-anchor="middle" font-size="9" fill="#c53030">过</text>
+                <path d="M178,75 L198,75" stroke="#c53030" stroke-width="1.5" marker-end="url(#arrowR)"/>
+                <circle cx="215" cy="75" r="16" fill="#fde8e8" stroke="#c53030" stroke-width="1.5"/>
+                <text x="215" y="79" text-anchor="middle" font-size="9" fill="#c53030">马路</text>
+                <path d="M233,75 L253,75" stroke="#c53030" stroke-width="1.5" marker-end="url(#arrowR)"/>
+                <circle cx="270" cy="75" r="16" fill="#fde8e8" stroke="#c53030" stroke-width="1.5"/>
+                <text x="270" y="79" text-anchor="middle" font-size="9" fill="#c53030">它</text>
+                <text x="160" y="110" text-anchor="middle" font-size="9" fill="#c53030">"猫"的信息经过4步才到"它"，信号衰减严重</text>
+            </g>
+            <defs><marker id="arrowR" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#c53030"/></marker></defs>
+
+            <!-- Self-Attention path -->
+            <text x="470" y="45" font-size="11" fill="#1b5e20" font-weight="600">Self-Attention (直接交互)</text>
+            <g>
+                <circle cx="430" cy="75" r="16" fill="#e6f7ed" stroke="#1b5e20" stroke-width="1.5"/>
+                <text x="430" y="79" text-anchor="middle" font-size="9" fill="#1b5e20">猫</text>
+                <circle cx="485" cy="75" r="16" fill="#e6f7ed" stroke="#1b5e20" stroke-width="1.5"/>
+                <text x="485" y="79" text-anchor="middle" font-size="9" fill="#1b5e20">没</text>
+                <circle cx="540" cy="75" r="16" fill="#e6f7ed" stroke="#1b5e20" stroke-width="1.5"/>
+                <text x="540" y="79" text-anchor="middle" font-size="9" fill="#1b5e20">过</text>
+                <circle cx="595" cy="75" r="16" fill="#e6f7ed" stroke="#1b5e20" stroke-width="1.5"/>
+                <text x="595" y="79" text-anchor="middle" font-size="9" fill="#1b5e20">马路</text>
+                <circle cx="650" cy="75" r="16" fill="#e6f7ed" stroke="#1b5e20" stroke-width="2"/>
+                <text x="650" y="79" text-anchor="middle" font-size="9" fill="#1b5e20" font-weight="700">它</text>
+                <!-- Direct connections -->
+                <line x1="446" y1="75" x2="634" y2="75" stroke="#1b5e20" stroke-width="2.5" opacity="0.6"/>
+                <line x1="501" y1="75" x2="634" y2="75" stroke="#1b5e20" stroke-width="0.5" opacity="0.3"/>
+                <line x1="556" y1="75" x2="634" y2="75" stroke="#1b5e20" stroke-width="0.5" opacity="0.2"/>
+                <line x1="611" y1="75" x2="634" y2="75" stroke="#1b5e20" stroke-width="0.5" opacity="0.2"/>
+                <text x="540" y="110" text-anchor="middle" font-size="9" fill="#1b5e20">"猫"和"它"直接交互，1步到位！</text>
+            </g>
+        </g>
+    </svg>
+</div>
+
+<!-- 多头注意力 -->
+<h2>三、多头注意力：8 个人同时读文章</h2>
+
+<p>单一的注意力只能关注一种关系模式。但语言中的关系是多维的——同一个词可能同时涉及语法关系、指代关系、语义关系等。</p>
+
+<p><span class="highlight">多头注意力（Multi-Head Attention）</span>就像让 8 个人同时阅读同一篇文章，每人关注不同方面：一个人关注语法结构，另一个关注指代关系，第三个关注情感色彩……最后把 8 个人的理解合并起来，形成更全面的理解。</p>
+
+<div class="card">
+    <span class="tag tag-blue">8 个注意力头</span>
+    <span class="tag tag-green">独立权重矩阵</span>
+    <span class="tag tag-orange">拼接输出</span>
+    <p>每个"头"有独立的 Q/K/V 权重矩阵，各自独立计算注意力，得到 8 个输出。然后将 8 个输出<strong>拼接</strong>起来，再乘以一个权重矩阵压缩回原始维度。</p>
+    <p>论文中发现：在编码"it"时，<strong>一个头关注"the animal"，另一个头关注"tired"</strong>——模型通过多个头同时捕获了不同维度的语义关系。</p>
+</div>
+
+<!-- 多头注意力图 -->
+<div class="chart-container">
+    <div class="chart-title">📊 多头注意力：并行捕获不同语义关系</div>
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Input -->
+        <text x="30" y="30" font-size="11" fill="#0d47a1" font-weight="600">输入: "The animal didn't cross the street because it was too tired"</text>
+
+        <!-- 8 heads -->
+        <g transform="translate(30, 50)">
+            <rect x="0" y="0" width="78" height="50" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1"/>
+            <text x="39" y="18" text-anchor="middle" font-size="9" fill="#0d47a1" font-weight="600">Head 1</text>
+            <text x="39" y="32" text-anchor="middle" font-size="8" fill="#1565c0">关注指代</text>
+            <text x="39" y="44" text-anchor="middle" font-size="8" fill="#1565c0">it → animal</text>
+
+            <rect x="85" y="0" width="78" height="50" rx="6" fill="#e6f7ed" stroke="#1b5e20" stroke-width="1"/>
+            <text x="124" y="18" text-anchor="middle" font-size="9" fill="#1b5e20" font-weight="600">Head 2</text>
+            <text x="124" y="32" text-anchor="middle" font-size="8" fill="#1b5e20">关注因果</text>
+            <text x="124" y="44" text-anchor="middle" font-size="8" fill="#1b5e20">it → tired</text>
+
+            <rect x="170" y="0" width="78" height="50" rx="6" fill="#fef3e2" stroke="#b35c00" stroke-width="1"/>
+            <text x="209" y="18" text-anchor="middle" font-size="9" fill="#b35c00" font-weight="600">Head 3</text>
+            <text x="209" y="32" text-anchor="middle" font-size="8" fill="#b35c00">关注语法</text>
+            <text x="209" y="44" text-anchor="middle" font-size="8" fill="#b35c00">was → tired</text>
+
+            <rect x="255" y="0" width="78" height="50" rx="6" fill="#f0e8fe" stroke="#6b21a8" stroke-width="1"/>
+            <text x="294" y="18" text-anchor="middle" font-size="9" fill="#6b21a8" font-weight="600">Head 4</text>
+            <text x="294" y="32" text-anchor="middle" font-size="8" fill="#6b21a8">关注修饰</text>
+            <text x="294" y="44" text-anchor="middle" font-size="8" fill="#6b21a8">too → tired</text>
+
+            <rect x="340" y="0" width="78" height="50" rx="6" fill="#fde8e8" stroke="#c53030" stroke-width="1"/>
+            <text x="379" y="18" text-anchor="middle" font-size="9" fill="#c53030" font-weight="600">Head 5</text>
+            <text x="379" y="32" text-anchor="middle" font-size="8" fill="#c53030">关注否定</text>
+            <text x="379" y="44" text-anchor="middle" font-size="8" fill="#c53030">didn't→cross</text>
+
+            <rect x="425" y="0" width="78" height="50" rx="6" fill="#f5f5f5" stroke="#64748b" stroke-width="1"/>
+            <text x="464" y="18" text-anchor="middle" font-size="9" fill="#64748b" font-weight="600">Head 6-8</text>
+            <text x="464" y="32" text-anchor="middle" font-size="8" fill="#64748b">其他关系</text>
+            <text x="464" y="44" text-anchor="middle" font-size="8" fill="#64748b">...</text>
+        </g>
+
+        <!-- Arrows down to concat -->
+        <g>
+            <path d="M69,105 L69,130 L350,130 L350,145" fill="none" stroke="#94a3b8" stroke-width="1"/>
+            <path d="M124,105 L124,130 L350,130" fill="none" stroke="#94a3b8" stroke-width="1"/>
+            <path d="M209,105 L209,130 L350,130" fill="none" stroke="#94a3b8" stroke-width="1"/>
+            <path d="M294,105 L294,130 L350,130" fill="none" stroke="#94a3b8" stroke-width="1"/>
+            <path d="M379,105 L379,130 L350,130" fill="none" stroke="#94a3b8" stroke-width="1"/>
+            <path d="M464,105 L464,130 L350,130" fill="none" stroke="#94a3b8" stroke-width="1"/>
+        </g>
+
+        <!-- Concat + WO -->
+        <rect x="250" y="145" width="200" height="36" rx="8" fill="#0d47a1"/>
+        <text x="350" y="168" text-anchor="middle" font-size="12" fill="white" font-weight="600">拼接 → × W° → 融合输出</text>
+
+        <!-- Result -->
+        <text x="350" y="205" text-anchor="middle" font-size="11" fill="#0d47a1" font-weight="600">"it" 的最终表示 = 融合了 animal + tired + 语法 + 否定 等多维信息</text>
+    </svg>
+</div>
+
+<!-- 位置编码 -->
+<h2>四、位置编码：告诉模型"谁在前谁在后"</h2>
+
+<p>Transformer 有一个"先天缺陷"：<strong>它不知道词的顺序</strong>。对自注意力来说，"猫追狗"和"狗追猫"的输入矩阵完全一样——因为注意力计算只关心"谁和谁相关"，不关心"谁先谁后"。</p>
+
+<p>这就必须人为地给每个位置加上一个"位置信号"——<span class="highlight">位置编码（Positional Encoding）</span>。</p>
+
+<div class="card">
+    <h4>三代位置编码方案</h4>
+    <table class="comparison-table">
+        <tr><th>方案</th><th>原理</th><th>优点</th><th>代表模型</th></tr>
+        <tr><td><strong>正弦/余弦</strong><br><small>（原论文）</small></td><td>用不同频率的 sin/cos 函数生成位置向量，像时钟的秒针、分针、时针各自以不同速度转动</td><td>可外推到未见过的更长序列</td><td>Transformer 原版</td></tr>
+        <tr><td><strong>学习型</strong><br><small>（Learned PE）</small></td><td>为每个位置学习一个可训练向量，像词嵌入一样从数据中学</td><td>能从数据中学习位置模式</td><td>GPT-2/3</td></tr>
+        <tr><td><strong>RoPE</strong><br><small>（旋转位置编码）</small></td><td>用旋转矩阵编码位置，两个向量的点积自然包含相对距离</td><td>自然编码相对位置，距离越远依赖越弱</td><td>LLaMA、DeepSeek、Qwen 等现代模型</td></tr>
+    </table>
+</div>
+
+<div class="insight-box">
+    <div class="title">💡 RoPE 的直觉理解</div>
+    <p>想象两个钟表的指针：指针转过的角度代表位置。两个指针之间的<strong>角度差</strong>就是它们的"相对距离"。距离越远，角度差越大，点积（投影）越小——自然地实现了"远距离注意力衰减"。这就是为什么 LLaMA、DeepSeek 等现代模型都选择了 RoPE。</p>
+</div>
+
+<!-- 编码器 vs 解码器 -->
+<h2>五、三条路线之争：Encoder vs Decoder</h2>
+
+<p>原始 Transformer 是<strong>编码器-解码器</strong>结构：编码器负责"读懂输入"，解码器负责"生成输出"，中间通过交叉注意力连接。但后来的发展出现了三条分化路线：</p>
+
+<div class="chart-container">
+    <div class="chart-title">📊 Transformer 三大架构路线对比</div>
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Encoder-Only -->
+        <rect x="10" y="10" width="220" height="280" rx="12" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+        <text x="120" y="36" text-anchor="middle" font-size="14" fill="#0d47a1" font-weight="700">Encoder-Only</text>
+        <text x="120" y="55" text-anchor="middle" font-size="11" fill="#1565c0">"阅读理解高手"</text>
+        <!-- Diagram -->
+        <rect x="50" y="70" width="140" height="30" rx="6" fill="#1565c0"/>
+        <text x="120" y="90" text-anchor="middle" font-size="10" fill="white" font-weight="600">双向注意力</text>
+        <text x="120" y="116" text-anchor="middle" font-size="10" fill="#0d47a1">每个词看到全文</text>
+        <text x="120" y="132" text-anchor="middle" font-size="10" fill="#0d47a1">↔ 前后文同时理解</text>
+        <!-- Info -->
+        <rect x="30" y="150" width="180" height="20" rx="4" fill="white"/>
+        <text x="120" y="164" text-anchor="middle" font-size="10" fill="#0d47a1" font-weight="600">训练：掩码语言模型（MLM）</text>
+        <rect x="30" y="175" width="180" height="20" rx="4" fill="white"/>
+        <text x="120" y="189" text-anchor="middle" font-size="10" fill="#0d47a1" font-weight="600">擅长：分类、提取、匹配</text>
+        <rect x="30" y="200" width="180" height="20" rx="4" fill="white"/>
+        <text x="120" y="214" text-anchor="middle" font-size="10" fill="#0d47a1" font-weight="600">代表：BERT、RoBERTa</text>
+        <rect x="30" y="235" width="180" height="40" rx="6" fill="#c53030"/>
+        <text x="120" y="253" text-anchor="middle" font-size="10" fill="white" font-weight="600">❌ 不能生成文本</text>
+        <text x="120" y="267" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">逐渐被生成式路线取代</text>
+
+        <!-- Decoder-Only (Winner) -->
+        <rect x="250" y="10" width="220" height="280" rx="12" fill="#e6f7ed" stroke="#1b5e20" stroke-width="2.5"/>
+        <rect x="250" y="10" width="220" height="280" rx="12" fill="none" stroke="#1b5e20" stroke-width="3" stroke-dasharray="0"/>
+        <text x="360" y="30" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="700">⭐ 当前主流</text>
+        <text x="360" y="52" text-anchor="middle" font-size="14" fill="#1b5e20" font-weight="700">Decoder-Only</text>
+        <text x="360" y="71" text-anchor="middle" font-size="11" fill="#2e7d32">"写作天才"</text>
+        <rect x="290" y="86" width="140" height="30" rx="6" fill="#1b5e20"/>
+        <text x="360" y="106" text-anchor="middle" font-size="10" fill="white" font-weight="600">因果（单向）注意力</text>
+        <text x="360" y="132" text-anchor="middle" font-size="10" fill="#1b5e20">每个词只看前面的词</text>
+        <text x="360" y="148" text-anchor="middle" font-size="10" fill="#1b5e20">→ 预测下一个词</text>
+        <rect x="270" y="166" width="180" height="20" rx="4" fill="white"/>
+        <text x="360" y="180" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="600">训练：预测下一个 token</text>
+        <rect x="270" y="191" width="180" height="20" rx="4" fill="white"/>
+        <text x="360" y="205" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="600">擅长：生成、对话、推理、代码</text>
+        <rect x="270" y="216" width="180" height="20" rx="4" fill="white"/>
+        <text x="360" y="230" text-anchor="middle" font-size="10" fill="#1b5e20" font-weight="600">代表：GPT、LLaMA、DeepSeek</text>
+        <rect x="270" y="248" width="180" height="30" rx="6" fill="#1b5e20"/>
+        <text x="360" y="268" text-anchor="middle" font-size="10" fill="white" font-weight="700">✅ 通过Scaling Law统一了一切</text>
+
+        <!-- Encoder-Decoder -->
+        <rect x="490" y="10" width="220" height="280" rx="12" fill="#fef3e2" stroke="#b35c00" stroke-width="2"/>
+        <text x="600" y="36" text-anchor="middle" font-size="14" fill="#b35c00" font-weight="700">Encoder-Decoder</text>
+        <text x="600" y="55" text-anchor="middle" font-size="11" fill="#e65100">"翻译官"</text>
+        <rect x="530" y="70" width="140" height="24" rx="6" fill="#b35c00"/>
+        <text x="600" y="87" text-anchor="middle" font-size="10" fill="white" font-weight="600">编码器：理解输入</text>
+        <rect x="530" y="100" width="140" height="24" rx="6" fill="#e65100"/>
+        <text x="600" y="117" text-anchor="middle" font-size="10" fill="white" font-weight="600">解码器：生成输出</text>
+        <text x="600" y="146" text-anchor="middle" font-size="10" fill="#b35c00">交叉注意力连接两者</text>
+        <rect x="510" y="164" width="180" height="20" rx="4" fill="white"/>
+        <text x="600" y="178" text-anchor="middle" font-size="10" fill="#b35c00" font-weight="600">擅长：翻译、摘要、改写</text>
+        <rect x="510" y="189" width="180" height="20" rx="4" fill="white"/>
+        <text x="600" y="203" text-anchor="middle" font-size="10" fill="#b35c00" font-weight="600">代表：T5、BART、原始 Transformer</text>
+        <rect x="510" y="235" width="180" height="30" rx="6" fill="#e65100" opacity="0.8"/>
+        <text x="600" y="253" text-anchor="middle" font-size="10" fill="white" font-weight="600">⚠️ 仍有特定场景优势</text>
+        <text x="600" y="267" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">但通用性不如 Decoder-Only</text>
+    </svg>
+</div>
+
+<div class="insight-box">
+    <div class="title">🏆 为什么 Decoder-Only 赢了？</div>
+    <p>核心原因：<strong>"预测下一个词"这个简单的训练目标，在模型足够大时，涌现出了理解、推理、代码生成等惊人能力</strong>。这就是 Scaling Law 的魔力——一个会写作的人，通过巧妙的提示（prompt），同样可以完成阅读理解；但一个只会阅读理解的人，很难学会写作。</p>
+</div>
+
+<!-- 自回归生成 -->
+<h2>六、自回归生成：一个字一个字地"蹦"</h2>
+
+<p>大模型的文本生成方式叫做<span class="highlight">自回归（Autoregressive）</span>——每次只预测下一个 token，然后把预测结果加入输入，继续预测再下一个。就像手机输入法的"下一个词建议"，但聪明一万倍。</p>
+
+<div class="card">
+    <h4>生成过程示例</h4>
+    <div class="code-block"><span class="comment">// 自回归生成：一步一步来</span>
+步骤1: 输入 <span class="string">"中国的首都"</span>   → 预测 <span class="keyword">"是"</span>     (概率最高)
+步骤2: 输入 <span class="string">"中国的首都是"</span>  → 预测 <span class="keyword">"北京"</span>
+步骤3: 输入 <span class="string">"中国的首都是北京"</span> → 预测 <span class="keyword">"。"</span>
+步骤4: 输入 <span class="string">"中国的首都是北京。"</span> → 预测 <span class="keyword">"北京"</span>
+步骤5: 输入 <span class="string">"中国的首都是北京。北京"</span> → 预测 <span class="keyword">"位于"</span>
+... 继续直到生成终止符 &lt;EOS&gt;</div>
+    <p>这就是为什么 GPT 回复看起来是"流式"的——它确实在一个 token 一个 token 地生成。生成 1000 个 token 需要模型运行 1000 次前向传播，这也是推理成本高的根本原因。</p>
+</div>
+
+<!-- 温度与采样 -->
+<h2>七、温度与采样：控制创造力 vs 准确性</h2>
+
+<p>模型输出的不是一个确定的词，而是一个<strong>概率分布</strong>。温度（Temperature）控制这个分布的"尖锐"程度：</p>
+
+<div class="chart-container">
+    <div class="chart-title">📊 温度对输出概率分布的影响</div>
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Low temperature -->
+        <g transform="translate(10, 10)">
+            <text x="100" y="15" text-anchor="middle" font-size="11" fill="#0d47a1" font-weight="700">低温 (T=0.1)：保守准确</text>
+            <rect x="10" y="25" width="150" height="22" rx="4" fill="#1565c0" opacity="0.9"/>
+            <text x="85" y="40" text-anchor="middle" font-size="10" fill="white" font-weight="600">"好" 92%</text>
+            <rect x="10" y="50" width="10" height="18" rx="3" fill="#1565c0" opacity="0.4"/>
+            <text x="28" y="63" font-size="9" fill="#64748b">"热" 6%</text>
+            <rect x="10" y="72" width="4" height="18" rx="3" fill="#1565c0" opacity="0.3"/>
+            <text x="22" y="85" font-size="9" fill="#64748b">"冷" 1%</text>
+            <text x="100" y="110" text-anchor="middle" font-size="9" fill="#0d47a1">→ 适合代码生成、翻译</text>
+        </g>
+
+        <!-- Medium temperature -->
+        <g transform="translate(240, 10)">
+            <text x="100" y="15" text-anchor="middle" font-size="11" fill="#1b5e20" font-weight="700">中温 (T=1.0)：平衡</text>
+            <rect x="10" y="25" width="72" height="22" rx="4" fill="#1b5e20" opacity="0.7"/>
+            <text x="46" y="40" text-anchor="middle" font-size="10" fill="white" font-weight="600">"好" 38%</text>
+            <rect x="10" y="50" width="44" height="18" rx="3" fill="#1b5e20" opacity="0.6"/>
+            <text x="32" y="63" font-size="9" fill="#1b5e20">"热" 23%</text>
+            <rect x="10" y="72" width="24" height="18" rx="3" fill="#1b5e20" opacity="0.5"/>
+            <text x="22" y="85" font-size="9" fill="#1b5e20">"冷" 12%</text>
+            <rect x="10" y="94" width="14" height="18" rx="3" fill="#1b5e20" opacity="0.4"/>
+            <text x="22" y="107" font-size="9" fill="#1b5e20">"棒" 7%</text>
+            <text x="100" y="135" text-anchor="middle" font-size="9" fill="#1b5e20">→ 通用对话</text>
+        </g>
+
+        <!-- High temperature -->
+        <g transform="translate(470, 10)">
+            <text x="100" y="15" text-anchor="middle" font-size="11" fill="#b35c00" font-weight="700">高温 (T=2.0)：创意发散</text>
+            <rect x="10" y="25" width="50" height="22" rx="4" fill="#b35c00" opacity="0.5"/>
+            <text x="35" y="40" text-anchor="middle" font-size="10" fill="white" font-weight="600">"好" 27%</text>
+            <rect x="10" y="50" width="44" height="18" rx="3" fill="#b35c00" opacity="0.45"/>
+            <text x="32" y="63" font-size="9" fill="#b35c00">"热" 24%</text>
+            <rect x="10" y="72" width="40" height="18" rx="3" fill="#b35c00" opacity="0.4"/>
+            <text x="30" y="85" font-size="9" fill="#b35c00">"冷" 21%</text>
+            <rect x="10" y="94" width="34" height="18" rx="3" fill="#b35c00" opacity="0.35"/>
+            <text x="27" y="107" font-size="9" fill="#b35c00">"棒" 18%</text>
+            <text x="100" y="135" text-anchor="middle" font-size="9" fill="#b35c00">→ 创意写作、头脑风暴</text>
+        </g>
+
+        <!-- Arrow -->
+        <text x="350" y="185" text-anchor="middle" font-size="11" fill="#475569">← 更确定、更重复 ───── 温度 ───── 更随机、更有创意 →</text>
+    </svg>
+</div>
+
+<div class="card">
+    <h4>实战参数选择指南</h4>
+    <table class="comparison-table">
+        <tr><th>应用场景</th><th>Temperature</th><th>Top-P</th><th>策略</th></tr>
+        <tr><td>代码生成</td><td>0.0 - 0.2</td><td>0.95</td><td>贪心或低温</td></tr>
+        <tr><td>翻译</td><td>0.0 - 0.3</td><td>0.9</td><td>束搜索</td></tr>
+        <tr><td>通用对话</td><td>0.7</td><td>0.9</td><td>核采样（Top-P）</td></tr>
+        <tr><td>创意写作</td><td>1.0 - 1.2</td><td>0.95</td><td>高温核采样</td></tr>
+    </table>
+</div>
+
+<!-- O(n²) 复杂度 -->
+<h2>八、O(n²) 的代价：为什么上下文窗口不能无限大</h2>
+
+<p>自注意力的计算复杂度是 <span class="highlight">O(n²)</span>——序列长度翻倍，计算量翻四倍，内存也翻四倍。这就是为什么上下文窗口不能无限扩大。</p>
+
+<div class="chart-container">
+    <div class="chart-title">📊 上下文长度 vs 注意力矩阵显存占用（FP16精度，单层单头）</div>
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, 'PingFang SC', sans-serif;">
+        <!-- Axes -->
+        <line x1="80" y1="200" x2="680" y2="200" stroke="#94a3b8" stroke-width="1.5"/>
+        <line x1="80" y1="30" x2="80" y2="200" stroke="#94a3b8" stroke-width="1.5"/>
+
+        <!-- Y axis labels -->
+        <text x="75" y="205" text-anchor="end" font-size="9" fill="#94a3b8">0</text>
+        <text x="75" y="165" text-anchor="end" font-size="9" fill="#94a3b8">8 MB</text>
+        <text x="75" y="125" text-anchor="end" font-size="9" fill="#94a3b8">128 MB</text>
+        <text x="75" y="85" text-anchor="end" font-size="9" fill="#94a3b8">2 GB</text>
+        <text x="75" y="45" text-anchor="end" font-size="9" fill="#94a3b8">32 GB</text>
+
+        <!-- Bars -->
+        <rect x="110" y="194" width="60" height="6" rx="3" fill="#86efac"/>
+        <text x="140" y="189" text-anchor="middle" font-size="9" fill="#1b5e20" font-weight="600">0.5 MB</text>
+        <text x="140" y="220" text-anchor="middle" font-size="9" fill="#475569">512</text>
+
+        <rect x="210" y="188" width="60" height="12" rx="3" fill="#4ade80"/>
+        <text x="240" y="183" text-anchor="middle" font-size="9" fill="#1b5e20" font-weight="600">8 MB</text>
+        <text x="240" y="220" text-anchor="middle" font-size="9" fill="#475569">2K</text>
+
+        <rect x="310" y="148" width="60" height="52" rx="3" fill="#facc15"/>
+        <text x="340" y="143" text-anchor="middle" font-size="9" fill="#b35c00" font-weight="600">128 MB</text>
+        <text x="340" y="220" text-anchor="middle" font-size="9" fill="#475569">8K</text>
+
+        <rect x="410" y="92" width="60" height="108" rx="3" fill="#f97316"/>
+        <text x="440" y="87" text-anchor="middle" font-size="9" fill="#c53030" font-weight="600">2 GB</text>
+        <text x="440" y="220" text-anchor="middle" font-size="9" fill="#475569">32K</text>
+
+        <rect x="510" y="46" width="60" height="154" rx="3" fill="#ef4444"/>
+        <text x="540" y="41" text-anchor="middle" font-size="9" fill="#c53030" font-weight="700">32 GB</text>
+        <text x="540" y="220" text-anchor="middle" font-size="9" fill="#475569">128K</text>
+
+        <rect x="610" y="34" width="60" height="166" rx="3" fill="#dc2626"/>
+        <text x="640" y="29" text-anchor="middle" font-size="9" fill="#c53030" font-weight="700">~2 TB</text>
+        <text x="640" y="220" text-anchor="middle" font-size="9" fill="#475569">1M</text>
+
+        <text x="380" y="245" text-anchor="middle" font-size="10" fill="#475569">上下文长度 (tokens) →  长度翻倍，显存 ×4 ！</text>
+    </svg>
+</div>
+
+<div class="insight-box">
+    <div class="title">⚡ Flash Attention：让长上下文成为可能</div>
+    <p>2022 年，Tri Dao 提出 <strong>Flash Attention</strong>——一种"IO 感知"的注意力算法。核心思想：不把完整的 n×n 注意力矩阵写入显存，而是分块计算，每块在 GPU 高速缓存（SRAM）中完成，大幅减少显存读写次数。</p>
+    <p><strong>效果</strong>：FlashAttention-2 在 A100 上达到了理论最大算力的 50-73%，训练速度比标准注意力快 2-4 倍。FlashAttention-3（2024）在 H100 上更是达到了 82% 的硬件利用率。</p>
+</div>
+
+<!-- 总结 -->
+<h2>总结：一个架构统治 AI 世界</h2>
+
+<p>回到 2017 年，没人能预想到一个翻译模型的架构改进，会在此后十年内彻底改变整个人工智能领域。Transformer 的成功可以归结为几个关键因素：</p>
+
+<table class="comparison-table">
+    <tr><th>创新点</th><th>RNN/LSTM 的痛点</th><th>Transformer 的解法</th><th>Java 类比</th></tr>
+    <tr><td><strong>并行计算</strong></td><td>必须逐词顺序处理</td><td>所有位置同时计算注意力</td><td>单线程 for 循环 → 多线程 Stream</td></tr>
+    <tr><td><strong>长距离依赖</strong></td><td>信息传 n 步，越远越失真</td><td>任意两词 1 步直接交互</td><td>LinkedList 遍历 O(n) → HashMap 直接定位 O(1)</td></tr>
+    <tr><td><strong>可扩展性</strong></td><td>训练慢，难以扩大规模</td><td>天然适配 GPU/TPU 并行</td><td>单体应用 → 可水平扩展的微服务</td></tr>
+    <tr><td><strong>多视角理解</strong></td><td>单一隐藏状态编码一切</td><td>多头注意力同时捕获多种关系</td><td>单字段对象 → 多维度数据分析</td></tr>
+</table>
+
+<div class="summary-box">
+    <strong>🎯 Transformer 的本质公式：</strong><br>
+    Transformer = <strong>自注意力</strong>（词间交互）+ <strong>多头注意力</strong>（多视角理解）+ <strong>位置编码</strong>（顺序感知）+ <strong>前馈网络</strong>（非线性变换/知识存储）+ <strong>残差连接</strong>（信息保真）+ <strong>层归一化</strong>（数值稳定）<br><br>
+    这个 2017 年的架构，至今支撑着 GPT、BERT、LLaMA、DeepSeek、Qwen、Claude、ViT（视觉）、AlphaFold2（蛋白质）……<strong>一个架构，改变了整个 AI 世界。</strong>
+</div>
+
+<div style="margin-top:48px;padding-top:24px;border-top:2px solid #e2e8f0;">
+    <h2 style="border-bottom:none;margin-top:0;">📚 参考资料</h2>
+    <ol style="padding-left:24px;font-size:13px;line-height:2.2;color:#475569;">
+        <li>Vaswani, A. et al. <em>"Attention Is All You Need"</em>, NeurIPS 2017. <a href="https://arxiv.org/abs/1706.03762" style="color:#1565c0;">https://arxiv.org/abs/1706.03762</a></li>
+        <li>Alammar, J. <em>"The Illustrated Transformer"</em>, 2018. <a href="https://jalammar.github.io/illustrated-transformer/" style="color:#1565c0;">https://jalammar.github.io/illustrated-transformer/</a></li>
+        <li>Dao, T. et al. <em>"FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness"</em>, NeurIPS 2022. <a href="https://arxiv.org/abs/2205.14135" style="color:#1565c0;">https://arxiv.org/abs/2205.14135</a></li>
+        <li>Holtzman, A. et al. <em>"The Curious Case of Neural Text Degeneration"</em> (Top-P Sampling), ICLR 2020. <a href="https://arxiv.org/abs/1904.09751" style="color:#1565c0;">https://arxiv.org/abs/1904.09751</a></li>
+        <li>苏剑林. <em>"《Attention is All You Need》浅读（简介+代码）"</em>, 科学空间, 2018. <a href="https://spaces.ac.cn/archives/4765" style="color:#1565c0;">https://spaces.ac.cn/archives/4765</a></li>
+        <li>Su, J. et al. <em>"RoFormer: Enhanced Transformer with Rotary Position Embedding"</em>, 2021. <a href="https://arxiv.org/abs/2104.09864" style="color:#1565c0;">https://arxiv.org/abs/2104.09864</a></li>
+        <li>李沐 et al. <em>"动手学深度学习（第 2 版）"</em>, 人民邮电出版社. <a href="https://zh.d2l.ai/" style="color:#1565c0;">https://zh.d2l.ai/</a></li>
+        <li>Datawhale. <em>"动手学大模型应用开发（LLM Universe）"</em>, 开源社区. <a href="https://github.com/datawhalechina/llm-universe" style="color:#1565c0;">https://github.com/datawhalechina/llm-universe</a></li>
+    </ol>
+</div>
+
+<div class="footer-note">
+    <p>大模型应用开发学习大纲 V2.0 · 模块一 · 第 1.2 节</p>
+</div>
+
+</body>
+</html>

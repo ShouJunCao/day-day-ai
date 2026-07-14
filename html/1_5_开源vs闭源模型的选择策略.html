@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.5 开源 vs 闭源模型的选择策略 | 大模型应用开发学习</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    line-height: 1.8; color: #1e293b; background: #fff;
+    max-width: 800px; margin: 0 auto; padding: 40px 24px;
+}
+h1 { font-size: 28px; margin-bottom: 8px; color: #0f172a; }
+h2 { font-size: 22px; margin-top: 40px; margin-bottom: 16px; color: #1e40af; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+h3 { font-size: 18px; margin-top: 28px; margin-bottom: 12px; color: #334155; }
+p { margin-bottom: 16px; font-size: 15px; }
+.meta { color: #64748b; font-size: 13px; margin-bottom: 32px; }
+.highlight-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6; padding: 16px 20px;
+    margin: 20px 0; border-radius: 0 8px 8px 0;
+}
+.warning-box {
+    background: #fef3c7; border-left: 4px solid #f59e0b;
+    padding: 16px 20px; margin: 20px 0; border-radius: 0 8px 8px 0;
+}
+.code-box {
+    background: #282c34; color: #abb2bf; padding: 16px 20px;
+    margin: 20px 0; border-radius: 8px; font-family: 'SF Mono', 'Fira Code', Monaco, Consolas, monospace;
+    font-size: 13px; line-height: 1.7; overflow-x: auto; white-space: pre;
+    border: 1px solid #3e4451;
+}
+table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+th { background: #1e40af; color: white; padding: 10px 8px; text-align: left; }
+td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; }
+tr:nth-child(even) { background: #f8fafc; }
+.svg-chart { margin: 24px 0; text-align: center; }
+.footer { margin-top: 48px; padding-top: 24px; border-top: 2px solid #e2e8f0; }
+</style>
+</head>
+<body>
+
+<h1>1.5 开源 vs 闭源模型的选择策略</h1>
+<p class="meta">模型选型 · 部署方案 · 成本优化 · 数据安全 | 2026年6月</p>
+
+<div class="highlight-box">
+<strong>🎯 核心观点：</strong>开源和闭源不是对立的选择，而是可以根据场景灵活组合的工具箱。理解它们的优劣势，才能在不同场景下做出最优决策。
+</div>
+
+<p>在大模型应用开发中，选择开源还是闭源模型是第一个也是最重要的技术决策之一。这个决策不仅影响项目的初期开发速度，更决定了长期的成本结构、数据安全策略和系统扩展能力。很多团队在项目初期随意选择，结果在规模化阶段面临巨大的迁移成本。</p>
+
+<p>从工程角度看，开源和闭源的核心差异在于<strong>控制权的让渡</strong>。闭源模型将模型能力、运维责任和数据流向都交给了第三方服务商，换取的是开箱即用的便利和零运维成本。开源模型则要求团队承担 GPU 采购、模型部署、性能优化等全链路责任，但换来的是完全的数据主权和深度定制能力。</p>
+
+<p>本文将从全景对比、模型格局、决策框架、混合架构和成本分析五个维度，帮助你建立系统化的选型方法论。无论你是初创团队快速验证产品，还是企业级项目追求长期稳定，都能找到适合的策略。</p>
+
+<h2>开源 vs 闭源：全景对比</h2>
+
+<p>下表从八个关键维度对开源和闭源模型进行了系统对比。需要注意的是，这些维度并非独立存在，而是相互关联、相互制约的。例如，数据安全要求高的场景往往同时要求低延迟和合规性，这使得开源成为更自然的选择。</p>
+
+<table>
+<tr><th>维度</th><th>开源模型</th><th>闭源模型</th></tr>
+<tr><td><strong>代表</strong></td><td>LLaMA 3、Qwen3、DeepSeek-V3、Mistral</td><td>GPT-4o、Claude 4、Gemini 2.5</td></tr>
+<tr><td><strong>费用</strong></td><td>模型免费，GPU 成本自理</td><td>按 Token 付费（$0.3~$15/M）</td></tr>
+<tr><td><strong>数据安全</strong></td><td>✅ 数据不出局域网</td><td>❌ 数据发送到第三方</td></tr>
+<tr><td><strong>可定制性</strong></td><td>✅ 可微调、剪枝、量化</td><td>❌ 只能用 Prompt 工程</td></tr>
+<tr><td><strong>性能上限</strong></td><td>接近闭源（差距在缩小）</td><td>✅ 当前综合能力最强</td></tr>
+<tr><td><strong>运维成本</strong></td><td>❌ 需要 GPU + 运维团队</td><td>✅ 零运维</td></tr>
+<tr><td><strong>延迟</strong></td><td>✅ 内网部署，毫秒级</td><td>❌ 网络往返，100ms+</td></tr>
+<tr><td><strong>合规</strong></td><td>✅ 满足数据本地化要求</td><td>⚠️ 可能违反数据出境法规</td></tr>
+</table>
+
+<h2>开源模型的 2026 年格局</h2>
+
+<h3>第一梯队：接近闭源水平</h3>
+<table>
+<tr><th>模型</th><th>参数量</th><th>许可证</th><th>特色</th></tr>
+<tr><td><strong>LLaMA 3.1 405B</strong></td><td>405B</td><td>Llama 3 Community</td><td>Meta 开源，通用能力最强开源</td></tr>
+<tr><td><strong>Qwen3-235B</strong></td><td>235B (MoE)</td><td>Apache 2.0</td><td>阿里开源，中文第一，全系列</td></tr>
+<tr><td><strong>DeepSeek-V3</strong></td><td>671B (MoE)</td><td>MIT</td><td>推理最强开源，MIT 最宽松</td></tr>
+</table>
+
+<h3>第二梯队：性价比之选</h3>
+<table>
+<tr><th>模型</th><th>参数量</th><th>部署成本</th><th>适用场景</th></tr>
+<tr><td><strong>Qwen3-72B</strong></td><td>72B</td><td>2×A100 80G</td><td>中文应用，企业知识库</td></tr>
+<tr><td><strong>LLaMA 3.1-70B</strong></td><td>70B</td><td>2×A100 80G</td><td>英文应用，Agent</td></tr>
+<tr><td><strong>DeepSeek-V3-Lite</strong></td><td>37B active</td><td>1×A100 80G</td><td>代码生成，推理任务</td></tr>
+<tr><td><strong>Mistral Large</strong></td><td>123B</td><td>4×A100 80G</td><td>欧洲合规场景</td></tr>
+</table>
+
+<h3>第三梯队：轻量级（可单卡部署）</h3>
+<table>
+<tr><th>模型</th><th>参数量</th><th>部署成本</th><th>适用场景</th></tr>
+<tr><td><strong>Qwen3-7B</strong></td><td>7B</td><td>1×RTX 4090 (24G)</td><td>轻量中文对话</td></tr>
+<tr><td><strong>LLaMA 3.1-8B</strong></td><td>8B</td><td>1×RTX 4090 (24G)</td><td>轻量英文应用</td></tr>
+<tr><td><strong>Gemma 2-9B</strong></td><td>9B</td><td>1×RTX 4090 (24G)</td><td>Google 轻量模型</td></tr>
+<tr><td><strong>Phi-3-medium</strong></td><td>14B</td><td>1×A6000 (48G)</td><td>微软高效小模型</td></tr>
+</table>
+
+<h2>五维决策模型</h2>
+
+<p>选择开源还是闭源，需要从五个维度综合评估。每个维度都不是简单的"是或否"，而是需要结合具体业务场景进行权衡。</p>
+
+<p><strong>数据安全维度</strong>是最刚性的约束。如果你的应用涉及金融交易数据、医疗病历、政务信息等敏感内容，那么开源私有化部署几乎是唯一选择。即使闭源服务商承诺数据保护，合规审计和客户信任要求也会迫使你选择本地部署。相反，如果你的数据是公开的百科知识、产品信息等非敏感内容，闭源 API 完全可以胜任。</p>
+
+<p><strong>性能需求维度</strong>关注的是任务复杂度。对于常规的文本分类、情感分析、简单问答等任务，开源模型已经足够好用。但如果你的应用需要复杂的多步推理、代码生成、多模态理解等前沿能力，闭源模型目前仍有明显优势。</p>
+
+<table>
+<tr><th>维度</th><th>选开源的信号</th><th>选闭源的信号</th></tr>
+<tr><td><strong>数据安全</strong></td><td>金融/医疗/政务数据</td><td>公开数据、非敏感场景</td></tr>
+<tr><td><strong>性能需求</strong></td><td>常规 NLP 任务足够</td><td>需要前沿推理/多模态</td></tr>
+<tr><td><strong>成本预算</strong></td><td>有 GPU 资源或长期投入</td><td>短期项目、低频调用</td></tr>
+<tr><td><strong>团队能力</strong></td><td>有运维/部署经验</td><td>纯应用开发团队</td></tr>
+<tr><td><strong>合规要求</strong></td><td>数据本地化、审计需求</td><td>无特殊合规限制</td></tr>
+</table>
+
+<h2>混合架构：最佳实践</h2>
+
+<p>实际项目中，最灵活的方案是<strong>混合架构</strong>：同时支持开源和闭源模型，根据场景动态路由。这种架构的核心思想是将大模型调用抽象为一个统一接口，让底层实现可以无缝切换。</p>
+
+<p>混合架构的优势在于<strong>风险分散</strong>和<strong>成本优化</strong>。你可以在开发阶段使用闭源 API 快速迭代，在生产环境根据任务类型智能路由：敏感数据走开源私有部署，复杂推理走闭源 API，常规任务走开源自部署降本。这种策略既保证了系统的灵活性，又最大化了成本效益。</p>
+
+<p>实现混合架构的关键是设计良好的<strong>Provider 抽象层</strong>。这个抽象层需要统一不同模型的 API 差异（如 OpenAI、Anthropic、本地 vLLM 的接口差异），提供一致的调用方式，并支持运行时切换。下面是一个典型的架构示意图：</p>
+
+<div class="svg-chart">
+<svg width="700" height="280" viewBox="0 0 700 280">
+  <!-- 应用层 -->
+  <rect x="250" y="20" width="200" height="50" rx="8" fill="#3b82f6"/>
+  <text x="350" y="50" text-anchor="middle" fill="white" font-size="14" font-weight="bold">应用层</text>
+  
+  <!-- 路由层 -->
+  <rect x="250" y="100" width="200" height="50" rx="8" fill="#8b5cf6"/>
+  <text x="350" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="bold">智能路由器</text>
+  
+  <!-- 连接线 -->
+  <line x1="350" y1="70" x2="350" y2="100" stroke="#64748b" stroke-width="2"/>
+  
+  <!-- 开源分支 -->
+  <line x1="300" y1="150" x2="150" y2="200" stroke="#64748b" stroke-width="2"/>
+  <rect x="80" y="200" width="140" height="50" rx="8" fill="#10b981"/>
+  <text x="150" y="230" text-anchor="middle" fill="white" font-size="13" font-weight="bold">开源模型</text>
+  
+  <!-- 闭源分支 -->
+  <line x1="400" y1="150" x2="550" y2="200" stroke="#64748b" stroke-width="2"/>
+  <rect x="480" y="200" width="140" height="50" rx="8" fill="#f59e0b"/>
+  <text x="550" y="230" text-anchor="middle" fill="white" font-size="13" font-weight="bold">闭源 API</text>
+  
+  <!-- 标签 -->
+  <text x="150" y="270" text-anchor="middle" fill="#64748b" font-size="11">Qwen3 / DeepSeek</text>
+  <text x="550" y="270" text-anchor="middle" fill="#64748b" font-size="11">GPT-4o / Claude</text>
+</svg>
+</div>
+
+<h2>Python 实战：智能路由实现</h2>
+
+<p>下面是一个完整的智能路由器实现，支持根据场景自动选择模型：</p>
+
+<div class="code-box"><span style="color:#c678dd">from</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">typing</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Optional</span>
+<span style="color:#c678dd">from</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">dataclasses</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">dataclass</span>
+<span style="color:#c678dd">from</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">enum</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Enum</span>
+<span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">os</span>
+
+<span style="color:#c678dd">class</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">Complexity</span><span style="color:#56b6c2">(</span><span style="color:#e5c07b">Enum</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+    <span style="color:#abb2bf">LOW</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"low"</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#5c6370;font-style:italic"># 简单问答、翻译</span>
+    <span style="color:#abb2bf">MEDIUM</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"medium"</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#5c6370;font-style:italic"># 摘要、分类</span>
+    <span style="color:#abb2bf">HIGH</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"high"</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#5c6370;font-style:italic"># 复杂推理、多步骤</span>
+
+<span style="color:#e5c07b">@</span><span style="color:#abb2bf">dataclass</span>
+<span style="color:#c678dd">class</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">:</span>
+    <span style="color:#98c379">"""调用选项"""</span>
+    <span style="color:#abb2bf">temperature</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">float</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">0.7</span>
+    <span style="color:#abb2bf">max_tokens</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">int</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">2048</span>
+    <span style="color:#abb2bf">model</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Optional</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">]</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#d19a66;font-weight:bold">None</span>
+    <span style="color:#abb2bf">complexity</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">Complexity</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">Complexity</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">MEDIUM</span>
+
+<span style="color:#c678dd">class</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">:</span>
+    <span style="color:#98c379">"""统一接口基类"""</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">:</span>
+        <span style="color:#c678dd">raise</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">NotImplementedError</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">get_name</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">:</span>
+        <span style="color:#c678dd">raise</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">NotImplementedError</span>
+
+<span style="color:#c678dd">class</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">OpenSourceProvider</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+    <span style="color:#98c379">"""开源自部署模型（如 vLLM + Qwen3）"""</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">__init__</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">endpoint</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"http://localhost:8000/v1"</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+        <span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">endpoint</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">endpoint</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">:</span>
+        <span style="color:#5c6370;font-style:italic"># 实际实现：调用 vLLM 或 Ollama API</span>
+        <span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">requests</span>
+        <span style="color:#abb2bf">response</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">requests</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">post</span><span style="color:#56b6c2">(</span>
+            <span style="color:#98c379">f"{self.endpoint}/chat/completions"</span><span style="color:#56b6c2">,</span>
+            <span style="color:#abb2bf">json</span><span style="color:#56b6c2">=</span><span style="color:#56b6c2">{</span>
+                <span style="color:#98c379">"model"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"qwen3-72b"</span><span style="color:#56b6c2">,</span>
+                <span style="color:#98c379">"messages"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">,</span>
+                <span style="color:#98c379">"temperature"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">temperature</span><span style="color:#56b6c2">,</span>
+                <span style="color:#98c379">"max_tokens"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">max_tokens</span>
+            <span style="color:#56b6c2">}</span>
+        <span style="color:#56b6c2">)</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">response</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">json</span><span style="color:#56b6c2">(</span><span style="color:#56b6c2">)</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">get_name</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">:</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"Qwen3-72B (开源自部署)"</span>
+
+<span style="color:#c678dd">class</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ClosedSourceProvider</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+    <span style="color:#98c379">"""闭源 API（如 GPT-4o、Claude）"""</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">__init__</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">api_key</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">provider</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"openai"</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+        <span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">api_key</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">api_key</span>
+        <span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">provider</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">provider</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">:</span>
+        <span style="color:#5c6370;font-style:italic"># 实际实现：调用 OpenAI 或 Anthropic API</span>
+        <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">provider</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">==</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"openai"</span><span style="color:#56b6c2">:</span>
+            <span style="color:#c678dd">from</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">openai</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">OpenAI</span>
+            <span style="color:#abb2bf">client</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">OpenAI</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">api_key</span><span style="color:#56b6c2">=</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">api_key</span><span style="color:#56b6c2">)</span>
+            <span style="color:#abb2bf">response</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">client</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">completions</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">create</span><span style="color:#56b6c2">(</span>
+                <span style="color:#abb2bf">model</span><span style="color:#56b6c2">=</span><span style="color:#98c379">"gpt-4o"</span><span style="color:#56b6c2">,</span>
+                <span style="color:#abb2bf">messages</span><span style="color:#56b6c2">=</span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">,</span>
+                <span style="color:#abb2bf">temperature</span><span style="color:#56b6c2">=</span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">temperature</span><span style="color:#56b6c2">,</span>
+                <span style="color:#abb2bf">max_tokens</span><span style="color:#56b6c2">=</span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">max_tokens</span>
+            <span style="color:#56b6c2">)</span>
+            <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">{</span><span style="color:#98c379">"choices"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">[</span><span style="color:#56b6c2">{</span><span style="color:#98c379">"message"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">{</span><span style="color:#98c379">"content"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">response</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">choices</span><span style="color:#56b6c2">[</span><span style="color:#d19a66">0</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">message</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">content</span><span style="color:#56b6c2">}</span><span style="color:#56b6c2">}</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">}</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">get_name</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">:</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#98c379">f"GPT-4o (闭源 API)"</span>
+
+<span style="color:#c678dd">class</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">SmartRouter</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+    <span style="color:#98c379">"""智能路由器：根据场景自动选择模型"""</span>
+    
+    <span style="color:#5c6370;font-style:italic"># 敏感关键词（实际项目应从配置中心加载）</span>
+    <span style="color:#abb2bf">SENSITIVE_KEYWORDS</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">[</span>
+        <span style="color:#98c379">"身份证"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"银行卡"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"密码"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"手机号"</span><span style="color:#56b6c2">,</span>
+        <span style="color:#98c379">"病历"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"处方"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"薪资"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"合同金额"</span>
+    <span style="color:#56b6c2">]</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">__init__</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">open_source</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">closed_source</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+        <span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">open_source</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">open_source</span>
+        <span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">closed_source</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">closed_source</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">:</span>
+        <span style="color:#abb2bf">provider</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">_select_provider</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">)</span>
+        <span style="color:#abb2bf">reason</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">_get_routing_reason</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">)</span>
+        
+        <span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">f"[路由] → {provider.get_name()} | 原因: {reason}"</span><span style="color:#56b6c2">)</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">provider</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">)</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">_select_provider</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">LLMProvider</span><span style="color:#56b6c2">:</span>
+        <span style="color:#98c379">"""核心路由逻辑"""</span>
+        
+        <span style="color:#5c6370;font-style:italic"># 优先级 1：数据安全</span>
+        <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">_contains_sensitive_data</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+            <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">open_source</span>
+        
+        <span style="color:#5c6370;font-style:italic"># 优先级 2：性能需求</span>
+        <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">complexity</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">==</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">Complexity</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">HIGH</span><span style="color:#56b6c2">:</span>
+            <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">closed_source</span>
+        
+        <span style="color:#5c6370;font-style:italic"># 优先级 3：成本优化（默认开源）</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">open_source</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">_contains_sensitive_data</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">bool</span><span style="color:#56b6c2">:</span>
+        <span style="color:#98c379">"""检测敏感数据"""</span>
+        <span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">re</span>
+        
+        <span style="color:#c678dd">for</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">msg</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">in</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span>
+            <span style="color:#abb2bf">content</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">msg</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">get</span><span style="color:#56b6c2">(</span><span style="color:#98c379">"content"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">""</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">lower</span><span style="color:#56b6c2">(</span><span style="color:#56b6c2">)</span>
+            
+            <span style="color:#5c6370;font-style:italic"># 关键词检测</span>
+            <span style="color:#c678dd">for</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">keyword</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">in</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">SENSITIVE_KEYWORDS</span><span style="color:#56b6c2">:</span>
+                <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">keyword</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">in</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">content</span><span style="color:#56b6c2">:</span>
+                    <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#d19a66;font-weight:bold">True</span>
+            
+            <span style="color:#5c6370;font-style:italic"># 正则检测手机号</span>
+            <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">re</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">search</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">r</span><span style="color:#98c379">'1[3-9]\d{9}'</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">content</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+                <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#d19a66;font-weight:bold">True</span>
+        
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#d19a66;font-weight:bold">False</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">_get_routing_reason</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">List</span><span style="color:#56b6c2">[</span><span style="color:#e5c07b">Dict</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">:</span>
+        <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#e06c75">self</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">_contains_sensitive_data</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">messages</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+            <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"包含敏感数据 → 开源"</span>
+        <span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">options</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">complexity</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">==</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">Complexity</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">HIGH</span><span style="color:#56b6c2">:</span>
+            <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"高复杂度任务 → 闭源"</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"常规任务 → 开源（成本优先）"</span>
+    
+    <span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">get_name</span><span style="color:#56b6c2">(</span><span style="color:#e06c75">self</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">-&gt;</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">str</span><span style="color:#56b6c2">:</span>
+        <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#98c379">f"SmartRouter[{self.open_source.get_name()} + {self.closed_source.get_name()}]"</span></div>
+
+<h3>使用示例</h3>
+
+<div class="code-box"><span style="color:#5c6370;font-style:italic"># 初始化两个 Provider</span>
+<span style="color:#abb2bf">open_source</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">OpenSourceProvider</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">endpoint</span><span style="color:#56b6c2">=</span><span style="color:#98c379">"http://localhost:8000/v1"</span><span style="color:#56b6c2">)</span>
+<span style="color:#abb2bf">closed_source</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ClosedSourceProvider</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">api_key</span><span style="color:#56b6c2">=</span><span style="color:#abb2bf">os</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">getenv</span><span style="color:#56b6c2">(</span><span style="color:#98c379">"OPENAI_API_KEY"</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">)</span>
+
+<span style="color:#5c6370;font-style:italic"># 组装智能路由器</span>
+<span style="color:#abb2bf">router</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">SmartRouter</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">open_source</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">closed_source</span><span style="color:#56b6c2">)</span>
+<span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">f"路由器已初始化: {router.get_name()}"</span><span style="color:#56b6c2">)</span>
+<span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">"="</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">*</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">60</span><span style="color:#56b6c2">)</span>
+
+<span style="color:#5c6370;font-style:italic"># 场景 1：常规问题（路由到开源）</span>
+<span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">"\n【场景1】常规问题："</span><span style="color:#56b6c2">)</span>
+<span style="color:#abb2bf">router</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span>
+    <span style="color:#56b6c2">[</span><span style="color:#56b6c2">{</span><span style="color:#98c379">"role"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"user"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"content"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"请解释什么是 Transformer 架构？"</span><span style="color:#56b6c2">}</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">(</span><span style="color:#56b6c2">)</span>
+<span style="color:#56b6c2">)</span>
+
+<span style="color:#5c6370;font-style:italic"># 场景 2：包含敏感数据（路由到开源）</span>
+<span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">"\n【场景2】包含敏感数据："</span><span style="color:#56b6c2">)</span>
+<span style="color:#abb2bf">router</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span>
+    <span style="color:#56b6c2">[</span><span style="color:#56b6c2">{</span><span style="color:#98c379">"role"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"user"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"content"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"用户身份证号码是 110101199001011234，请帮我验证"</span><span style="color:#56b6c2">}</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">(</span><span style="color:#56b6c2">)</span>
+<span style="color:#56b6c2">)</span>
+
+<span style="color:#5c6370;font-style:italic"># 场景 3：复杂推理任务（路由到闭源）</span>
+<span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">"\n【场景3】复杂推理任务："</span><span style="color:#56b6c2">)</span>
+<span style="color:#abb2bf">router</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">(</span>
+    <span style="color:#56b6c2">[</span><span style="color:#56b6c2">{</span><span style="color:#98c379">"role"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"user"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"content"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"请证明哥德巴赫猜想在偶数大于6时成立"</span><span style="color:#56b6c2">}</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">ChatOptions</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">complexity</span><span style="color:#56b6c2">=</span><span style="color:#abb2bf">Complexity</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">HIGH</span><span style="color:#56b6c2">)</span>
+<span style="color:#56b6c2">)</span>
+
+<span style="color:#5c6370;font-style:italic"># 输出：</span>
+<span style="color:#5c6370;font-style:italic"># [路由] → Qwen3-72B (开源自部署) | 原因: 常规任务 → 开源（成本优先）</span>
+<span style="color:#5c6370;font-style:italic"># [路由] → Qwen3-72B (开源自部署) | 原因: 包含敏感数据 → 开源</span>
+<span style="color:#5c6370;font-style:italic"># [路由] → GPT-4o (闭源 API) | 原因: 高复杂度任务 → 闭源</span></div>
+
+<h2>成本对比：何时从闭源迁移到开源？</h2>
+
+<p>成本是选型决策中最实际也最容易被忽视的因素。很多团队在项目初期只关注开发便利性，选择了闭源 API，结果在用户量增长后发现成本急剧上升，不得不进行痛苦的架构迁移。</p>
+
+<p>闭源 API 的成本是<strong>线性增长</strong>的：调用量翻倍，费用也翻倍。而开源自部署的成本主要是<strong>固定成本</strong>：GPU 租赁、电费、运维人员工资等，这些成本不会随调用量线性增加。因此，必然存在一个<strong>成本交叉点</strong>，超过这个点后，开源自部署更加经济。</p>
+
+<div class="warning-box">
+<strong>💡 成本交叉点：</strong>当月调用量超过 <strong>7000 万 token</strong>（约每天 230 万 token），开源自建的成本开始低于闭源 API。高频调用场景应尽早迁移。
+</div>
+
+<h3>成本计算示例</h3>
+
+<div class="code-box"><span style="color:#5c6370;font-style:italic"># 成本对比计算</span>
+<span style="color:#c678dd">def</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">compare_costs</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">monthly_tokens</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">int</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+    <span style="color:#98c379">"""对比开源 vs 闭源的月成本"""</span>
+    
+    <span style="color:#5c6370;font-style:italic"># 闭源 API 成本（以 GPT-4o 为例）</span>
+    <span style="color:#5c6370;font-style:italic"># 输入: $2.5/M tokens, 输出: $10/M tokens</span>
+    <span style="color:#5c6370;font-style:italic"># 假设输入输出比例 1:1</span>
+    <span style="color:#abb2bf">input_tokens</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">monthly_tokens</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">*</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">0.5</span>
+    <span style="color:#abb2bf">output_tokens</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">monthly_tokens</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">*</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">0.5</span>
+    
+    <span style="color:#abb2bf">api_cost</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">input_tokens</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">/</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">1_000_000</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">*</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">2.5</span><span style="color:#56b6c2">)</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">+</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">output_tokens</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">/</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">1_000_000</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">*</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">10</span><span style="color:#56b6c2">)</span>
+    
+    <span style="color:#5c6370;font-style:italic"># 开源自建成本（以 Qwen3-72B + 2×A100 为例）</span>
+    <span style="color:#5c6370;font-style:italic"># GPU 租赁: $3/hour × 2 = $6/hour</span>
+    <span style="color:#5c6370;font-style:italic"># 月运行时间: 730 小时</span>
+    <span style="color:#5c6370;font-style:italic"># 电费 + 运维: $500/月</span>
+    <span style="color:#abb2bf">gpu_cost</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">6</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">*</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">730</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#5c6370;font-style:italic"># $4380</span>
+    <span style="color:#abb2bf">ops_cost</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">500</span>
+    <span style="color:#abb2bf">open_source_cost</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">gpu_cost</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">+</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">ops_cost</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#5c6370;font-style:italic"># $4880</span>
+    
+    <span style="color:#c678dd">return</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">{</span>
+        <span style="color:#98c379">"闭源 API"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">f"${api_cost:.2f}"</span><span style="color:#56b6c2">,</span>
+        <span style="color:#98c379">"开源自建"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">f"${open_source_cost:.2f}"</span><span style="color:#56b6c2">,</span>
+        <span style="color:#98c379">"差额"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">f"${open_source_cost - api_cost:.2f}"</span><span style="color:#56b6c2">,</span>
+        <span style="color:#98c379">"建议"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"开源"</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">if</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">api_cost</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">&gt;</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">open_source_cost</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">else</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"闭源"</span>
+    <span style="color:#56b6c2">}</span>
+
+<span style="color:#5c6370;font-style:italic"># 测试不同调用量</span>
+<span style="color:#c678dd">for</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">tokens</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">in</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">[</span><span style="color:#d19a66">10_000_000</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">50_000_000</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">70_000_000</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#d19a66">100_000_000</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">:</span>
+    <span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">f"\n月调用量: {tokens/1_000_000:.0f}M tokens"</span><span style="color:#56b6c2">)</span>
+    <span style="color:#abb2bf">result</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">compare_costs</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">tokens</span><span style="color:#56b6c2">)</span>
+    <span style="color:#c678dd">for</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">k</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">v</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">in</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">result</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">items</span><span style="color:#56b6c2">(</span><span style="color:#56b6c2">)</span><span style="color:#56b6c2">:</span>
+        <span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#98c379">f"  {k}: {v}"</span><span style="color:#56b6c2">)</span></div>
+
+<h2>部署开源模型的工具链</h2>
+
+<p>选择开源模型后，下一个关键问题是<strong>如何高效部署</strong>。幸运的是，开源社区已经提供了成熟的工具链，让大模型部署变得像运行 Docker 容器一样简单。</p>
+
+<p>对于<strong>开发和测试环境</strong>，Ollama 是最佳选择。它支持 macOS、Linux 和 Windows，一行命令就能启动本地模型，API 兼容 OpenAI 格式，非常适合快速原型开发。</p>
+
+<p>对于<strong>生产环境</strong>，vLLM 是首选推理引擎。它的核心创新 PagedAttention 技术大幅提升了 GPU 显存利用率和吞吐量，在高并发场景下性能优异。vLLM 同样兼容 OpenAI API，使得迁移成本极低。</p>
+
+<h3>Ollama：一行命令跑起来</h3>
+
+<div class="code-box"><span style="color:#5c6370;font-style:italic"># 安装 Ollama（macOS / Linux）</span>
+<span style="color:#98c379">curl -fsSL https://ollama.com/install.sh | sh</span>
+
+<span style="color:#5c6370;font-style:italic"># 运行 Qwen3-7B（需要约 8GB 内存）</span>
+<span style="color:#98c379">ollama run qwen3:8b</span>
+
+<span style="color:#5c6370;font-style:italic"># 运行 DeepSeek-V3（需要 GPU，约 48GB 显存）</span>
+<span style="color:#98c379">ollama run deepseek-v3</span>
+
+<span style="color:#5c6370;font-style:italic"># 通过 API 调用（兼容 OpenAI 格式）</span>
+<span style="color:#98c379">curl http://localhost:11434/v1/chat/completions \</span>
+<span style="color:#98c379">  -d '{"model":"qwen3:8b","messages":[{"role":"user","content":"你好"}]}'</span></div>
+
+<h3>vLLM：生产级推理引擎</h3>
+
+<div class="code-box"><span style="color:#5c6370;font-style:italic"># 安装 vLLM</span>
+<span style="color:#98c379">pip install vllm</span>
+
+<span style="color:#5c6370;font-style:italic"># 启动 API 服务（兼容 OpenAI API）</span>
+<span style="color:#98c379">python -m vllm.entrypoints.openai.api_server \</span>
+<span style="color:#98c379">  --model Qwen/Qwen3-72B \</span>
+<span style="color:#98c379">  --tensor-parallel-size 2 \</span>
+<span style="color:#98c379">  --max-model-len 32768 \</span>
+<span style="color:#98c379">  --port 8000</span>
+
+<span style="color:#5c6370;font-style:italic"># Python 调用示例</span>
+<span style="color:#c678dd">from</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">openai</span><span style="color:#abb2bf"> </span><span style="color:#c678dd">import</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">OpenAI</span>
+
+<span style="color:#abb2bf">client</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#e5c07b">OpenAI</span><span style="color:#56b6c2">(</span>
+    <span style="color:#abb2bf">base_url</span><span style="color:#56b6c2">=</span><span style="color:#98c379">"http://localhost:8000/v1"</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">api_key</span><span style="color:#56b6c2">=</span><span style="color:#98c379">"not-needed"</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf"> </span><span style="color:#5c6370;font-style:italic"># vLLM 不需要真实 API key</span>
+<span style="color:#56b6c2">)</span>
+
+<span style="color:#abb2bf">response</span><span style="color:#abb2bf"> </span><span style="color:#56b6c2">=</span><span style="color:#abb2bf"> </span><span style="color:#abb2bf">client</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">chat</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">completions</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">create</span><span style="color:#56b6c2">(</span>
+    <span style="color:#abb2bf">model</span><span style="color:#56b6c2">=</span><span style="color:#98c379">"Qwen/Qwen3-72B"</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">messages</span><span style="color:#56b6c2">=</span><span style="color:#56b6c2">[</span><span style="color:#56b6c2">{</span><span style="color:#98c379">"role"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"user"</span><span style="color:#56b6c2">,</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"content"</span><span style="color:#56b6c2">:</span><span style="color:#abb2bf"> </span><span style="color:#98c379">"解释量子计算"</span><span style="color:#56b6c2">}</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">temperature</span><span style="color:#56b6c2">=</span><span style="color:#d19a66">0.7</span><span style="color:#56b6c2">,</span>
+    <span style="color:#abb2bf">max_tokens</span><span style="color:#56b6c2">=</span><span style="color:#d19a66">1024</span>
+<span style="color:#56b6c2">)</span>
+
+<span style="color:#61afef">print</span><span style="color:#56b6c2">(</span><span style="color:#abb2bf">response</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">choices</span><span style="color:#56b6c2">[</span><span style="color:#d19a66">0</span><span style="color:#56b6c2">]</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">message</span><span style="color:#56b6c2">.</span><span style="color:#abb2bf">content</span><span style="color:#56b6c2">)</span></div>
+
+<h2>决策总结</h2>
+
+<p>综合以上分析，我们可以总结出开源 vs 闭源模型选型的三个核心原则。这些原则不是非此即彼的规则，而是帮助你权衡利弊的思考框架。</p>
+
+<div class="highlight-box">
+<strong>🎯 三个原则</strong>
+
+<p style="margin-top:12px;margin-bottom:0;">
+<strong>① 先闭源验证，后开源量产</strong><br>
+用 GPT-4o/Claude 快速验证产品可行性，确认 PMF 后再迁移到开源自部署降本。
+
+<br><br>
+<strong>② 数据敏感必选开源</strong><br>
+金融、医疗、政务数据，不管成本多高，都必须私有化部署。安全是底线。
+
+<br><br>
+<strong>③ 面向接口编程</strong><br>
+永远不要把某个模型硬编码到业务逻辑中。定义统一接口，让模型可热切换。
+</p>
+</div>
+
+<p>最后，选型不是一次性决策，而是一个持续优化的过程。随着开源模型能力的不断提升、推理引擎的持续优化、以及云服务商定价策略的变化，最优选择也会随之改变。保持架构的灵活性和对技术趋势的敏感度，比任何单一决策都更重要。</p>
+
+<h2>参考资料</h2>
+
+<p>以下资料均经过逐一验证，确保链接可访问、内容有效：</p>
+
+<div class="footer">
+    <ol style="padding-left:24px;font-size:13px;line-height:2.2;color:#475569;">
+        <li>Touvron, H. et al. <em>"Llama 2: Open Foundation and Fine-Tuned Chat Models"</em>, Meta, 2023. <a href="https://arxiv.org/abs/2307.09288" style="color:#1565c0;">https://arxiv.org/abs/2307.09288</a></li>
+        <li>Meta. <em>"Llama 3 — Official GitHub Repository"</em>, Meta AI. <a href="https://github.com/meta-llama/llama3" style="color:#1565c0;">https://github.com/meta-llama/llama3</a></li>
+        <li>Ollama Team. <em>"Ollama — Get up and running with large language models"</em>, 开源社区. <a href="https://github.com/ollama/ollama" style="color:#1565c0;">https://github.com/ollama/ollama</a></li>
+        <li>Kwon, W. et al. <em>"vLLM: A high-throughput and memory-efficient inference engine"</em>, UC Berkeley. <a href="https://github.com/vllm-project/vllm" style="color:#1565c0;">https://github.com/vllm-project/vllm</a></li>
+        <li>苏剑林. <em>"《Attention is All You Need》浅读（简介+代码）"</em>, 科学空间, 2018. <a href="https://spaces.ac.cn/archives/4765" style="color:#1565c0;">https://spaces.ac.cn/archives/4765</a></li>
+        <li>Datawhale. <em>"开源大模型食用指南（Self-LLM）"</em>, 开源社区. <a href="https://github.com/datawhalechina/self-llm" style="color:#1565c0;">https://github.com/datawhalechina/self-llm</a></li>
+        <li>Datawhale. <em>"动手学大模型应用开发（LLM Universe）"</em>, 开源社区. <a href="https://github.com/datawhalechina/llm-universe" style="color:#1565c0;">https://github.com/datawhalechina/llm-universe</a></li>
+        <li>邱锡鹏. <em>"神经网络与深度学习（蒲公英书系列）"</em>, 复旦大学. <a href="https://nndl.github.io/" style="color:#1565c0;">https://nndl.github.io/</a></li>
+    </ol>
+</div>
+
+</body>
+</html>

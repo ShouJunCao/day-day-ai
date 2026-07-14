@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大模型应用开发学习大纲 V2.0</title>
+<style>
+:root {
+    --primary: #1a3c6e;
+    --primary-light: #2a5ea8;
+    --primary-lighter: #3a7bd5;
+    --accent: #e8913a;
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text: #2c3e50;
+    --text-light: #6b7c93;
+    --border: #e2e8f0;
+    --sidebar-w: 280px;
+    --header-h: 64px;
+}
+
+[data-theme="dark"] {
+    --primary: #6ba3e8;
+    --primary-light: #8bb8f0;
+    --primary-lighter: #a8ccf5;
+    --accent: #f0a850;
+    --bg: #1a1d23;
+    --card-bg: #242830;
+    --text: #e0e6ed;
+    --text-light: #8899aa;
+    --border: #333840;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* Header */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-h);
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+.header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.header .badge {
+    background: var(--accent);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.header-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 8px;
+    transition: background 0.2s;
+}
+
+.header-btn:hover { background: rgba(255,255,255,0.25); }
+
+.menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    margin-right: 12px;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    width: var(--sidebar-w);
+    height: calc(100vh - var(--header-h));
+    background: var(--card-bg);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 900;
+    transition: transform 0.3s;
+    padding-bottom: 40px;
+}
+
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.sidebar .phase {
+    padding: 12px 16px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.sidebar a {
+    display: block;
+    padding: 5px 12px 5px 20px;
+    color: var(--text-light);
+    text-decoration: none;
+    font-size: 12px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.6;
+}
+
+.sidebar a:hover, .sidebar a.active {
+    color: var(--primary);
+    background: rgba(26,60,110,0.06);
+    border-left-color: var(--primary);
+}
+
+.sidebar .progress-info {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+}
+
+.progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 3px;
+    transition: width 0.5s;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 4px;
+}
+
+/* Main content */
+.main {
+    margin-left: var(--sidebar-w);
+    margin-top: var(--header-h);
+    padding: 32px 40px 80px;
+    max-width: 900px;
+}
+
+/* Hero section */
+.hero {
+    background: linear-gradient(135deg, var(--primary), var(--primary-lighter));
+    color: white;
+    padding: 40px;
+    border-radius: 16px;
+    margin-bottom: 32px;
+}
+
+.hero h2 {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.hero p {
+    opacity: 0.9;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+.hero .stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.hero .stat {
+    background: rgba(255,255,255,0.15);
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.hero .stat .num {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.hero .stat .label {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+/* Phase card */
+.phase-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.phase-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.phase-header {
+    padding: 20px 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    user-select: none;
+}
+
+.phase-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-lighter));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.phase-info { flex: 1; }
+.phase-info h3 { font-size: 18px; color: var(--text); }
+.phase-info .desc { font-size: 13px; color: var(--text-light); margin-top: 2px; }
+
+.phase-toggle {
+    font-size: 20px;
+    color: var(--text-light);
+    transition: transform 0.3s;
+}
+
+.phase-card.open .phase-toggle { transform: rotate(180deg); }
+
+.phase-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.phase-card.open .phase-body {
+    max-height: 5000px;
+}
+
+.module {
+    padding: 0 24px 20px;
+}
+
+.module-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary-light);
+    padding: 12px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.item {
+    display: flex;
+    align-items: flex-start;
+    padding: 6px 0;
+    gap: 10px;
+}
+
+.item input[type="checkbox"] {
+    margin-top: 5px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.item label {
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    flex: 1;
+}
+
+.item label.done {
+    text-decoration: line-through;
+    color: var(--text-light);
+    opacity: 0.6;
+}
+
+.item.practice label {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.item.practice label::before {
+    content: "🔧 ";
+}
+
+.sub-item {
+    padding-left: 26px;
+}
+
+.sub-item .item {
+    padding: 4px 0;
+}
+
+.sub-item label {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+/* Timeline */
+.timeline-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.timeline-section h3 {
+    font-size: 18px;
+    color: var(--primary);
+    margin-bottom: 16px;
+}
+
+.timeline-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.timeline-table th {
+    background: var(--primary);
+    color: white;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+}
+
+.timeline-table th:first-child { border-radius: 8px 0 0 0; }
+.timeline-table th:last-child { border-radius: 0 8px 0 0; }
+
+.timeline-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+
+.timeline-table tr:nth-child(even) td { background: rgba(26,60,110,0.03); }
+
+/* Resources */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.resource-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.resource-card h4 {
+    font-size: 14px;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+.resource-card ul {
+    list-style: none;
+    padding: 0;
+}
+
+.resource-card li {
+    font-size: 13px;
+    color: var(--text-light);
+    padding: 3px 0;
+}
+
+.resource-card li::before {
+    content: "📌 ";
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-light);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .menu-btn { display: block; }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 20px 16px 60px; }
+    .hero { padding: 24px; }
+    .hero h2 { font-size: 22px; }
+    .hero .stats { gap: 12px; }
+    .hero .stat .num { font-size: 22px; }
+}
+
+/* Scroll to top */
+.scroll-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 999;
+    transition: opacity 0.3s;
+}
+
+.scroll-top.visible { display: flex; }
+
+/* Search */
+.search-box {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+}
+
+.search-box input:focus { border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <h1>🧠 大模型应用开发学习大纲 <span class="badge">V2.0</span></h1>
+    <button class="header-btn" onclick="expandAll()">展开全部</button>
+    <button class="header-btn" onclick="collapseAll()">收起全部</button>
+    <button class="header-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="search-box">
+        <input type="text" placeholder="🔍 搜索知识点..." id="searchInput" oninput="searchItems(this.value)">
+    </div>
+    
+    <div class="phase">第一阶段 · 基础认知</div>
+    <a href="#mod1" onclick="navModule('phase1','mod1')" title="模块一：大模型原理入门">模块一 · 大模型原理入门</a>
+    <a href="#mod2" onclick="navModule('phase1','mod2')" title="模块二：大模型 API 开发基础">模块二 · API 开发基础</a>
+
+    <div class="phase">第二阶段 · 提示工程</div>
+    <a href="#mod3" onclick="navModule('phase2','mod3')" title="模块三：Prompt Engineering">模块三 · Prompt Engineering</a>
+    <a href="#mod4" onclick="navModule('phase2','mod4')" title="模块四：对话系统设计">模块四 · 对话系统设计</a>
+
+    <div class="phase">第三阶段 · RAG</div>
+    <a href="#mod5" onclick="navModule('phase3','mod5')" title="模块五：向量数据库与 Embedding">模块五 · 向量数据库与 Embedding</a>
+    <a href="#mod6" onclick="navModule('phase3','mod6')" title="模块六：RAG 核心架构">模块六 · RAG 核心架构</a>
+    <a href="#mod7" onclick="navModule('phase3','mod7')" title="模块七：高级 RAG 技术">模块七 · 高级 RAG 技术</a>
+
+    <div class="phase">第四阶段 · 工具集成</div>
+    <a href="#mod8" onclick="navModule('phase4','mod8')" title="模块八：Function Calling">模块八 · Function Calling</a>
+    <a href="#mod9" onclick="navModule('phase4','mod9')" title="模块九：MCP 协议">模块九 · MCP 协议</a>
+
+    <div class="phase">第五阶段 · Agent</div>
+    <a href="#mod10" onclick="navModule('phase5','mod10')" title="模块十：Agent 基础架构">模块十 · Agent 基础架构</a>
+    <a href="#mod11" onclick="navModule('phase5','mod11')" title="模块十一：AI 开发工具与 IDE">模块十一 · AI 开发工具与 IDE</a>
+    <a href="#mod12" onclick="navModule('phase5','mod12')" title="模块十二：多 Agent 协作">模块十二 · 多 Agent 协作</a>
+
+    <div class="phase">第六阶段 · 记忆</div>
+    <a href="#mod13" onclick="navModule('phase6','mod13')" title="模块十三：AI 记忆框架深度解析">模块十三 · AI 记忆框架</a>
+
+    <div class="phase">第七阶段 · 微调</div>
+    <a href="#mod14" onclick="navModule('phase7','mod14')" title="模块十四：大模型微调">模块十四 · 大模型微调</a>
+    <a href="#mod15" onclick="navModule('phase7','mod15')" title="模块十五：推理优化与部署">模块十五 · 推理优化与部署</a>
+
+    <div class="phase">第八阶段 · 评估</div>
+    <a href="#mod16" onclick="navModule('phase8','mod16')" title="模块十六：LLM 评估体系">模块十六 · LLM 评估体系</a>
+
+    <div class="phase">第九阶段 · 工程化</div>
+    <a href="#mod17" onclick="navModule('phase9','mod17')" title="模块十七：大模型应用工程化">模块十七 · 应用工程化</a>
+    <a href="#mod18" onclick="navModule('phase9','mod18')" title="模块十八：安全与合规">模块十八 · 安全与合规</a>
+
+    <div class="phase">第十阶段 · 实战</div>
+    <a href="#mod19" onclick="navModule('phase10','mod19')" title="模块十九：多模态大模型">模块十九 · 多模态大模型</a>
+    <a href="#mod20" onclick="navModule('phase10','mod20')" title="模块二十：平台与生态">模块二十 · 平台与生态</a>
+    <a href="#mod21" onclick="navModule('phase10','mod21')" title="模块二十一：综合项目实战">模块二十一 · 综合项目实战</a>
+
+    <div class="phase">附录</div>
+    <a href="#timeline" onclick="navTo('timeline')">📅 学习路线规划</a>
+    <a href="#resources" onclick="navTo('resources')">📚 推荐学习资源</a>
+    
+    <div class="progress-info">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">学习进度</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="progress-text" id="progressText">0 / 0 已完成</div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="main">
+    
+    <!-- Hero -->
+    <div class="hero">
+        <h2>大模型应用开发学习大纲</h2>
+        <p>面向有 Java 开发经验的工程师，融合当前热门框架与产品（Mem0、Letta、Zep、MCP、Hermes、Kiro 等），由浅到深，系统全面。</p>
+        <div class="stats">
+            <div class="stat"><div class="num">10</div><div class="label">学习阶段</div></div>
+            <div class="stat"><div class="num">21</div><div class="label">知识模块</div></div>
+            <div class="stat"><div class="num">~28</div><div class="label">周计划</div></div>
+            <div class="stat"><div class="num">5</div><div class="label">实战项目</div></div>
+        </div>
+    </div>
+
+    <!-- Phase 1 -->
+    <div class="phase-card open" id="phase1">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">1</div>
+            <div class="phase-info">
+                <h3>大模型基础认知</h3>
+                <div class="desc">理解大模型原理，掌握 API 开发基础 · 预计 2 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod1">
+                <div class="module-title">模块一：大模型原理入门</div>
+                <div class="item"><input type="checkbox" id="c1_1" onchange="updateProgress()"><label for="c1_1">1.1 大语言模型发展简史（GPT → BERT → LLaMA → Qwen → Claude → DeepSeek）<a href="1_1_大语言模型发展简史.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c1_2" onchange="updateProgress()"><label for="c1_2">1.2 Transformer 架构核心思想（Attention、位置编码、自回归生成）<a href="1_2_Transformer架构核心思想.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c1_3" onchange="updateProgress()"><label for="c1_3">1.3 模型参数与能力的关系（Scale Law、涌现能力）<a href="1_3_模型参数与能力的关系.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c1_4" onchange="updateProgress()"><label for="c1_4">1.4 主流大模型对比（GPT-4o、Claude 4、Qwen3、DeepSeek-V3、GLM-4、Gemini 2.5）<a href="1_4_主流大模型对比.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c1_5" onchange="updateProgress()"><label for="c1_5">1.5 开源 vs 闭源模型的选择策略与适用场景<a href="1_5_开源vs闭源模型的选择策略.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c1_6" onchange="updateProgress()"><label for="c1_6">1.6 模型能力边界认知（幻觉、上下文限制、推理能力）<a href="1_6_模型能力边界认知.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c1_7" onchange="updateProgress()"><label for="c1_7">1.7 大模型应用的产品形态（Chatbot、Copilot、Agent、Workflow）<a href="1_7_大模型应用的产品形态.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+            </div>
+            <div class="module" id="mod2">
+                <div class="module-title">模块二：大模型 API 开发基础</div>
+                <div class="item"><input type="checkbox" id="c2_1" onchange="updateProgress()"><label for="c2_1">2.1 OpenAI 兼容 API 标准（Chat Completions、Streaming、Function Calling）<a href="2_1_OpenAI兼容API标准.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c2_2" onchange="updateProgress()"><label for="c2_2">2.2 国内主流模型 API 接入（通义千问、文心、智谱、Moonshot、DeepSeek）<a href="2_2_国内主流模型API接入.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c2_3" onchange="updateProgress()"><label for="c2_3">2.3 API 核心参数（temperature、top_p、max_tokens、stop sequences）<a href="2_3_API核心参数详解.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c2_4" onchange="updateProgress()"><label for="c2_4">2.4 流式输出（SSE）的原理与实现<a href="2_4_流式输出SSE的原理与实现.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c2_5" onchange="updateProgress()"><label for="c2_5">2.5 Token 计费与成本控制策略<a href="2_5_Token计费与成本控制策略.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c2_6" onchange="updateProgress()"><label for="c2_6">2.6 多模型网关设计（LiteLLM、OneAPI、OpenRouter）<a href="2_6_多模型网关设计.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c2_7" onchange="updateProgress()"><label for="c2_7">2.7 API 重试、限流与错误处理最佳实践<a href="2_7_API重试限流与错误处理.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item practice"><input type="checkbox" id="c2_8" onchange="updateProgress()"><label for="c2_8">2.8 实战：封装多模型统一调用 SDK<a href="2_8_实战封装多模型统一调用SDK.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-card" id="phase2">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">2</div>
+            <div class="phase-info">
+                <h3>提示工程与交互设计</h3>
+                <div class="desc">掌握 Prompt 工程核心技能，设计对话系统 · 预计 2 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod3">
+                <div class="module-title">模块三：Prompt Engineering</div>
+                <div class="item"><input type="checkbox" id="c3_1" onchange="updateProgress()"><label for="c3_1">3.1 Prompt 设计基本原则（清晰、具体、结构化、分步骤）<a href="3_1_Prompt设计基本原则.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_2" onchange="updateProgress()"><label for="c3_2">3.2 零样本（Zero-shot）与少样本（Few-shot）提示<a href="3_2_零样本与少样本提示.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_3" onchange="updateProgress()"><label for="c3_3">3.3 思维链（CoT）与思维树（Tree-of-Thought）<a href="3_3_思维链CoT与思维树ToT.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_4" onchange="updateProgress()"><label for="c3_4">3.4 自洽性（Self-Consistency）与多数投票<a href="3_4_自洽性与多数投票.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_5" onchange="updateProgress()"><label for="c3_5">3.5 角色设定与 System Prompt 设计模式<a href="3_5_角色设定与SystemPrompt设计模式.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_6" onchange="updateProgress()"><label for="c3_6">3.6 结构化输出（JSON Mode、XML、Structured Outputs）<a href="3_6_结构化输出JSONModeXML.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_7" onchange="updateProgress()"><label for="c3_7">3.7 Prompt 模板管理与版本控制（Promptflow、LangSmith）<a href="3_7_Prompt模板管理与版本控制.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_8" onchange="updateProgress()"><label for="c3_8">3.8 Prompt 注入攻击类型与防御策略<a href="3_8_Prompt注入攻击类型与防御策略.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item"><input type="checkbox" id="c3_9" onchange="updateProgress()"><label for="c3_9">3.9 自动化评估与迭代优化<a href="3_9_自动化评估与迭代优化.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+                <div class="item practice"><input type="checkbox" id="c3_10" onchange="updateProgress()"><label for="c3_10">3.10 实战：设计企业级 Prompt 模板库<a href="3_10_实战设计企业级Prompt模板库.html" target="_blank" style="margin-left:8px;color:var(--accent);font-size:12px;text-decoration:none;">📖 查看学习内容 →</a></label></div>
+            </div>
+            <div class="module" id="mod4">
+                <div class="module-title">模块四：对话系统设计</div>
+                <div class="item"><input type="checkbox" id="c4_1" onchange="updateProgress()"><label for="c4_1">4.1 多轮对话上下文管理（滑动窗口、摘要压缩、Token 预算）</label></div>
+                <div class="item"><input type="checkbox" id="c4_2" onchange="updateProgress()"><label for="c4_2">4.2 对话状态机设计与状态追踪</label></div>
+                <div class="item"><input type="checkbox" id="c4_3" onchange="updateProgress()"><label for="c4_3">4.3 意图识别与槽位填充</label></div>
+                <div class="item"><input type="checkbox" id="c4_4" onchange="updateProgress()"><label for="c4_4">4.4 对话引导、澄清与兜底策略</label></div>
+                <div class="item"><input type="checkbox" id="c4_5" onchange="updateProgress()"><label for="c4_5">4.5 对话质量评估指标</label></div>
+                <div class="item"><input type="checkbox" id="c4_6" onchange="updateProgress()"><label for="c4_6">4.6 多模态对话（文本 + 图片 + 语音）</label></div>
+                <div class="item practice"><input type="checkbox" id="c4_7" onchange="updateProgress()"><label for="c4_7">4.7 实战：构建多轮对话智能客服系统</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-card" id="phase3">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">3</div>
+            <div class="phase-info">
+                <h3>RAG 与知识增强</h3>
+                <div class="desc">掌握向量检索与 RAG 核心技术 · 预计 4 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod5">
+                <div class="module-title">模块五：向量数据库与 Embedding</div>
+                <div class="item"><input type="checkbox" id="c5_1" onchange="updateProgress()"><label for="c5_1">5.1 文本向量化原理（Word → Sentence → Contextual Embedding）</label></div>
+                <div class="item"><input type="checkbox" id="c5_2" onchange="updateProgress()"><label for="c5_2">5.2 主流 Embedding 模型对比（OpenAI、BGE-M3、GTE、M3E、Jina）</label></div>
+                <div class="item"><input type="checkbox" id="c5_3" onchange="updateProgress()"><label for="c5_3">5.3 向量数据库选型（Milvus、Qdrant、Chroma、Pinecone、FAISS、pgvector）</label></div>
+                <div class="item"><input type="checkbox" id="c5_4" onchange="updateProgress()"><label for="c5_4">5.4 向量索引算法（HNSW、IVF、PQ、ScaNN）</label></div>
+                <div class="item"><input type="checkbox" id="c5_5" onchange="updateProgress()"><label for="c5_5">5.5 相似度度量（余弦、欧氏、内积）与选择策略</label></div>
+                <div class="item"><input type="checkbox" id="c5_6" onchange="updateProgress()"><label for="c5_6">5.6 混合检索（向量 + BM25 + 全文 + 元数据过滤）</label></div>
+                <div class="item"><input type="checkbox" id="c5_7" onchange="updateProgress()"><label for="c5_7">5.7 向量数据库分布式部署与性能优化</label></div>
+                <div class="item practice"><input type="checkbox" id="c5_8" onchange="updateProgress()"><label for="c5_8">5.8 实战：搭建 Milvus + BGE-M3 向量检索服务</label></div>
+            </div>
+            <div class="module" id="mod6">
+                <div class="module-title">模块六：RAG 核心架构</div>
+                <div class="item"><input type="checkbox" id="c6_1" onchange="updateProgress()"><label for="c6_1">6.1 RAG 整体流程与核心挑战</label></div>
+                <div class="item"><input type="checkbox" id="c6_2" onchange="updateProgress()"><label for="c6_2">6.2 文档解析策略（PDF、Word、HTML、Markdown、PPT）</label></div>
+                <div class="item"><input type="checkbox" id="c6_3" onchange="updateProgress()"><label for="c6_3">6.3 文档解析工具（MinerU、Unstructured、LlamaParse、Marker）</label></div>
+                <div class="item"><input type="checkbox" id="c6_4" onchange="updateProgress()"><label for="c6_4">6.4 文本分块策略（固定长度、语义分块、递归分块、Sentence Window）</label></div>
+                <div class="item"><input type="checkbox" id="c6_5" onchange="updateProgress()"><label for="c6_5">6.5 检索优化（Query 改写、HyDE、Multi-Query、Step-back）</label></div>
+                <div class="item"><input type="checkbox" id="c6_6" onchange="updateProgress()"><label for="c6_6">6.6 重排序技术（BGE-Reranker、Cohere、Cross-Encoder）</label></div>
+                <div class="item"><input type="checkbox" id="c6_7" onchange="updateProgress()"><label for="c6_7">6.7 上下文管理（压缩、过滤、Lost in the Middle）</label></div>
+                <div class="item"><input type="checkbox" id="c6_8" onchange="updateProgress()"><label for="c6_8">6.8 RAG 评估体系（RAGAS 框架）</label></div>
+                <div class="item practice"><input type="checkbox" id="c6_9" onchange="updateProgress()"><label for="c6_9">6.9 实战：构建企业知识库问答系统</label></div>
+            </div>
+            <div class="module" id="mod7">
+                <div class="module-title">模块七：高级 RAG 技术</div>
+                <div class="item"><input type="checkbox" id="c7_1" onchange="updateProgress()"><label for="c7_1">7.1 Graph RAG（Microsoft GraphRAG）</label></div>
+                <div class="item"><input type="checkbox" id="c7_2" onchange="updateProgress()"><label for="c7_2">7.2 Agentic RAG（Agent 自主检索路由）</label></div>
+                <div class="item"><input type="checkbox" id="c7_3" onchange="updateProgress()"><label for="c7_3">7.3 多模态 RAG（图片、表格、代码块处理）</label></div>
+                <div class="item"><input type="checkbox" id="c7_4" onchange="updateProgress()"><label for="c7_4">7.4 增量更新与文档版本管理</label></div>
+                <div class="item"><input type="checkbox" id="c7_5" onchange="updateProgress()"><label for="c7_5">7.5 权限控制与多租户 RAG</label></div>
+                <div class="item"><input type="checkbox" id="c7_6" onchange="updateProgress()"><label for="c7_6">7.6 RAG 与微调的选择策略</label></div>
+                <div class="item"><input type="checkbox" id="c7_7" onchange="updateProgress()"><label for="c7_7">7.7 Corrective RAG（CRAG）与 Self-RAG</label></div>
+                <div class="item practice"><input type="checkbox" id="c7_8" onchange="updateProgress()"><label for="c7_8">7.8 实战：Graph RAG + Agentic RAG 系统</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-card" id="phase4">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">4</div>
+            <div class="phase-info">
+                <h3>Function Calling 与工具集成</h3>
+                <div class="desc">掌握工具调用与 MCP 协议 · 预计 3 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod8">
+                <div class="module-title">模块八：Function Calling</div>
+                <div class="item"><input type="checkbox" id="c8_1" onchange="updateProgress()"><label for="c8_1">8.1 Function Calling 原理与完整流程</label></div>
+                <div class="item"><input type="checkbox" id="c8_2" onchange="updateProgress()"><label for="c8_2">8.2 Tool 定义规范（JSON Schema、参数描述）</label></div>
+                <div class="item"><input type="checkbox" id="c8_3" onchange="updateProgress()"><label for="c8_3">8.3 单工具调用与多工具编排</label></div>
+                <div class="item"><input type="checkbox" id="c8_4" onchange="updateProgress()"><label for="c8_4">8.4 工具调用的错误处理、重试与超时</label></div>
+                <div class="item"><input type="checkbox" id="c8_5" onchange="updateProgress()"><label for="c8_5">8.5 工具权限控制与安全沙箱（Docker、E2B）</label></div>
+                <div class="item"><input type="checkbox" id="c8_6" onchange="updateProgress()"><label for="c8_6">8.6 主流框架对比（OpenAI、Anthropic、Qwen、Gemini）</label></div>
+                <div class="item"><input type="checkbox" id="c8_7" onchange="updateProgress()"><label for="c8_7">8.7 Parallel Function Calling（并行工具调用）</label></div>
+                <div class="item practice"><input type="checkbox" id="c8_8" onchange="updateProgress()"><label for="c8_8">8.8 实战：天气/数据库/API/文件操作工具集</label></div>
+            </div>
+            <div class="module" id="mod9">
+                <div class="module-title">模块九：MCP 协议（Model Context Protocol）</div>
+                <div class="item"><input type="checkbox" id="c9_1" onchange="updateProgress()"><label for="c9_1">9.1 MCP 协议概述与设计理念</label></div>
+                <div class="item"><input type="checkbox" id="c9_2" onchange="updateProgress()"><label for="c9_2">9.2 MCP 核心概念（Server、Client、Tools、Resources）</label></div>
+                <div class="item"><input type="checkbox" id="c9_3" onchange="updateProgress()"><label for="c9_3">9.3 MCP Server 开发（Python/TypeScript SDK）</label></div>
+                <div class="item"><input type="checkbox" id="c9_4" onchange="updateProgress()"><label for="c9_4">9.4 MCP Client 集成与多 Server 编排</label></div>
+                <div class="item"><input type="checkbox" id="c9_5" onchange="updateProgress()"><label for="c9_5">9.5 MCP 与 Function Calling 的关系与差异</label></div>
+                <div class="item"><input type="checkbox" id="c9_6" onchange="updateProgress()"><label for="c9_6">9.6 MCP 传输层（stdio、SSE、HTTP Streaming）</label></div>
+                <div class="item"><input type="checkbox" id="c9_7" onchange="updateProgress()"><label for="c9_7">9.7 MCP 生态与社区工具（MCP Hub、Smithery）</label></div>
+                <div class="item"><input type="checkbox" id="c9_8" onchange="updateProgress()"><label for="c9_8">9.8 MCP 安全最佳实践</label></div>
+                <div class="item practice"><input type="checkbox" id="c9_9" onchange="updateProgress()"><label for="c9_9">9.9 实战：开发 MCP Server（数据库/文件/Web 搜索）</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 5 -->
+    <div class="phase-card" id="phase5">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">5</div>
+            <div class="phase-info">
+                <h3>AI Agent 开发</h3>
+                <div class="desc">Agent 架构、框架对比、开发工具 · 预计 3 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod10">
+                <div class="module-title">模块十：Agent 基础架构</div>
+                <div class="item"><input type="checkbox" id="c10_1" onchange="updateProgress()"><label for="c10_1">10.1 Agent 核心概念（感知 → 思考 → 行动 → 反馈）</label></div>
+                <div class="item"><input type="checkbox" id="c10_2" onchange="updateProgress()"><label for="c10_2">10.2 ReAct 框架深度解析</label></div>
+                <div class="item"><input type="checkbox" id="c10_3" onchange="updateProgress()"><label for="c10_3">10.3 框架对比：LangGraph / AutoGen / CrewAI / OpenAI Agents SDK / Dify</label></div>
+                <div class="item"><input type="checkbox" id="c10_4" onchange="updateProgress()"><label for="c10_4">10.4 Agent 规划能力（任务分解、动态规划）</label></div>
+                <div class="item"><input type="checkbox" id="c10_5" onchange="updateProgress()"><label for="c10_5">10.5 Agent Loop 设计（ReAct、Plan-and-Execute、Reflexion）</label></div>
+                <div class="item"><input type="checkbox" id="c10_6" onchange="updateProgress()"><label for="c10_6">10.6 异常处理、超时与恢复机制</label></div>
+                <div class="item"><input type="checkbox" id="c10_7" onchange="updateProgress()"><label for="c10_7">10.7 Agent 可观测性（LangSmith、LangFuse、Phoenix）</label></div>
+                <div class="item practice"><input type="checkbox" id="c10_8" onchange="updateProgress()"><label for="c10_8">10.8 实战：构建数据分析 Agent</label></div>
+            </div>
+            <div class="module" id="mod11">
+                <div class="module-title">模块十一：AI Agent 开发工具与 IDE</div>
+                <div class="item"><input type="checkbox" id="c11_1" onchange="updateProgress()"><label for="c11_1">11.1 AI 编码助手（Copilot、Cursor、Windsurf、Cline）</label></div>
+                <div class="item"><input type="checkbox" id="c11_2" onchange="updateProgress()"><label for="c11_2">11.2 AI 编码 Agent（Claude Code、Codex CLI、OpenCode、Kiro）</label></div>
+                <div class="item"><input type="checkbox" id="c11_3" onchange="updateProgress()"><label for="c11_3">11.3 Hermes Agent：Skills / Memory / Cron / 多平台集成</label></div>
+                <div class="item"><input type="checkbox" id="c11_4" onchange="updateProgress()"><label for="c11_4">11.4 Kiro IDE：Specs 驱动开发 / Agent 模式</label></div>
+                <div class="item"><input type="checkbox" id="c11_5" onchange="updateProgress()"><label for="c11_5">11.5 AI 开发工作流最佳实践</label></div>
+                <div class="item practice"><input type="checkbox" id="c11_6" onchange="updateProgress()"><label for="c11_6">11.6 实战：用 Hermes + Kiro 构建 AI 应用</label></div>
+            </div>
+            <div class="module" id="mod12">
+                <div class="module-title">模块十二：多 Agent 协作</div>
+                <div class="item"><input type="checkbox" id="c12_1" onchange="updateProgress()"><label for="c12_1">12.1 多 Agent 架构模式（层级式、对等式、混合式）</label></div>
+                <div class="item"><input type="checkbox" id="c12_2" onchange="updateProgress()"><label for="c12_2">12.2 Agent 间通信与消息传递协议</label></div>
+                <div class="item"><input type="checkbox" id="c12_3" onchange="updateProgress()"><label for="c12_3">12.3 角色分工与协作编排（CrewAI、AutoGen）</label></div>
+                <div class="item"><input type="checkbox" id="c12_4" onchange="updateProgress()"><label for="c12_4">12.4 冲突解决与共识机制</label></div>
+                <div class="item"><input type="checkbox" id="c12_5" onchange="updateProgress()"><label for="c12_5">12.5 多 Agent 可观测性与调试</label></div>
+                <div class="item"><input type="checkbox" id="c12_6" onchange="updateProgress()"><label for="c12_6">12.6 编排框架对比（LangGraph vs CrewAI vs AutoGen）</label></div>
+                <div class="item practice"><input type="checkbox" id="c12_7" onchange="updateProgress()"><label for="c12_7">12.7 实战：多 Agent 协作代码审查系统</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 6 -->
+    <div class="phase-card" id="phase6">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">6</div>
+            <div class="phase-info">
+                <h3>Agent 记忆系统</h3>
+                <div class="desc">深入理解 AI 记忆框架（Mem0/Letta/Zep/LangMem）· 预计 2 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod13">
+                <div class="module-title">模块十三：AI 记忆框架深度解析</div>
+                <div class="item"><input type="checkbox" id="c13_1" onchange="updateProgress()"><label for="c13_1">13.1 记忆类型学（语义/情景/程序/工作记忆）</label></div>
+                <div class="item"><input type="checkbox" id="c13_2" onchange="updateProgress()"><label for="c13_2">13.2 框架对比：Mem0 / Letta / Zep / LangMem / SK Memory</label></div>
+                <div class="item"><input type="checkbox" id="c13_3" onchange="updateProgress()"><label for="c13_3">13.3 Mem0 深度实践（四层架构、新算法、28种向量DB）</label></div>
+                <div class="item"><input type="checkbox" id="c13_4" onchange="updateProgress()"><label for="c13_4">13.4 Letta/MemGPT 深度实践（MemFS、Sleep-time Compute）</label></div>
+                <div class="item"><input type="checkbox" id="c13_5" onchange="updateProgress()"><label for="c13_5">13.5 Zep 深度实践（Graphiti、Context Lake、企业治理）</label></div>
+                <div class="item"><input type="checkbox" id="c13_6" onchange="updateProgress()"><label for="c13_6">13.6 记忆系统关键能力（多信号检索、时间推理、版本管理）</label></div>
+                <div class="item"><input type="checkbox" id="c13_7" onchange="updateProgress()"><label for="c13_7">13.7 记忆系统设计模式（分层架构、多租户、安全治理）</label></div>
+                <div class="item practice"><input type="checkbox" id="c13_8" onchange="updateProgress()"><label for="c13_8">13.8 实战：基于 Mem0 构建企业级记忆服务</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 7 -->
+    <div class="phase-card" id="phase7">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">7</div>
+            <div class="phase-info">
+                <h3>模型微调与优化</h3>
+                <div class="desc">LoRA 微调、推理加速与部署 · 预计 3 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod14">
+                <div class="module-title">模块十四：大模型微调</div>
+                <div class="item"><input type="checkbox" id="c14_1" onchange="updateProgress()"><label for="c14_1">14.1 微调 vs RAG vs Prompt 选择决策树</label></div>
+                <div class="item"><input type="checkbox" id="c14_2" onchange="updateProgress()"><label for="c14_2">14.2 微调数据类型（SFT、DPO/RLHF、ORPO）</label></div>
+                <div class="item"><input type="checkbox" id="c14_3" onchange="updateProgress()"><label for="c14_3">14.3 微调数据准备（格式、清洗、增强、合成数据）</label></div>
+                <div class="item"><input type="checkbox" id="c14_4" onchange="updateProgress()"><label for="c14_4">14.4 全量微调 vs LoRA vs QLoRA vs DoRA</label></div>
+                <div class="item"><input type="checkbox" id="c14_5" onchange="updateProgress()"><label for="c14_5">14.5 微调框架（LLaMA-Factory、Unsloth、Axolotl、SWIFT）</label></div>
+                <div class="item"><input type="checkbox" id="c14_6" onchange="updateProgress()"><label for="c14_6">14.6 训练参数调优（学习率、Epoch、Rank）</label></div>
+                <div class="item"><input type="checkbox" id="c14_7" onchange="updateProgress()"><label for="c14_7">14.7 微调效果评估（自动 + 人工 + Arena）</label></div>
+                <div class="item"><input type="checkbox" id="c14_8" onchange="updateProgress()"><label for="c14_8">14.8 常见问题（过拟合、灾难性遗忘、模式崩塌）</label></div>
+                <div class="item practice"><input type="checkbox" id="c14_9" onchange="updateProgress()"><label for="c14_9">14.9 实战：用 LoRA 微调垂直领域模型</label></div>
+            </div>
+            <div class="module" id="mod15">
+                <div class="module-title">模块十五：模型推理优化与部署</div>
+                <div class="item"><input type="checkbox" id="c15_1" onchange="updateProgress()"><label for="c15_1">15.1 模型量化（INT8/INT4/GGUF/AWQ/GPTQ/FP8）</label></div>
+                <div class="item"><input type="checkbox" id="c15_2" onchange="updateProgress()"><label for="c15_2">15.2 推理加速（vLLM、TensorRT-LLM、llama.cpp、Ollama、SGLang）</label></div>
+                <div class="item"><input type="checkbox" id="c15_3" onchange="updateProgress()"><label for="c15_3">15.3 KV Cache 优化（PagedAttention、Chunked Prefill）</label></div>
+                <div class="item"><input type="checkbox" id="c15_4" onchange="updateProgress()"><label for="c15_4">15.4 批处理策略（Continuous Batching、Speculative Decoding）</label></div>
+                <div class="item"><input type="checkbox" id="c15_5" onchange="updateProgress()"><label for="c15_5">15.5 部署架构（单机/分布式、GPU 选型）</label></div>
+                <div class="item"><input type="checkbox" id="c15_6" onchange="updateProgress()"><label for="c15_6">15.6 成本控制（缓存、降级、智能路由）</label></div>
+                <div class="item"><input type="checkbox" id="c15_7" onchange="updateProgress()"><label for="c15_7">15.7 边缘部署（llama.cpp、MLC-LLM）</label></div>
+                <div class="item practice"><input type="checkbox" id="c15_8" onchange="updateProgress()"><label for="c15_8">15.8 实战：vLLM 高并发推理服务 + 负载均衡</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 8 -->
+    <div class="phase-card" id="phase8">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">8</div>
+            <div class="phase-info">
+                <h3>评估与质量保障</h3>
+                <div class="desc">LLM 评估体系与质量保障流水线 · 预计 2 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod16">
+                <div class="module-title">模块十六：LLM 评估体系</div>
+                <div class="item"><input type="checkbox" id="c16_1" onchange="updateProgress()"><label for="c16_1">16.1 评估方法论（自动 + 人工 + LLM-as-Judge）</label></div>
+                <div class="item"><input type="checkbox" id="c16_2" onchange="updateProgress()"><label for="c16_2">16.2 评估工具：lm-evaluation-harness / OpenCompass / RAGAS / DeepEval / Promptfoo</label></div>
+                <div class="item"><input type="checkbox" id="c16_3" onchange="updateProgress()"><label for="c16_3">16.3 评估指标设计（准确率、相关性、安全性、延迟、成本）</label></div>
+                <div class="item"><input type="checkbox" id="c16_4" onchange="updateProgress()"><label for="c16_4">16.4 评估数据集构建（Golden Set、Edge Cases）</label></div>
+                <div class="item"><input type="checkbox" id="c16_5" onchange="updateProgress()"><label for="c16_5">16.5 持续评估与回归测试（CI/CD 集成）</label></div>
+                <div class="item"><input type="checkbox" id="c16_6" onchange="updateProgress()"><label for="c16_6">16.6 幻觉检测与缓解策略</label></div>
+                <div class="item"><input type="checkbox" id="c16_7" onchange="updateProgress()"><label for="c16_7">16.7 A/B 测试与灰度发布</label></div>
+                <div class="item"><input type="checkbox" id="c16_8" onchange="updateProgress()"><label for="c16_8">16.8 在线评估与用户反馈闭环</label></div>
+                <div class="item practice"><input type="checkbox" id="c16_9" onchange="updateProgress()"><label for="c16_9">16.9 实战：构建 LLM 评估流水线</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 9 -->
+    <div class="phase-card" id="phase9">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">9</div>
+            <div class="phase-info">
+                <h3>工程化与生产实践</h3>
+                <div class="desc">生产级架构设计与安全合规 · 预计 3 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod17">
+                <div class="module-title">模块十七：大模型应用工程化</div>
+                <div class="item"><input type="checkbox" id="c17_1" onchange="updateProgress()"><label for="c17_1">17.1 应用架构设计（网关层、服务层、模型层、存储层）</label></div>
+                <div class="item"><input type="checkbox" id="c17_2" onchange="updateProgress()"><label for="c17_2">17.2 异步与并发处理（Streaming、SSE、WebSocket、gRPC）</label></div>
+                <div class="item"><input type="checkbox" id="c17_3" onchange="updateProgress()"><label for="c17_3">17.3 缓存策略（语义缓存、结果缓存、Embedding 缓存）</label></div>
+                <div class="item"><input type="checkbox" id="c17_4" onchange="updateProgress()"><label for="c17_4">17.4 限流、熔断与降级策略</label></div>
+                <div class="item"><input type="checkbox" id="c17_5" onchange="updateProgress()"><label for="c17_5">17.5 可观测性（LangFuse、Phoenix、请求追踪）</label></div>
+                <div class="item"><input type="checkbox" id="c17_6" onchange="updateProgress()"><label for="c17_6">17.6 CI/CD 与 Prompt 版本管理</label></div>
+                <div class="item"><input type="checkbox" id="c17_7" onchange="updateProgress()"><label for="c17_7">17.7 多模型路由与 A/B 测试</label></div>
+                <div class="item"><input type="checkbox" id="c17_8" onchange="updateProgress()"><label for="c17_8">17.8 成本监控与预算控制</label></div>
+                <div class="item practice"><input type="checkbox" id="c17_9" onchange="updateProgress()"><label for="c17_9">17.9 实战：生产级大模型应用网关</label></div>
+            </div>
+            <div class="module" id="mod18">
+                <div class="module-title">模块十八：安全与合规</div>
+                <div class="item"><input type="checkbox" id="c18_1" onchange="updateProgress()"><label for="c18_1">18.1 Prompt 注入攻击与防御（直接/间接/Jailbreak）</label></div>
+                <div class="item"><input type="checkbox" id="c18_2" onchange="updateProgress()"><label for="c18_2">18.2 内容安全过滤（敏感信息、有害内容、PII）</label></div>
+                <div class="item"><input type="checkbox" id="c18_3" onchange="updateProgress()"><label for="c18_3">18.3 数据隐私保护（PII 脱敏、数据隔离）</label></div>
+                <div class="item"><input type="checkbox" id="c18_4" onchange="updateProgress()"><label for="c18_4">18.4 Guardrails 框架（Guardrails AI、NeMo、LLM Guard）</label></div>
+                <div class="item"><input type="checkbox" id="c18_5" onchange="updateProgress()"><label for="c18_5">18.5 合规要求（GDPR、数据安全法、算法备案）</label></div>
+                <div class="item"><input type="checkbox" id="c18_6" onchange="updateProgress()"><label for="c18_6">18.6 红队测试（Red Teaming）</label></div>
+                <div class="item practice"><input type="checkbox" id="c18_7" onchange="updateProgress()"><label for="c18_7">18.7 实战：内容安全网关 + Guardrails</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 10 -->
+    <div class="phase-card" id="phase10">
+        <div class="phase-header" onclick="togglePhase(this)">
+            <div class="phase-num">10</div>
+            <div class="phase-info">
+                <h3>前沿技术与综合实战</h3>
+                <div class="desc">多模态、平台生态、5 个完整项目 · 预计 4 周</div>
+            </div>
+            <div class="phase-toggle">▼</div>
+        </div>
+        <div class="phase-body">
+            <div class="module" id="mod19">
+                <div class="module-title">模块十九：多模态大模型</div>
+                <div class="item"><input type="checkbox" id="c19_1" onchange="updateProgress()"><label for="c19_1">19.1 多模态模型概述（GPT-4o、Claude Vision、Qwen-VL、Gemini）</label></div>
+                <div class="item"><input type="checkbox" id="c19_2" onchange="updateProgress()"><label for="c19_2">19.2 图像理解与分析（OCR、图表、视觉问答）</label></div>
+                <div class="item"><input type="checkbox" id="c19_3" onchange="updateProgress()"><label for="c19_3">19.3 文档智能解析（MinerU、Marker、Nougat）</label></div>
+                <div class="item"><input type="checkbox" id="c19_4" onchange="updateProgress()"><label for="c19_4">19.4 多模态 RAG</label></div>
+                <div class="item"><input type="checkbox" id="c19_5" onchange="updateProgress()"><label for="c19_5">19.5 语音交互（ASR + TTS + LLM）</label></div>
+                <div class="item"><input type="checkbox" id="c19_6" onchange="updateProgress()"><label for="c19_6">19.6 视频理解与生成</label></div>
+                <div class="item practice"><input type="checkbox" id="c19_7" onchange="updateProgress()"><label for="c19_7">19.7 实战：文档智能解析 + 多模态问答</label></div>
+            </div>
+            <div class="module" id="mod20">
+                <div class="module-title">模块二十：AI 应用开发平台与生态</div>
+                <div class="item"><input type="checkbox" id="c20_1" onchange="updateProgress()"><label for="c20_1">20.1 低代码平台（Dify、Coze、FastGPT、Flowise）</label></div>
+                <div class="item"><input type="checkbox" id="c20_2" onchange="updateProgress()"><label for="c20_2">20.2 Agent 框架深度对比与选型指南</label></div>
+                <div class="item"><input type="checkbox" id="c20_3" onchange="updateProgress()"><label for="c20_3">20.3 AI 应用市场与插件生态</label></div>
+                <div class="item"><input type="checkbox" id="c20_4" onchange="updateProgress()"><label for="c20_4">20.4 开源社区（HuggingFace、ModelScope、OpenXLab）</label></div>
+                <div class="item"><input type="checkbox" id="c20_5" onchange="updateProgress()"><label for="c20_5">20.5 AI 应用产品设计原则</label></div>
+                <div class="item"><input type="checkbox" id="c20_6" onchange="updateProgress()"><label for="c20_6">20.6 AI Native vs AI Enhanced 应用</label></div>
+            </div>
+            <div class="module" id="mod21">
+                <div class="module-title">模块二十一：综合项目实战</div>
+                <div class="item practice"><input type="checkbox" id="c21_1" onchange="updateProgress()"><label for="c21_1">项目一：智能客服系统（RAG + Agent + Mem0）</label></div>
+                <div class="item practice"><input type="checkbox" id="c21_2" onchange="updateProgress()"><label for="c21_2">项目二：企业知识管理（多模态 RAG + Graph RAG + Zep）</label></div>
+                <div class="item practice"><input type="checkbox" id="c21_3" onchange="updateProgress()"><label for="c21_3">项目三：AI 编码助手（Agent + MCP + Kiro/Hermes）</label></div>
+                <div class="item practice"><input type="checkbox" id="c21_4" onchange="updateProgress()"><label for="c21_4">项目四：数据分析 Agent（NL→SQL→可视化 + Letta）</label></div>
+                <div class="item practice"><input type="checkbox" id="c21_5" onchange="updateProgress()"><label for="c21_5">项目五：个人 AI 助手（Agent + Memory + Skills + Cron）</label></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-section" id="timeline">
+        <h3>📅 学习路线规划（每天 2-3 小时）</h3>
+        <table class="timeline-table">
+            <tr><th>阶段</th><th>时长</th><th>重点</th><th>产出</th></tr>
+            <tr><td>第一阶段</td><td>2 周</td><td>打好认知基础，跑通 API</td><td>多模型 SDK</td></tr>
+            <tr><td>第二阶段</td><td>2 周</td><td>Prompt 工程是核心技能</td><td>Prompt 模板库</td></tr>
+            <tr><td>第三阶段</td><td>4 周</td><td>RAG 是目前最主流模式</td><td>企业知识库系统</td></tr>
+            <tr><td>第四阶段</td><td>3 周</td><td>工具调用 + MCP</td><td>MCP Server 集</td></tr>
+            <tr><td>第五阶段</td><td>3 周</td><td>Agent 是未来趋势</td><td>数据分析 Agent</td></tr>
+            <tr><td>第六阶段</td><td>2 周</td><td>记忆系统是核心能力</td><td>企业记忆服务</td></tr>
+            <tr><td>第七阶段</td><td>3 周</td><td>微调和推理优化</td><td>微调模型 + 推理服务</td></tr>
+            <tr><td>第八阶段</td><td>2 周</td><td>评估体系决定质量</td><td>评估流水线</td></tr>
+            <tr><td>第九阶段</td><td>3 周</td><td>工程化决定落地</td><td>生产级网关</td></tr>
+            <tr><td>第十阶段</td><td>4 周</td><td>综合实战巩固知识</td><td>完整项目作品集</td></tr>
+        </table>
+    </div>
+
+    <!-- Resources -->
+    <div class="timeline-section" id="resources">
+        <h3>📚 推荐学习资源</h3>
+        <div class="resource-grid">
+            <div class="resource-card">
+                <h4>📄 必读论文</h4>
+                <ul>
+                    <li>Attention Is All You Need</li>
+                    <li>RAG (Lewis et al.)</li>
+                    <li>ReAct (Yao et al.)</li>
+                    <li>MemGPT (Packer et al.)</li>
+                    <li>Memory in the Age of AI Agents</li>
+                </ul>
+            </div>
+            <div class="resource-card">
+                <h4>🛠️ 必学框架</h4>
+                <ul>
+                    <li>LangChain / LangGraph</li>
+                    <li>Mem0 / Letta / Zep</li>
+                    <li>lm-evaluation-harness</li>
+                    <li>vLLM</li>
+                    <li>MCP (Model Context Protocol)</li>
+                </ul>
+            </div>
+            <div class="resource-card">
+                <h4>💻 必用工具</h4>
+                <ul>
+                    <li>Cursor / Kiro (AI 编码)</li>
+                    <li>Hermes Agent</li>
+                    <li>Dify / Coze (低代码)</li>
+                    <li>LangFuse (可观测性)</li>
+                </ul>
+            </div>
+            <div class="resource-card">
+                <h4>🔄 Java 经验转化</h4>
+                <ul>
+                    <li>Spring Boot → 应用网关</li>
+                    <li>MySQL/Redis → 向量DB/缓存</li>
+                    <li>并发编程 → Streaming</li>
+                    <li>设计模式 → Agent 架构</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>大纲版本 V2.0 · 更新日期 2026年6月17日 · 根据学习进度持续迭代</p>
+    </div>
+</div>
+
+<!-- Scroll to top -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// Toggle phase card
+function togglePhase(header) {
+    header.parentElement.classList.toggle('open');
+}
+
+// Expand/collapse all
+function expandAll() {
+    document.querySelectorAll('.phase-card').forEach(c => c.classList.add('open'));
+}
+function collapseAll() {
+    document.querySelectorAll('.phase-card').forEach(c => c.classList.remove('open'));
+}
+
+// Theme toggle
+function toggleTheme() {
+    const body = document.body;
+    const isDark = body.getAttribute('data-theme') === 'dark';
+    body.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+// Load theme
+if (localStorage.getItem('theme') === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+    document.getElementById('themeBtn').textContent = '☀️';
+}
+
+// Sidebar toggle (mobile)
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Navigation
+function navTo(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Open the phase card if it's a phase card
+        const card = el.closest('.phase-card');
+        if (card) card.classList.add('open');
+    }
+    document.getElementById('sidebar').classList.remove('open');
+}
+
+// Navigate to module within a phase
+function navModule(phaseId, modId) {
+    const card = document.getElementById(phaseId);
+    if (card) card.classList.add('open');
+    setTimeout(() => {
+        const mod = document.getElementById(modId);
+        if (mod) mod.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    document.getElementById('sidebar').classList.remove('open');
+}
+
+// Progress tracking
+function updateProgress() {
+    const checkboxes = document.querySelectorAll('.item input[type="checkbox"]');
+    const total = checkboxes.length;
+    const checked = document.querySelectorAll('.item input[type="checkbox"]:checked').length;
+    const pct = Math.round((checked / total) * 100);
+    
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = `${checked} / ${total} 已完成 (${pct}%)`;
+    
+    // Update label styles
+    checkboxes.forEach(cb => {
+        const label = cb.nextElementSibling;
+        if (label) {
+            label.classList.toggle('done', cb.checked);
+        }
+    });
+    
+    // Save to localStorage
+    const state = {};
+    checkboxes.forEach(cb => { if (cb.checked) state[cb.id] = true; });
+    localStorage.setItem('outline_progress', JSON.stringify(state));
+}
+
+// Load progress
+function loadProgress() {
+    const saved = localStorage.getItem('outline_progress');
+    if (saved) {
+        const state = JSON.parse(saved);
+        Object.keys(state).forEach(id => {
+            const cb = document.getElementById(id);
+            if (cb) cb.checked = true;
+        });
+    }
+    updateProgress();
+}
+
+// Search
+function searchItems(query) {
+    const items = document.querySelectorAll('.item');
+    const q = query.toLowerCase();
+    items.forEach(item => {
+        const label = item.querySelector('label');
+        if (!label) return;
+        const text = label.textContent.toLowerCase();
+        item.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+    // Open all cards when searching
+    if (q) {
+        document.querySelectorAll('.phase-card').forEach(c => c.classList.add('open'));
+    }
+}
+
+// Scroll to top button
+window.addEventListener('scroll', () => {
+    document.getElementById('scrollTop').classList.toggle('visible', window.scrollY > 400);
+});
+
+// Active sidebar link
+window.addEventListener('scroll', () => {
+    const sections = document.querySelectorAll('.phase-card, .timeline-section');
+    let current = '';
+    sections.forEach(s => {
+        if (s.getBoundingClientRect().top < 100) current = s.id;
+    });
+    document.querySelectorAll('.sidebar a').forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+});
+
+// Init
+loadProgress();
+</script>
+
+</body>
+</html>

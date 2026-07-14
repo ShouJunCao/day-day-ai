@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.10 实战：设计企业级 Prompt 模板库 - 大模型应用开发指南</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.8; }
+        h1 { color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        h2 { color: #1e40af; margin-top: 40px; }
+        h3 { color: #3b82f6; }
+        p { margin: 16px 0; text-align: justify; }
+        table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; }
+        th { background-color: #f8fafc; font-weight: 600; }
+        .highlight-box { background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 16px; margin: 24px 0; border-radius: 4px; }
+        .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 4px; }
+        pre { border-radius: 8px; margin: 20px 0 !important; background: #282c34 !important; color: #abb2bf !important; }
+        pre code { white-space: pre-wrap !important; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; }
+        code:not(pre code) { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+        .nav { margin-bottom: 40px; font-size: 14px; color: #6b7280; }
+        .nav a { color: #2563eb; text-decoration: none; margin-right: 15px; }
+        .nav a:hover { text-decoration: underline; }
+        svg { max-width: 100%; height: auto; margin: 30px 0; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="index.html">🏠 目录</a>
+        <a href="3_9_自动化评估与迭代优化.html">← 3.9 评估优化</a>
+    </div>
+
+    <h1>3.10 实战：设计企业级 Prompt 模板库</h1>
+    
+    <p>当 Prompt 数量从十几个膨胀到数百个时，散落在代码各处的字符串拼接将变成维护噩梦。企业级应用需要统一的 <strong>Prompt 模板库</strong>：支持版本管理、分类检索、变量渲染、缓存加速与多租户隔离。本章将构建一套完整的模板库架构，涵盖存储策略、生命周期管理与性能优化。</p>
+
+    <h2>从硬编码到模板库的演进</h2>
+    
+    <p>早期项目通常将 Prompt 硬编码在业务逻辑中：<code>prompt = f"请分析{user_input}的情感..."</code>。这种方式在模板数量少时简单有效，但随着规模扩大，暴露出三大痛点：一是 <strong>修改成本高</strong>（每次调整需重新部署代码）；二是 <strong>缺乏版本控制</strong>（无法回滚到上一个稳定版本）；三是 <strong>重复渲染开销大</strong>（相同参数组合每次都重新格式化）。</p>
+    
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.2" />
+                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0.05" />
+            </linearGradient>
+            <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.2" />
+                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.05" />
+            </linearGradient>
+            <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.2" />
+                <stop offset="100%" style="stop-color:#10b981;stop-opacity:0.05" />
+            </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="800" height="320" fill="#f8fafc" rx="8"/>
+        <text x="400" y="35" text-anchor="middle" font-weight="bold" font-size="18" fill="#1e293b">Prompt 管理成熟度模型</text>
+        <rect x="30" y="60" width="230" height="220" fill="url(#g1)" rx="8" stroke="#ef4444" stroke-width="2"/>
+        <text x="145" y="90" text-anchor="middle" font-weight="bold" font-size="16" fill="#dc2626">Level 1: 硬编码</text>
+        <text x="45" y="120" font-size="13" fill="#374151">• Prompt 散落在业务代码中</text>
+        <text x="45" y="145" font-size="13" fill="#374151">• f-string 拼接变量</text>
+        <text x="45" y="170" font-size="13" fill="#374151">• 修改需重新部署</text>
+        <text x="45" y="195" font-size="13" fill="#374151">• 无版本、无分类</text>
+        <text x="45" y="220" font-size="13" fill="#374151">• 适合：个人项目、MVP</text>
+        <rect x="285" y="60" width="230" height="220" fill="url(#g2)" rx="8" stroke="#f59e0b" stroke-width="2"/>
+        <text x="400" y="90" text-anchor="middle" font-weight="bold" font-size="16" fill="#d97706">Level 2: 文件管理</text>
+        <text x="300" y="120" font-size="13" fill="#374151">• YAML/JSON 集中存储</text>
+        <text x="300" y="145" font-size="13" fill="#374151">• Jinja2 变量渲染</text>
+        <text x="300" y="170" font-size="13" fill="#374151">• Git 版本控制</text>
+        <text x="300" y="195" font-size="13" fill="#374151">• 适合：中小型团队</text>
+        <text x="300" y="220" font-size="13" fill="#374151">• 痛点：无缓存、无权限</text>
+        <rect x="540" y="60" width="230" height="220" fill="url(#g3)" rx="8" stroke="#10b981" stroke-width="2"/>
+        <text x="655" y="90" text-anchor="middle" font-weight="bold" font-size="16" fill="#059669">Level 3: 企业级模板库</text>
+        <text x="555" y="120" font-size="13" fill="#374151">• 注册中心 + 缓存层</text>
+        <text x="555" y="145" font-size="13" fill="#374151">• 版本回滚与灰度发布</text>
+        <text x="555" y="170" font-size="13" fill="#374151">• 多租户与权限隔离</text>
+        <text x="555" y="195" font-size="13" fill="#374151">• 审计日志与变更追踪</text>
+        <text x="555" y="220" font-size="13" fill="#374151">• 适合：企业级 SaaS 平台</text>
+    </svg>
+
+    <h2>核心架构设计</h2>
+    
+    <p>企业级模板库由三层组成：<strong>存储层</strong>（YAML/JSON 文件或数据库）、<strong>注册中心</strong>（内存索引、分类检索、版本历史）和 <strong>缓存层</strong>（TTL + LRU 驱逐）。存储层负责持久化，注册中心提供快速查询，缓存层降低重复渲染开销。</p>
+
+    <h3>PromptTemplate 不可变对象</h3>
+    <p>每个模板被封装为 <code>dataclass(frozen=True)</code> 的不可变对象，包含 ID、名称、分类、版本号、内容元数据与创建时间。不可变性确保模板在多线程环境下安全共享，避免运行时意外篡改。</p>
+
+    <pre><code class="language-python">@dataclass(frozen=True)
+class PromptTemplate:
+    """不可变的 Prompt 模板对象"""
+    id: str
+    name: str
+    category: str
+    version: str
+    content: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+    def render(self, **kwargs: Any) -> str:
+        """使用 Jinja2 风格进行简单变量替换"""
+        result = self.content
+        for key, value in kwargs.items():
+            placeholder = f"{{{{{key}}}}}"
+            if placeholder in result:
+                result = result.replace(placeholder, str(value))
+        return result</code></pre>
+
+    <h3>PromptRegistry 注册中心</h3>
+    <p>注册中心维护模板的内存索引，支持按 ID 精确查找、按分类批量检索与版本历史追溯。每次更新模板时，旧版本自动归档到历史记录，确保可随时回滚。</p>
+
+    <pre><code class="language-python">@dataclass
+class PromptRegistry:
+    """企业级 Prompt 注册中心"""
+    templates: dict[str, PromptTemplate] = field(default_factory=dict)
+    index_by_category: dict[str, list[str]] = field(default_factory=dict)
+    _version_history: dict[str, list[PromptTemplate]] = field(default_factory=dict)
+
+    def register(self, template: PromptTemplate) -> None:
+        """注册或更新模板，旧版本自动归档"""
+        old = self.templates.get(template.id)
+        self.templates[template.id] = template
+        cat = template.category
+        if cat not in self.index_by_category:
+            self.index_by_category[cat] = []
+        if template.id not in self.index_by_category[cat]:
+            self.index_by_category[cat].append(template.id)
+        if old is not None:
+            if template.id not in self._version_history:
+                self._version_history[template.id] = [old]
+            self._version_history[template.id].append(template)
+            logger.info("Updated template %s: v%s -> v%s", 
+                       template.id, old.version, template.version)
+
+    def get(self, template_id: str, version: str | None = None) -> PromptTemplate | None:
+        """按 ID 获取模板，可选指定历史版本"""
+        if version and template_id in self._version_history:
+            for t in reversed(self._version_history[template_id]):
+                if t.version == version:
+                    return t
+        return self.templates.get(template_id)</code></pre>
+
+    <h3>TemplateLoader 多格式加载器</h3>
+    <p>加载器支持从 YAML 和 JSON 文件批量导入模板，也支持动态创建内联模板。文件加载时自动校验必填字段（id、name、content），缺失时抛出明确异常。</p>
+
+    <pre><code class="language-python">@dataclass
+class TemplateLoader:
+    """从文件或字符串加载模板"""
+    registry: PromptRegistry
+
+    def load_from_yaml(self, path: str | Path) -> list[PromptTemplate]:
+        p = Path(path)
+        if not p.exists():
+            raise FileNotFoundError(f"Template file not found: {p}")
+        with open(p, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        if not isinstance(data, list):
+            data = [data]
+        templates = []
+        for item in data:
+            t = PromptTemplate(
+                id=item["id"],
+                name=item["name"],
+                category=item.get("category", "default"),
+                version=item.get("version", "1.0.0"),
+                content=item["content"],
+                metadata=item.get("metadata", {})
+            )
+            self.registry.register(t)
+            templates.append(t)
+        return templates</code></pre>
+
+    <h2>缓存层设计：TTL + LRU</h2>
+    
+    <p>Prompt 渲染（尤其是复杂模板）的开销不容忽视。缓存层使用 <code>OrderedDict</code> 实现 LRU 驱逐策略，配合 TTL 过期机制。相同模板 ID + 参数组合只渲染一次，后续请求直接返回缓存结果。</p>
+
+    <table>
+        <thead>
+            <tr><th>策略</th><th>触发条件</th><th>效果</th><th>适用场景</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>TTL 过期</td><td>缓存条目超过存活时间</td><td>自动清理过期数据</td><td>动态业务参数</td></tr>
+            <tr><td>LRU 驱逐</td><td>缓存容量达到上限</td><td>淘汰最久未访问条目</td><td>内存受限环境</td></tr>
+            <tr><td>主动失效</td><td>模板版本更新</td><td>清除关联缓存键</td><td>灰度发布后</td></tr>
+            <tr><td>缓存预热</td><td>服务启动/定时任务</td><td>提前加载热点模板</td><td>高流量场景</td></tr>
+        </tbody>
+    </table>
+
+    <pre><code class="language-python">@dataclass
+class PromptCache:
+    """支持 TTL + LRU 的 Prompt 渲染结果缓存"""
+    max_size: int = 1024
+    default_ttl: float = 300.0
+    _store: OrderedDict[str, CacheEntry] = field(default_factory=OrderedDict)
+    _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
+    _hits: int = 0
+    _misses: int = 0
+    _evictions: int = 0
+
+    def get(self, key: str) -> Any | None:
+        with self._lock:
+            entry = self._store.get(key)
+            if entry is None:
+                self._misses += 1
+                return None
+            if time.time() > entry.expires_at:
+                del self._store[key]
+                self._misses += 1
+                return None
+            entry.access_count += 1
+            entry.last_access = time.time()
+            self._store.move_to_end(key)
+            self._hits += 1
+            return entry.value
+
+    def put(self, key: str, value: Any, ttl: float | None = None) -> None:
+        with self._lock:
+            ttl = ttl or self.default_ttl
+            if key in self._store:
+                self._store[key] = CacheEntry(value, time.time() + ttl)
+                self._store.move_to_end(key)
+                return
+            if len(self._store) >= self.max_size:
+                self._store.popitem(last=False)
+                self._evictions += 1
+            self._store[key] = CacheEntry(value, time.time() + ttl)</code></pre>
+
+    <div class="highlight-box">
+        <strong>💡 缓存键设计最佳实践</strong>
+        <p>缓存键应包含模板 ID 与所有变量的有序哈希：<code>f"{template_id}:{sorted(kwargs.items())}"</code>。这样可以确保相同参数组合命中同一缓存条目，同时避免变量顺序不同导致的缓存未命中。</p>
+    </div>
+
+    <h2>多租户与权限隔离</h2>
+    
+    <p>在 SaaS 场景下，不同租户的 Prompt 模板必须严格隔离。实现方式是在 <code>PromptTemplate</code> 的元数据中添加 <code>tenant_id</code> 字段，并在注册中心查询时附加租户过滤条件。同时，可按角色（管理员、编辑者、只读用户）控制模板的创建、修改与查看权限。</p>
+
+    <div class="warning-box">
+        <strong>⚠️ 常见陷阱</strong>
+        <ul>
+            <li><strong>缓存击穿</strong>：热点模板过期瞬间，大量请求同时回源渲染。解决方案：使用互斥锁确保只有一个线程执行渲染，其余线程等待。</li>
+            <li><strong>版本不一致</strong>：不同服务实例加载了不同版本的模板文件。解决方案：使用配置中心（如 etcd、Nacos）统一分发，或采用滚动发布策略。</li>
+            <li><strong>模板注入</strong>：用户输入包含 <code>{{__import__('os')}} </code> 等危险内容。解决方案：渲染前对用户输入做白名单校验，或使用沙箱隔离的模板引擎。</li>
+        </ul>
+    </div>
+
+    <h2>审计日志与变更追踪</h2>
+    
+    <p>企业级模板库的每次变更（创建、更新、删除）都应记录审计日志：包含操作人、时间戳、变更前后内容差异、影响范围。这对于合规审计、故障排查与责任追溯至关重要。</p>
+
+    <h3>本章小结</h3>
+    <p>企业级 Prompt 模板库不是简单的文件存储，而是涵盖版本管理、分类检索、缓存加速、多租户隔离与审计追踪的完整基础设施。通过不可变模板对象、注册中心索引与 TTL+LRU 缓存层的组合，你可以在保证灵活性的同时，实现高性能与可维护性的统一。</p>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>

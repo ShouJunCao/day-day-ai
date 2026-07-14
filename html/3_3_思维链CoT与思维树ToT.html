@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.3 思维链（CoT）与思维树（Tree-of-Thought）— 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.6; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .example-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .example-box h4 { color: var(--accent); margin-bottom: 8px; font-size: 1em; }
+        .compare-box { display: flex; gap: 16px; margin: 16px 0; }
+        .compare-box > div { flex: 1; padding: 16px; border-radius: 8px; }
+        .compare-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .compare-good { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .compare-box h4 { margin-bottom: 8px; font-size: 0.95em; }
+        .compare-bad h4 { color: var(--red); }
+        .compare-good h4 { color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>3.3 思维链（CoT）与思维树（Tree-of-Thought）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块三：Prompt Engineering</span>
+        <span class="tag tag-time">预计学习：55 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 <strong>Chain-of-Thought（CoT）</strong> 的核心原理与变体</li>
+        <li>掌握 <strong>Tree-of-Thought（ToT）</strong> 的搜索框架与实现</li>
+        <li>学会在工程化场景中选择合适的推理策略</li>
+        <li>能够构建生产级的 CoT / ToT 推理引擎</li>
+    </ul>
+
+    <h2>一、为什么需要推理引导？</h2>
+    <p>大模型在简单任务上表现出色，但面对<strong>复杂推理任务</strong>（数学计算、逻辑推导、多步骤分析）时，直接给出答案往往不够准确。原因在于：模型是基于概率生成下一个 token 的，复杂推理需要多步逻辑链条，而一次性生成容易在中间步骤出错。</p>
+
+    <p>研究表明，如果引导模型<strong>逐步展示推理过程</strong>，而非直接跳到最终答案，输出质量会显著提升。这就是思维链（Chain-of-Thought）的核心思想——让模型"先想清楚再给出回答"。</p>
+
+    <div class="compare-box">
+        <div class="compare-bad">
+            <h4>❌ 直接回答</h4>
+            <p><strong>问题：</strong>一个商店有 23 个苹果，卖了 17 个，又进了 6 个，现在有多少？</p>
+            <p><strong>回答：</strong>12 个</p>
+            <p style="color: var(--red); font-size: 0.85em;">❌ 错误（正确答案是 12... 等等，23-17+6=12，这次碰巧对了，但更复杂的问题就容易出错）</p>
+        </div>
+        <div class="compare-good">
+            <h4>✅ CoT 逐步推理</h4>
+            <p><strong>思考过程：</strong></p>
+            <p>1. 初始：23 个苹果</p>
+            <p>2. 卖了 17 个：23 - 17 = 6 个</p>
+            <p>3. 又进了 6 个：6 + 6 = 12 个</p>
+            <p><strong>答案：12 个</strong> ✅</p>
+        </div>
+    </div>
+
+    <h2>二、Chain-of-Thought（CoT）</h2>
+    <p>CoT 由 Wei et al.（2022）提出，核心思想是在 Prompt 中加入<strong>逐步推理的示例</strong>，让模型学习展示中间步骤。CoT 有几种主要变体：</p>
+
+    <ul>
+        <li><strong>Few-shot CoT</strong>：在 Few-shot 示例中包含完整的推理步骤</li>
+        <li><strong>Zero-shot CoT</strong>：仅通过 "Let's think step by step" 触发推理</li>
+        <li><strong>Self-Ask</strong>：模型自己提出子问题并逐一回答</li>
+        <li><strong>Least-to-Most</strong>：将复杂问题拆解为从简到难的子问题链</li>
+    </ul>
+
+    <div class="diagram-container">
+        <svg width="780" height="300" viewBox="0 0 780 300" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="cot-g" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+                <linearGradient id="tot-g" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+            </defs>
+            <!-- 标题 -->
+            <text x="390" y="24" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">CoT vs ToT 推理结构对比</text>
+            
+            <!-- CoT 线性链 -->
+            <text x="195" y="55" text-anchor="middle" fill="#4361ee" font-size="14" font-weight="bold">Chain-of-Thought（线性链）</text>
+            <rect x="20" y="75" width="70" height="40" rx="8" fill="url(#cot-g)"/>
+            <text x="55" y="100" text-anchor="middle" fill="white" font-size="11">问题</text>
+            <line x1="90" y1="95" x2="110" y2="95" stroke="#4361ee" stroke-width="2" marker-end="url(#arrow-cot)"/>
+            <rect x="110" y="75" width="70" height="40" rx="8" fill="url(#cot-g)" opacity="0.8"/>
+            <text x="145" y="100" text-anchor="middle" fill="white" font-size="11">步骤1</text>
+            <line x1="180" y1="95" x2="200" y2="95" stroke="#4361ee" stroke-width="2"/>
+            <rect x="200" y="75" width="70" height="40" rx="8" fill="url(#cot-g)" opacity="0.7"/>
+            <text x="235" y="100" text-anchor="middle" fill="white" font-size="11">步骤2</text>
+            <line x1="270" y1="95" x2="290" y2="95" stroke="#4361ee" stroke-width="2"/>
+            <rect x="290" y="75" width="70" height="40" rx="8" fill="url(#cot-g)" opacity="0.6"/>
+            <text x="325" y="100" text-anchor="middle" fill="white" font-size="11">答案</text>
+            <text x="195" y="140" text-anchor="middle" fill="#64748b" font-size="11">单一路径 · 逐步推进 · 简单高效</text>
+            
+            <!-- ToT 树状结构 -->
+            <text x="585" y="55" text-anchor="middle" fill="#10b981" font-size="14" font-weight="bold">Tree-of-Thought（树状搜索）</text>
+            <!-- 根节点 -->
+            <rect x="555" y="70" width="60" height="35" rx="8" fill="url(#tot-g)"/>
+            <text x="585" y="92" text-anchor="middle" fill="white" font-size="11">问题</text>
+            <!-- 第二层 -->
+            <line x1="570" y1="105" x2="500" y2="135" stroke="#10b981" stroke-width="1.5"/>
+            <line x1="585" y1="105" x2="585" y2="135" stroke="#10b981" stroke-width="1.5"/>
+            <line x1="600" y1="105" x2="670" y2="135" stroke="#10b981" stroke-width="1.5"/>
+            <rect x="470" y="135" width="60" height="35" rx="8" fill="url(#tot-g)" opacity="0.8"/>
+            <text x="500" y="157" text-anchor="middle" fill="white" font-size="10">路径A</text>
+            <rect x="555" y="135" width="60" height="35" rx="8" fill="url(#tot-g)" opacity="0.8"/>
+            <text x="585" y="157" text-anchor="middle" fill="white" font-size="10">路径B</text>
+            <rect x="640" y="135" width="60" height="35" rx="8" fill="url(#tot-g)" opacity="0.5"/>
+            <text x="670" y="157" text-anchor="middle" fill="white" font-size="10">路径C ✗</text>
+            <!-- 第三层 -->
+            <line x1="485" y1="170" x2="470" y2="195" stroke="#10b981" stroke-width="1"/>
+            <line x1="515" y1="170" x2="530" y2="195" stroke="#10b981" stroke-width="1"/>
+            <line x1="570" y1="170" x2="555" y2="195" stroke="#10b981" stroke-width="1"/>
+            <line x1="600" y1="170" x2="615" y2="195" stroke="#10b981" stroke-width="1"/>
+            <rect x="445" y="195" width="50" height="30" rx="6" fill="url(#tot-g)" opacity="0.6"/>
+            <text x="470" y="214" text-anchor="middle" fill="white" font-size="9">A1</text>
+            <rect x="505" y="195" width="50" height="30" rx="6" fill="url(#tot-g)" opacity="0.6"/>
+            <text x="530" y="214" text-anchor="middle" fill="white" font-size="9">A2 ✓</text>
+            <rect x="535" y="195" width="50" height="30" rx="6" fill="url(#tot-g)" opacity="0.6"/>
+            <text x="560" y="214" text-anchor="middle" fill="white" font-size="9">B1</text>
+            <rect x="595" y="195" width="50" height="30" rx="6" fill="url(#tot-g)" opacity="0.4"/>
+            <text x="620" y="214" text-anchor="middle" fill="white" font-size="9">B2 ✗</text>
+            <text x="585" y="260" text-anchor="middle" fill="#64748b" font-size="11">多路径探索 · 评估剪枝 · 最优选择</text>
+        </svg>
+    </div>
+
+    <h2>三、Zero-shot CoT 实践</h2>
+    <p>Zero-shot CoT 是最简单也最实用的推理引导方式——只需在 Prompt 末尾加上<strong>"Let's think step by step"</strong>（或中文的"让我们一步步思考"），模型就会自动展示推理过程。这个技巧虽然简单，但在数学推理、逻辑分析等任务上效果显著。</p>
+
+<pre><code class="language-python">"""
+cot_tot.py — 思维链（CoT）与思维树（ToT）实现
+包含 Zero-shot CoT、Few-shot CoT、ToT 搜索框架
+"""
+
+from typing import Optional, Callable
+from dataclasses import dataclass, field
+import json
+
+
+@dataclass
+class CoTResult:
+    """CoT 推理结果"""
+    question: str
+    reasoning_steps: list[str]
+    final_answer: str
+    confidence: float = 0.0
+
+
+class ZeroShotCoT:
+    """
+    Zero-shot CoT：通过触发词引导模型逐步推理。
+    
+    核心原理：
+        在 Prompt 中加入 "Let's think step by step"
+        触发模型的推理链，无需提供示例。
+    
+    适用场景：
+        数学推理、逻辑分析、常识推理
+    """
+    
+    TRIGGERS = {
+        "en": "Let's think step by step.",
+        "zh": "让我们一步步思考。",
+        "detailed": "Please break this down step by step, "
+                    "showing your reasoning at each step.",
+    }
+    
+    def __init__(self, language: str = "zh"):
+        """
+        参数:
+            language: 触发词语言（en / zh / detailed）
+        """
+        self.trigger = self.TRIGGERS.get(language, self.TRIGGERS["zh"])
+    
+    def build_prompt(self, question: str) -> str:
+        """
+        构建 Zero-shot CoT Prompt。
+        
+        参数:
+            question: 需要推理的问题
+        返回:
+            包含触发词的完整 Prompt
+        """
+        return (
+            f"## 问题\n{question}\n\n"
+            f"## 要求\n"
+            f"请先展示完整的推理过程（每一步都要写清楚），"
+            f"最后给出最终答案。\n\n"
+            f"{self.trigger}"
+        )
+    
+    def parse_response(self, response_text: str) -> CoTResult:
+        """
+        解析模型输出，提取推理步骤和最终答案。
+        
+        参数:
+            response_text: 模型的完整输出
+        返回:
+            CoTResult 对象
+        """
+        lines = response_text.strip().split("\n")
+        steps = []
+        answer = ""
+        
+        for line in lines:
+            stripped = line.strip()
+            # 提取编号步骤（如 "1. xxx"、"步骤1："）
+            if any(stripped.startswith(p) for p in 
+                   ["1.", "2.", "3.", "4.", "5.", "6.",
+                    "步骤", "Step", "第"]):
+                steps.append(stripped)
+            # 提取最终答案
+            if "答案" in stripped or "answer" in stripped.lower():
+                answer = stripped
+        
+        return CoTResult(
+            question="",
+            reasoning_steps=steps,
+            final_answer=answer or lines[-1] if lines else "",
+        )</code></pre>
+
+    <h2>四、Few-shot CoT 实践</h2>
+    <p>Few-shot CoT 在示例中展示完整的推理过程，比 Zero-shot CoT 更加可控。通过精心设计的示例，你可以指定推理的粒度、格式和深度。关键是在示例中<strong>不仅展示答案，还要展示思考过程</strong>。</p>
+
+<pre><code class="language-python">@dataclass
+class CoTExample:
+    """CoT 示例：包含问题、推理步骤和答案"""
+    question: str
+    steps: list[str]
+    answer: str
+
+
+class FewShotCoT:
+    """
+    Few-shot CoT：通过包含推理步骤的示例引导模型。
+    
+    相比 Zero-shot CoT 的优势：
+        - 推理格式更可控
+        - 推理深度更一致
+        - 适合特定领域的推理模式
+    """
+    
+    def __init__(self, examples: list[CoTExample]):
+        """
+        参数:
+            examples: CoT 示例列表（建议 2-4 个）
+        """
+        self.examples = examples
+    
+    def build_prompt(self, question: str) -> str:
+        """
+        构建 Few-shot CoT Prompt。
+        
+        参数:
+            question: 需要推理的实际问题
+        返回:
+            包含示例和问题的完整 Prompt
+        """
+        parts = ["## 任务\n请像下面的示例一样，逐步推理并给出答案。\n"]
+        
+        # 添加示例
+        for i, ex in enumerate(self.examples, 1):
+            steps_text = "\n".join(
+                f"  {j+1}. {s}" for j, s in enumerate(ex.steps)
+            )
+            parts.append(
+                f"### 示例 {i}\n"
+                f"**问题：** {ex.question}\n"
+                f"**推理过程：**\n{steps_text}\n"
+                f"**答案：** {ex.answer}"
+            )
+        
+        # 实际问题
+        parts.append(
+            f"### 实际任务\n"
+            f"**问题：** {question}\n"
+            f"**推理过程：**"
+        )
+        
+        return "\n\n".join(parts)
+    
+    @classmethod
+    def math_reasoning(cls) -> "FewShotCoT":
+        """创建数学推理的预设 CoT 模板"""
+        examples = [
+            CoTExample(
+                question="小明有 15 个糖果，给了小红 7 个，"
+                         "又从小华那里得到 3 个，现在有几个？",
+                steps=[
+                    "初始数量：15 个糖果",
+                    "给小红 7 个：15 - 7 = 8 个",
+                    "从小华得到 3 个：8 + 3 = 11 个",
+                ],
+                answer="11 个",
+            ),
+            CoTExample(
+                question="一个水池，A 管 6 小时注满，B 管 8 小时注满，"
+                         "两管同时开，几小时注满？",
+                steps=[
+                    "A 管每小时注水量：1/6",
+                    "B 管每小时注水量：1/8",
+                    "两管同时开，每小时注水量：1/6 + 1/8 = 7/24",
+                    "注满时间：1 ÷ (7/24) = 24/7 ≈ 3.43 小时",
+                ],
+                answer="约 3.43 小时（24/7 小时）",
+            ),
+        ]
+        return cls(examples)</code></pre>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 选择建议</div>
+        <p><strong>Zero-shot CoT</strong> 适合快速验证和通用推理；<strong>Few-shot CoT</strong> 适合需要统一推理格式的生产场景。在实践中，可以先用 Zero-shot CoT 验证可行性，确认可行后再设计 Few-shot CoT 模板以提高稳定性。</p>
+    </div>
+
+    <h2>五、Tree-of-Thought（ToT）</h2>
+    <p>CoT 的局限在于它只探索<strong>一条推理路径</strong>。如果中间某一步出错，整个推理链条就会偏离。Tree-of-Thought（Yao et al., 2023）通过<strong>同时探索多条推理路径</strong>，并在每个步骤评估和选择最优方向，显著提高了复杂推理的准确率。</p>
+
+    <p>ToT 的核心流程分为四步：<strong>分解</strong>（将问题拆为子步骤）→ <strong>生成</strong>（每步生成多个候选方案）→ <strong>评估</strong>（用 LLM 打分）→ <strong>搜索</strong>（BFS/DFS 找最优路径）。这个过程类似人类解决复杂问题时的"头脑风暴"——先发散思考多种可能，再收敛到最优方案。</p>
+
+    <p>ToT 的搜索策略通常采用 <strong>beam search</strong>（束搜索）：在每一步保留 Top-K 条最优路径，而不是只保留一条。这既保证了搜索的广度，又避免了指数级的计算开销。搜索深度（max_depth）和分支因子（branching_factor）是两个关键超参数，需要根据任务复杂度调优。</p>
+
+<pre><code class="language-python">class TreeOfThought:
+    """
+    Tree-of-Thought 搜索框架。
+    
+    通过 BFS/DFS 在多个推理路径中搜索最优解。
+    每个节点代表一个推理步骤，LLM 负责生成候选
+    和评估分数。
+    
+    参数:
+        llm_client: LLM 客户端
+        max_depth: 最大推理深度
+        branching_factor: 每步生成的候选数
+        search_method: 搜索方法（bfs / dfs）
+    """
+    
+    def __init__(
+        self,
+        llm_client,
+        max_depth: int = 5,
+        branching_factor: int = 3,
+        search_method: str = "bfs",
+    ):
+        self.client = llm_client
+        self.max_depth = max_depth
+        self.branching = branching_factor
+        self.search_method = search_method
+    
+    def generate_candidates(
+        self, question: str, current_path: list[str]
+    ) -> list[str]:
+        """
+        在当前推理路径上生成候选下一步。
+        
+        参数:
+            question: 原始问题
+            current_path: 已有的推理步骤
+        返回:
+            候选推理步骤列表
+        """
+        path_text = "\n".join(
+            f"  步骤 {i+1}: {s}" for i, s in enumerate(current_path)
+        ) or "  （尚未开始）"
+        
+        prompt = (
+            f"问题：{question}\n\n"
+            f"已有推理步骤：\n{path_text}\n\n"
+            f"请给出 {self.branching} 种可能的下一步推理，"
+            f"每种用一行描述，格式为 JSON 数组。"
+        )
+        
+        response = self.client.chat(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8,  # 高温度增加多样性
+        )
+        
+        try:
+            candidates = json.loads(response.content)
+            return candidates if isinstance(candidates, list) else []
+        except json.JSONDecodeError:
+            return []
+    
+    def evaluate(
+        self, question: str, path: list[str]
+    ) -> float:
+        """
+        评估当前推理路径的质量（0-1 分）。
+        
+        参数:
+            question: 原始问题
+            path: 推理步骤列表
+        返回:
+            路径质量分数（0-1）
+        """
+        path_text = "\n".join(
+            f"  步骤 {i+1}: {s}" for i, s in enumerate(path)
+        )
+        
+        prompt = (
+            f"问题：{question}\n\n"
+            f"推理过程：\n{path_text}\n\n"
+            f"请评估这个推理过程的正确性和合理性，"
+            f"输出一个 0-1 之间的分数（仅输出数字）。"
+        )
+        
+        response = self.client.chat(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,  # 低温度提高评估一致性
+        )
+        
+        try:
+            score = float(response.content.strip())
+            return max(0.0, min(1.0, score))
+        except (ValueError, AttributeError):
+            return 0.0
+    
+    def solve(self, question: str) -> dict:
+        """
+        使用 BFS 搜索最优推理路径。
+        
+        参数:
+            question: 需要推理的问题
+        返回:
+            包含最优路径和分数的字典
+        """
+        # BFS：维护一个优先队列
+        paths = [([], 0.0)]  # (path, score)
+        best_path = []
+        best_score = 0.0
+        
+        for depth in range(self.max_depth):
+            new_paths = []
+            
+            for path, _ in paths:
+                # 生成候选
+                candidates = self.generate_candidates(
+                    question, path
+                )
+                
+                for candidate in candidates:
+                    new_path = path + [candidate]
+                    score = self.evaluate(question, new_path)
+                    new_paths.append((new_path, score))
+                    
+                    if score > best_score:
+                        best_score = score
+                        best_path = new_path
+            
+            # 保留 Top-K 路径（beam search）
+            new_paths.sort(key=lambda x: x[1], reverse=True)
+            paths = new_paths[:self.branching]
+            
+            # 如果最高分已经达到阈值，提前终止
+            if best_score >= 0.9:
+                break
+        
+        return {
+            "question": question,
+            "best_path": best_path,
+            "score": best_score,
+            "steps_explored": len(paths) * self.max_depth,
+        }</code></pre>
+
+    <h2>六、CoT 与 ToT 对比</h2>
+    <p>理解两种方法的差异，有助于在实际场景中做出正确选择：</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>CoT（思维链）</th><th>ToT（思维树）</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>推理结构</strong></td><td>线性链条</td><td>树状搜索</td></tr>
+            <tr><td><strong>路径数量</strong></td><td>单条路径</td><td>多条路径并行探索</td></tr>
+            <tr><td><strong>API 调用次数</strong></td><td>1 次</td><td>N × B 次（N=深度, B=分支数）</td></tr>
+            <tr><td><strong>Token 成本</strong></td><td>低</td><td>高（多次调用）</td></tr>
+            <tr><td><strong>准确率</strong></td><td>中等</td><td>高（搜索最优路径）</td></tr>
+            <tr><td><strong>延迟</strong></td><td>低</td><td>高</td></tr>
+            <tr><td><strong>实现复杂度</strong></td><td>简单</td><td>复杂</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>简单推理、快速响应</td><td>复杂问题、高准确率要求</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 成本提醒</div>
+        <p>ToT 的 API 调用次数是 CoT 的 <strong>10-50 倍</strong>。例如 max_depth=5, branching_factor=3 时，单次 ToT 搜索需要约 15 次 API 调用。在高频场景中，务必设置调用上限和超时机制，避免成本失控。</p>
+    </div>
+
+    <h2>七、工程化集成</h2>
+    <p>在生产环境中，我们需要将 CoT 和 ToT 集成到统一的推理引擎中，并根据任务复杂度自动选择策略。以下是生产级的推理引擎实现：</p>
+
+<pre><code class="language-python">class ReasoningEngine:
+    """
+    统一推理引擎：自动选择 CoT / ToT 策略。
+    
+    集成重试、限流、日志等生产级特性。
+    支持任务复杂度自动评估和策略切换。
+    
+    参数:
+        llm_client: LLM 客户端
+        default_strategy: 默认策略（auto / cot / tot）
+        max_api_calls: 单次推理最大 API 调用次数
+    """
+    
+    def __init__(
+        self,
+        llm_client,
+        default_strategy: str = "auto",
+        max_api_calls: int = 20,
+    ):
+        self.client = llm_client
+        self.strategy = default_strategy
+        self.max_calls = max_api_calls
+        self._call_count = 0
+    
+    def assess_complexity(self, question: str) -> str:
+        """
+        评估问题复杂度，返回推荐策略。
+        
+        评估维度：
+            - 是否涉及多步计算
+            - 是否有多个约束条件
+            - 是否需要逻辑推导
+        """
+        prompt = (
+            f"评估以下问题的推理复杂度，输出 'simple' 或 "
+            f"'complex'（仅输出一个词）：\n\n{question}"
+        )
+        response = self.client.chat(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+        )
+        self._call_count += 1
+        
+        result = response.content.strip().lower()
+        return "complex" if "complex" in result else "simple"
+    
+    def reason(self, question: str) -> dict:
+        """
+        执行推理，自动选择最优策略。
+        
+        参数:
+            question: 需要推理的问题
+        返回:
+            包含推理结果和元数据的字典
+        """
+        self._call_count = 0
+        
+        # 确定策略
+        if self.strategy == "auto":
+            complexity = self.assess_complexity(question)
+            strategy = "tot" if complexity == "complex" else "cot"
+        else:
+            strategy = self.strategy
+        
+        # 执行推理
+        if strategy == "cot":
+            cot = ZeroShotCoT(language="zh")
+            prompt = cot.build_prompt(question)
+            response = self.client.chat(
+                messages=[{"role": "user", "content": prompt}],
+            )
+            self._call_count += 1
+            result = cot.parse_response(response.content)
+            return {
+                "strategy": "cot",
+                "question": question,
+                "answer": result.final_answer,
+                "steps": result.reasoning_steps,
+                "api_calls": self._call_count,
+            }
+        else:
+            tot = TreeOfThought(
+                self.client,
+                max_depth=3,
+                branching_factor=2,
+            )
+            result = tot.solve(question)
+            self._call_count += result["steps_explored"]
+            return {
+                "strategy": "tot",
+                "question": question,
+                "answer": result["best_path"],
+                "score": result["score"],
+                "api_calls": self._call_count,
+            }
+
+
+# 使用示例
+# engine = ReasoningEngine(client, default_strategy="auto")
+# result = engine.reason("一个水池有两个水管...")
+# print(f"策略: {result['strategy']}, 调用次数: {result['api_calls']}")</code></pre>
+
+    <h2>八、推理策略选择指南</h2>
+    <p>以下决策框架帮助你根据实际场景选择最合适的推理策略：</p>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>推荐策略</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>简单数学题</td><td>Zero-shot CoT</td><td>一步触发即可，成本低</td></tr>
+            <tr><td>标准化推理任务</td><td>Few-shot CoT</td><td>格式可控，输出一致</td></tr>
+            <tr><td>复杂逻辑推导</td><td>ToT (BFS)</td><td>多路径搜索，容错性高</td></tr>
+            <tr><td>创意/开放性问题</td><td>ToT + 高温度</td><td>探索多样性方案</td></tr>
+            <tr><td>实时响应场景</td><td>Zero-shot CoT</td><td>延迟低，一次调用</td></tr>
+            <tr><td>高准确率要求</td><td>ToT + Self-Consistency</td><td>多次验证，投票决策</td></tr>
+        </tbody>
+    </table>
+
+    <h2>九、CoT 高级技巧</h2>
+    <p>掌握基础的 CoT 之后，还有一些进阶技巧可以进一步提升推理质量：</p>
+
+    <h3>技巧一：分而治之（Decomposition）</h3>
+    <p>对于复杂问题，先让模型将问题拆解为子问题，再对每个子问题分别进行 CoT 推理。这种方式比直接对整个问题做 CoT 更可靠，因为每个子问题的推理链条更短，出错概率更低。</p>
+
+<pre><code class="language-python">class DecomposedCoT:
+    """
+    分而治之 CoT：先拆解问题，再逐步推理。
+    
+    工作流程：
+        1. 将复杂问题拆解为 N 个子问题
+        2. 对每个子问题独立执行 CoT
+        3. 汇总各子问题的答案，得出最终结论
+    
+    优势：
+        - 每个子推理链更短，出错概率低
+        - 子问题可并行处理
+        - 中间结果可复用和缓存
+    """
+    
+    def __init__(self, llm_client):
+        self.client = llm_client
+    
+    def decompose(self, question: str) -> list[str]:
+        """将复杂问题拆解为子问题列表"""
+        prompt = (
+            f"请将以下复杂问题拆解为 2-4 个简单的子问题，"
+            f"输出 JSON 数组格式：\n\n{question}"
+        )
+        response = self.client.chat(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+        )
+        try:
+            sub_questions = json.loads(response.content)
+            return sub_questions if isinstance(sub_questions, list) else []
+        except json.JSONDecodeError:
+            return [question]  # 降级为原问题
+    
+    def solve_sub_question(self, sub_q: str, context: str = "") -> str:
+        """对单个子问题执行 CoT"""
+        cot = ZeroShotCoT(language="zh")
+        prompt = cot.build_prompt(sub_q)
+        if context:
+            prompt = f"## 已知信息\n{context}\n\n{prompt}"
+        
+        response = self.client.chat(
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content
+    
+    def solve(self, question: str) -> dict:
+        """
+        完整执行分而治之 CoT 推理。
+        
+        返回:
+            包含子问题、子答案和最终答案的字典
+        """
+        # 第一步：拆解
+        sub_questions = self.decompose(question)
+        
+        # 第二步：逐一求解
+        sub_answers = []
+        context = ""
+        for sq in sub_questions:
+            answer = self.solve_sub_question(sq, context)
+            sub_answers.append(answer)
+            context += f"\n子问题：{sq}\n答案：{answer}\n"
+        
+        # 第三步：汇总
+        summary_prompt = (
+            f"## 原始问题\n{question}\n\n"
+            f"## 各子问题的答案\n"
+        )
+        for i, (sq, sa) in enumerate(
+            zip(sub_questions, sub_answers), 1
+        ):
+            summary_prompt += f"\n子问题 {i}: {sq}\n答案: {sa}\n"
+        summary_prompt += (
+            "\n请根据以上子问题的答案，"
+            "给出原始问题的最终答案。"
+        )
+        
+        final_response = self.client.chat(
+            messages=[{"role": "user", "content": summary_prompt}],
+        )
+        
+        return {
+            "question": question,
+            "sub_questions": sub_questions,
+            "sub_answers": sub_answers,
+            "final_answer": final_response.content,
+        }
+
+
+# 使用示例
+# decomposed = DecomposedCoT(client)
+# result = decomposed.solve(
+#     "一个公司年收入 500 万，成本占 60%，税率 25%，"
+#     "净利润是多少？如果明年收入增长 20%，净利润会变为多少？"
+# )</code></pre>
+
+    <h3>技巧二：自我验证（Self-Verification）</h3>
+    <p>在 CoT 推理结束后，让模型<strong>重新检查</strong>自己的推理过程。这种"回头看"的机制可以发现中间步骤的错误，显著提高最终答案的准确率。实现方式是：将原始问题和 CoT 输出一起发给模型，要求它验证推理是否正确。</p>
+
+    <p>自我验证在生产环境中非常实用，特别是对于高风险决策场景（如金融计算、医疗建议）。你可以设置一个验证阈值——如果模型对推理结果的置信度低于阈值，则触发二次验证或人工审核。</p>
+
+    <h3>技巧三：多路径采样 + 投票</h3>
+    <p>这是 Self-Consistency（下一章会详细讲解）的核心思想：对同一个问题执行<strong>多次 CoT</strong>（使用较高 temperature），然后对最终答案进行多数投票。如果多数推理路径得出相同答案，说明该答案更可靠。这种方式比单次 CoT 更鲁棒，但成本也相应增加。在实践中，通常采样 3-5 次即可获得较好的效果。</p>
+
+    <div class="note note-info">
+        <div class="note-title">📌 小结</div>
+        <p>CoT 和 ToT 是 Prompt Engineering 中最核心的推理引导技术。<strong>CoT 是基础</strong>——通过逐步推理提高准确性；<strong>ToT 是进阶</strong>——通过多路径搜索提高鲁棒性。在实际项目中，建议从 CoT 开始，当准确率无法满足要求时再引入 ToT。高级技巧（分而治之、自我验证、多路径投票）可以组合使用，构建更可靠的推理系统。下一章我们将学习<strong>自洽性（Self-Consistency）</strong>，它通过多次采样和投票进一步提升 CoT 的可靠性。</p>
+    </div>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

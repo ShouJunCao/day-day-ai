@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.7 API重试、限流与错误处理最佳实践 - 大模型应用开发学习大纲</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.8; color: #333; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px 50px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 32px; color: #2c3e50; border-bottom: 3px solid #e74c3c; padding-bottom: 15px; margin-bottom: 30px; }
+        h2 { font-size: 24px; color: #34495e; margin-top: 40px; margin-bottom: 20px; padding-left: 15px; border-left: 4px solid #e74c3c; }
+        h3 { font-size: 18px; color: #555; margin-top: 25px; margin-bottom: 15px; }
+        p { margin-bottom: 15px; text-align: justify; }
+        .summary-box { background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 30px 0; }
+        .key-point { background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0; }
+        .warning { background: #fff3e0; padding: 15px; border-left: 4px solid #ff9800; margin: 20px 0; }
+        .danger { background: #ffebee; padding: 15px; border-left: 4px solid #e74c3c; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
+        th { background: #e74c3c; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        
+        .kw { color: #c678dd; }
+        .str { color: #98c379; }
+        .cmt { color: #5c6370; font-style: italic; }
+        .dec { color: #e5c07b; }
+        .cls { color: #61afef; }
+        .num { color: #d19a66; }
+        .op { color: #56b6c2; }
+        .self { color: #e06c75; }
+        .fn { color: #61afef; }
+        pre { background: #282c34; color: #abb2bf; padding: 20px; border-radius: 6px; overflow-x: auto; margin: 20px 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+        code { font-family: 'Consolas', 'Monaco', 'Courier New', monospace; background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 14px; color: #e74c3c; }
+        pre code { background: transparent; color: inherit; padding: 0; }
+        .file-tree { background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: 'Consolas', monospace; margin: 20px 0; }
+        .file-tree div { margin: 5px 0; }
+        .highlight { background: #fffacd; padding: 2px 5px; }
+        .diagram { text-align: center; margin: 30px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>2.7 API重试、限流与错误处理最佳实践</h1>
+        
+        <div class="summary-box">
+            <h3>📋 本节导读</h3>
+            <p>在生产环境中，API调用不可避免地会遇到各种错误：网络超时、服务不可用、请求限流等。如何优雅地处理这些错误，保证系统的稳定性和可靠性，是每个开发者必须掌握的技能。本节将系统介绍重试策略、限流器、熔断器等核心模式，并提供完整的生产级实现。</p>
+        </div>
+
+        <h2>一、为什么需要错误处理？</h2>
+        
+        <h3>1.1 常见的API错误类型</h3>
+        <table>
+            <tr>
+                <th>错误类型</th>
+                <th>HTTP状态码</th>
+                <th>原因</th>
+                <th>处理策略</th>
+            </tr>
+            <tr>
+                <td>网络超时</td>
+                <td>408, 504</td>
+                <td>网络连接不稳定、服务器响应慢</td>
+                <td>重试（指数退避）</td>
+            </tr>
+            <tr>
+                <td>服务器错误</td>
+                <td>500, 502, 503</td>
+                <td>服务器内部故障、过载</td>
+                <td>重试 + 熔断</td>
+            </tr>
+            <tr>
+                <td>请求限流</td>
+                <td>429</td>
+                <td>请求频率超过API限制</td>
+                <td>等待 + 限流器</td>
+            </tr>
+            <tr>
+                <td>认证失败</td>
+                <td>401, 403</td>
+                <td>API Key无效、权限不足</td>
+                <td>不重试（更新凭证）</td>
+            </tr>
+            <tr>
+                <td>参数错误</td>
+                <td>400</td>
+                <td>请求参数无效</td>
+                <td>不重试（修正参数）</td>
+            </tr>
+        </table>
+
+        <h3>1.2 错误处理的核心原则</h3>
+        <div class="key-point">
+            <strong>💡 核心原则：</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li><strong>分类处理</strong>：不同类型的错误需要不同的处理策略</li>
+                <li><strong>可重试性</strong>：只对瞬态错误重试，不对永久性错误重试</li>
+                <li><strong>退避策略</strong>：使用指数退避避免过载</li>
+                <li><strong>熔断保护</strong>：防止故障服务拖垮整个系统</li>
+                <li><strong>优雅降级</strong>：提供备选方案，保证核心功能可用</li>
+            </ul>
+        </div>
+
+        <h2>二、重试策略（Retry）</h2>
+
+        <h3>2.1 指数退避重试</h3>
+        <p>指数退避是最常用的重试策略，每次重试的等待时间呈指数增长：</p>
+        <pre><span class="cmt"># 指数退避公式</span>
+delay = base_delay * (backoff_multiplier ^ attempt)
+
+<span class="cmt"># 示例：base_delay=1s, multiplier=2</span>
+<span class="cmt"># 第1次重试：1s</span>
+<span class="cmt"># 第2次重试：2s</span>
+<span class="cmt"># 第3次重试：4s</span>
+<span class="cmt"># 第4次重试：8s</span></pre>
+
+        <h3>2.2 随机抖动（Jitter）</h3>
+        <p>在指数退避的基础上添加随机抖动，避免多个客户端同时重试导致的"惊群效应"：</p>
+        <pre><span class="kw">import</span> random
+
+<span class="kw">def</span> calculate_delay(attempt, base_delay, max_delay, jitter=<span class="kw">True</span>):
+    <span class="str">"""计算重试延迟时间"""</span>
+    delay = base_delay * (<span class="num">2</span> ** attempt)
+    delay = min(delay, max_delay)
+    
+    <span class="kw">if</span> jitter:
+        <span class="cmt"># 添加0.5x ~ 1.5x的随机抖动</span>
+        jitter_factor = random.<span class="fn">uniform</span>(<span class="num">0.5</span>, <span class="num">1.5</span>)
+        delay *= jitter_factor
+    
+    <span class="kw">return</span> delay</pre>
+
+        <div class="warning">
+            <strong>⚠️ 注意：</strong>在高并发场景下，如果所有客户端在同一时刻重试，会导致服务器瞬间过载。随机抖动可以有效分散重试时间。
+        </div>
+
+        <h3>2.3 完整实现</h3>
+        <pre><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> typing <span class="kw">import</span> <span class="cls">Callable</span>, <span class="cls">TypeVar</span>, <span class="cls">Tuple</span>, <span class="cls">Type</span>
+<span class="kw">import</span> asyncio
+<span class="kw">import</span> random
+
+<span class="cls">T</span> = <span class="cls">TypeVar</span>(<span class="str">'T'</span>)
+
+<span class="dec">@dataclass</span>
+<span class="kw">class</span> <span class="cls">RetryPolicy</span>:
+    <span class="str">"""重试策略配置"""</span>
+    max_attempts: <span class="cls">int</span> = <span class="num">3</span>
+    base_delay: <span class="cls">float</span> = <span class="num">1.0</span>
+    max_delay: <span class="cls">float</span> = <span class="num">60.0</span>
+    backoff_multiplier: <span class="cls">float</span> = <span class="num">2.0</span>
+    jitter: <span class="cls">bool</span> = <span class="kw">True</span>
+    retryable_exceptions: <span class="cls">Tuple</span>[<span class="cls">Type</span>[<span class="cls">Exception</span>], ...] = (
+        <span class="cls">ConnectionError</span>,
+        <span class="cls">TimeoutError</span>,
+    )
+    
+    <span class="kw">def</span> calculate_delay(<span class="self">self</span>, attempt: <span class="cls">int</span>) -> <span class="cls">float</span>:
+        <span class="str">"""计算第attempt次重试的延迟时间"""</span>
+        delay = <span class="self">self</span>.<span class="fn">base_delay</span> * (<span class="self">self</span>.<span class="fn">backoff_multiplier</span> ** attempt)
+        delay = min(delay, <span class="self">self</span>.<span class="fn">max_delay</span>)
+        
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">jitter</span>:
+            jitter_factor = random.<span class="fn">uniform</span>(<span class="num">0.5</span>, <span class="num">1.5</span>)
+            delay *= jitter_factor
+        
+        <span class="kw">return</span> delay
+    
+    <span class="kw">def</span> should_retry(<span class="self">self</span>, error: <span class="cls">Exception</span>, attempt: <span class="cls">int</span>) -> <span class="cls">bool</span>:
+        <span class="str">"""判断是否应该重试"""</span>
+        <span class="kw">if</span> attempt >= <span class="self">self</span>.<span class="fn">max_attempts</span>:
+            <span class="kw">return</span> <span class="kw">False</span>
+        
+        <span class="kw">return</span> isinstance(error, <span class="self">self</span>.<span class="fn">retryable_exceptions</span>)
+
+
+<span class="kw">def</span> retry_with_policy(policy: <span class="cls">RetryPolicy</span>):
+    <span class="str">"""重试装饰器"""</span>
+    <span class="kw">def</span> decorator(func: <span class="cls">Callable</span>[..., <span class="cls">T</span>]) -> <span class="cls">Callable</span>[..., <span class="cls">T</span>]:
+        <span class="kw">async</span> <span class="kw">def</span> wrapper(*args, **kwargs) -> <span class="cls">T</span>:
+            last_error = <span class="kw">None</span>
+            
+            <span class="kw">for</span> attempt <span class="kw">in</span> range(policy.<span class="fn">max_attempts</span>):
+                <span class="kw">try</span>:
+                    <span class="kw">return</span> <span class="kw">await</span> func(*args, **kwargs)
+                <span class="kw">except</span> <span class="cls">Exception</span> <span class="kw">as</span> e:
+                    last_error = e
+                    
+                    <span class="kw">if</span> <span class="kw">not</span> policy.<span class="fn">should_retry</span>(e, attempt):
+                        <span class="kw">raise</span>
+                    
+                    delay = policy.<span class="fn">calculate_delay</span>(attempt)
+                    print(<span class="str">f"尝试 {attempt + 1} 失败: {e}，{delay:.2f}s后重试"</span>)
+                    <span class="kw">await</span> asyncio.<span class="fn">sleep</span>(delay)
+            
+            <span class="kw">raise</span> <span class="cls">RetryableError</span>(last_error, policy.<span class="fn">max_attempts</span>)
+        
+        <span class="kw">return</span> wrapper
+    <span class="kw">return</span> decorator</pre>
+
+        <h2>三、限流器（Rate Limiter）</h2>
+
+        <h3>3.1 令牌桶算法</h3>
+        <p>令牌桶是最常用的限流算法，工作原理：</p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+            <li>桶中有固定数量的令牌</li>
+            <li>每个请求消耗一个令牌</li>
+            <li>令牌以固定速率补充</li>
+            <li>桶满时不再补充</li>
+        </ul>
+
+        <pre><span class="kw">import</span> time
+<span class="kw">import</span> asyncio
+
+<span class="kw">class</span> <span class="cls">TokenBucket</span>:
+    <span class="str">"""令牌桶限流器"""</span>
+    
+    <span class="kw">def</span> __init__(<span class="self">self</span>, capacity: <span class="cls">int</span>, refill_rate: <span class="cls">float</span>):
+        <span class="str">"""</span>
+        <span class="cls">Args</span>:
+            capacity: 桶容量（最大令牌数）
+            refill_rate: 补充速率（令牌/秒）
+        <span class="str">"""</span>
+        <span class="self">self</span>.<span class="fn">capacity</span> = capacity
+        <span class="self">self</span>.<span class="fn">refill_rate</span> = refill_rate
+        <span class="self">self</span>.<span class="fn">tokens</span> = capacity
+        <span class="self">self</span>.<span class="fn">last_refill</span> = time.<span class="fn">time</span>()
+    
+    <span class="kw">def</span> acquire(<span class="self">self</span>, tokens: <span class="cls">int</span> = <span class="num">1</span>) -> <span class="cls">bool</span>:
+        <span class="str">"""尝试获取令牌"""</span>
+        <span class="cmt"># 补充令牌</span>
+        now = time.<span class="fn">time</span>()
+        elapsed = now - <span class="self">self</span>.<span class="fn">last_refill</span>
+        new_tokens = elapsed * <span class="self">self</span>.<span class="fn">refill_rate</span>
+        <span class="self">self</span>.<span class="fn">tokens</span> = min(<span class="self">self</span>.<span class="fn">capacity</span>, <span class="self">self</span>.<span class="fn">tokens</span> + new_tokens)
+        <span class="self">self</span>.<span class="fn">last_refill</span> = now
+        
+        <span class="cmt"># 检查是否有足够令牌</span>
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">tokens</span> >= tokens:
+            <span class="self">self</span>.<span class="fn">tokens</span> -= tokens
+            <span class="kw">return</span> <span class="kw">True</span>
+        
+        <span class="kw">return</span> <span class="kw">False</span>
+    
+    <span class="kw">async</span> <span class="kw">def</span> acquire_or_wait(<span class="self">self</span>, tokens: <span class="cls">int</span> = <span class="num">1</span>, timeout: <span class="cls">float</span> = <span class="kw">None</span>):
+        <span class="str">"""等待直到获取令牌或超时"""</span>
+        start_time = time.<span class="fn">time</span>()
+        
+        <span class="kw">while</span> <span class="kw">True</span>:
+            <span class="kw">if</span> <span class="self">self</span>.<span class="fn">acquire</span>(tokens):
+                <span class="kw">return</span> <span class="kw">True</span>
+            
+            <span class="kw">if</span> timeout <span class="kw">and</span> (time.<span class="fn">time</span>() - start_time) >= timeout:
+                <span class="kw">raise</span> <span class="cls">RateLimitExceeded</span>(<span class="str">"获取令牌超时"</span>)
+            
+            <span class="kw">await</span> asyncio.<span class="fn">sleep</span>(<span class="num">0.1</span>)</pre>
+
+        <h3>3.2 滑动窗口算法</h3>
+        <p>滑动窗口算法精确控制时间窗口内的请求数：</p>
+        <pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">class</span> <span class="cls">SlidingWindow</span>:
+    <span class="str">"""滑动窗口限流器"""</span>
+    
+    <span class="kw">def</span> __init__(<span class="self">self</span>, max_requests: <span class="cls">int</span>, window_size: <span class="cls">float</span>):
+        <span class="self">self</span>.<span class="fn">max_requests</span> = max_requests
+        <span class="self">self</span>.<span class="fn">window_size</span> = window_size
+        <span class="self">self</span>.<span class="fn">requests</span> = deque()
+    
+    <span class="kw">def</span> acquire(<span class="self">self</span>) -> <span class="cls">bool</span>:
+        <span class="str">"""尝试记录请求"""</span>
+        now = time.<span class="fn">time</span>()
+        window_start = now - <span class="self">self</span>.<span class="fn">window_size</span>
+        
+        <span class="cmt"># 移除过期记录</span>
+        <span class="kw">while</span> <span class="self">self</span>.<span class="fn">requests</span> <span class="kw">and</span> <span class="self">self</span>.<span class="fn">requests</span>[<span class="num">0</span>] < window_start:
+            <span class="self">self</span>.<span class="fn">requests</span>.<span class="fn">popleft</span>()
+        
+        <span class="cmt"># 检查是否超限</span>
+        <span class="kw">if</span> len(<span class="self">self</span>.<span class="fn">requests</span>) < <span class="self">self</span>.<span class="fn">max_requests</span>:
+            <span class="self">self</span>.<span class="fn">requests</span>.<span class="fn">append</span>(now)
+            <span class="kw">return</span> <span class="kw">True</span>
+        
+        <span class="kw">return</span> <span class="kw">False</span></pre>
+
+        <div class="key-point">
+            <strong>💡 选择建议：</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li><strong>令牌桶</strong>：适合控制突发流量，允许一定程度的流量突发</li>
+                <li><strong>滑动窗口</strong>：适合精确控制持续流量，严格按照时间窗口限制</li>
+                <li><strong>组合使用</strong>：生产环境通常组合使用，令牌桶控制突发，滑动窗口控制持续</li>
+            </ul>
+        </div>
+
+        <h2>四、熔断器（Circuit Breaker）</h2>
+
+        <h3>4.1 三种状态</h3>
+        <table>
+            <tr>
+                <th>状态</th>
+                <th>行为</th>
+                <th>转换条件</th>
+            </tr>
+            <tr>
+                <td><strong>关闭（CLOSED）</strong></td>
+                <td>正常处理请求，记录失败次数</td>
+                <td>失败次数达到阈值 → 打开</td>
+            </tr>
+            <tr>
+                <td><strong>打开（OPEN）</strong></td>
+                <td>快速失败，拒绝所有请求</td>
+                <td>经过恢复时间 → 半开</td>
+            </tr>
+            <tr>
+                <td><strong>半开（HALF_OPEN）</strong></td>
+                <td>允许少量请求测试服务</td>
+                <td>成功 → 关闭；失败 → 打开</td>
+            </tr>
+        </table>
+
+        <h3>4.2 熔断器核心实现</h3>
+        <pre><span class="kw">from</span> enum <span class="kw">import</span> <span class="cls">Enum</span>
+<span class="kw">import</span> time
+
+<span class="kw">class</span> <span class="cls">CircuitState</span>(<span class="cls">Enum</span>):
+    <span class="cls">CLOSED</span> = <span class="str">"closed"</span>
+    <span class="cls">OPEN</span> = <span class="str">"open"</span>
+    <span class="cls">HALF_OPEN</span> = <span class="str">"half_open"</span>
+
+<span class="kw">class</span> <span class="cls">CircuitBreaker</span>:
+    <span class="str">"""熔断器"""</span>
+    
+    <span class="kw">def</span> __init__(
+        <span class="self">self</span>,
+        failure_threshold: <span class="cls">int</span> = <span class="num">5</span>,
+        recovery_timeout: <span class="cls">float</span> = <span class="num">30.0</span>,
+        success_threshold: <span class="cls">int</span> = <span class="num">2</span>,
+    ):
+        <span class="self">self</span>.<span class="fn">failure_threshold</span> = failure_threshold
+        <span class="self">self</span>.<span class="fn">recovery_timeout</span> = recovery_timeout
+        <span class="self">self</span>.<span class="fn">success_threshold</span> = success_threshold
+        
+        <span class="self">self</span>.<span class="fn">state</span> = <span class="cls">CircuitState</span>.<span class="cls">CLOSED</span>
+        <span class="self">self</span>.<span class="fn">failure_count</span> = <span class="num">0</span>
+        <span class="self">self</span>.<span class="fn">success_count</span> = <span class="num">0</span>
+        <span class="self">self</span>.<span class="fn">open_time</span> = <span class="kw">None</span>
+    
+    <span class="kw">async</span> <span class="kw">def</span> call(<span class="self">self</span>, func, *args, **kwargs):
+        <span class="str">"""通过熔断器调用函数"""</span>
+        <span class="cmt"># 检查状态</span>
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">state</span> == <span class="cls">CircuitState</span>.<span class="cls">OPEN</span>:
+            <span class="kw">if</span> <span class="self">self</span>.<span class="fn">_should_attempt_reset</span>():
+                <span class="self">self</span>.<span class="fn">_transition_to_half_open</span>()
+            <span class="kw">else</span>:
+                <span class="kw">raise</span> <span class="cls">CircuitBreakerOpenError</span>(<span class="str">"熔断器已打开"</span>)
+        
+        <span class="cmt"># 执行函数</span>
+        <span class="kw">try</span>:
+            result = <span class="kw">await</span> func(*args, **kwargs)
+            <span class="kw">await</span> <span class="self">self</span>.<span class="fn">_on_success</span>()
+            <span class="kw">return</span> result
+        <span class="kw">except</span> <span class="cls">Exception</span> <span class="kw">as</span> e:
+            <span class="kw">await</span> <span class="self">self</span>.<span class="fn">_on_failure</span>()
+            <span class="kw">raise</span>
+    
+    <span class="kw">def</span> _should_attempt_reset(<span class="self">self</span>) -> <span class="cls">bool</span>:
+        <span class="str">"""判断是否应该尝试重置"""</span>
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">open_time</span> <span class="kw">is</span> <span class="kw">None</span>:
+            <span class="kw">return</span> <span class="kw">False</span>
+        elapsed = time.<span class="fn">time</span>() - <span class="self">self</span>.<span class="fn">open_time</span>
+        <span class="kw">return</span> elapsed >= <span class="self">self</span>.<span class="fn">recovery_timeout</span>
+    
+    <span class="kw">def</span> _transition_to_half_open(<span class="self">self</span>):
+        <span class="self">self</span>.<span class="fn">state</span> = <span class="cls">CircuitState</span>.<span class="cls">HALF_OPEN</span>
+        <span class="self">self</span>.<span class="fn">success_count</span> = <span class="num">0</span>
+    
+    <span class="kw">def</span> _transition_to_open(<span class="self">self</span>):
+        <span class="self">self</span>.<span class="fn">state</span> = <span class="cls">CircuitState</span>.<span class="cls">OPEN</span>
+        <span class="self">self</span>.<span class="fn">open_time</span> = time.<span class="fn">time</span>()
+    
+    <span class="kw">def</span> _transition_to_closed(<span class="self">self</span>):
+        <span class="self">self</span>.<span class="fn">state</span> = <span class="cls">CircuitState</span>.<span class="cls">CLOSED</span>
+        <span class="self">self</span>.<span class="fn">failure_count</span> = <span class="num">0</span>
+        <span class="self">self</span>.<span class="fn">open_time</span> = <span class="kw">None</span>
+    
+    <span class="kw">async</span> <span class="kw">def</span> _on_success(<span class="self">self</span>):
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">state</span> == <span class="cls">CircuitState</span>.<span class="cls">HALF_OPEN</span>:
+            <span class="self">self</span>.<span class="fn">success_count</span> += <span class="num">1</span>
+            <span class="kw">if</span> <span class="self">self</span>.<span class="fn">success_count</span> >= <span class="self">self</span>.<span class="fn">success_threshold</span>:
+                <span class="self">self</span>.<span class="fn">_transition_to_closed</span>()
+        <span class="kw">elif</span> <span class="self">self</span>.<span class="fn">state</span> == <span class="cls">CircuitState</span>.<span class="cls">CLOSED</span>:
+            <span class="self">self</span>.<span class="fn">failure_count</span> = <span class="num">0</span>
+    
+    <span class="kw">async</span> <span class="kw">def</span> _on_failure(<span class="self">self</span>):
+        <span class="self">self</span>.<span class="fn">failure_count</span> += <span class="num">1</span>
+        
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">state</span> == <span class="cls">CircuitState</span>.<span class="cls">HALF_OPEN</span>:
+            <span class="self">self</span>.<span class="fn">_transition_to_open</span>()
+        <span class="kw">elif</span> <span class="self">self</span>.<span class="fn">state</span> == <span class="cls">CircuitState</span>.<span class="cls">CLOSED</span>:
+            <span class="kw">if</span> <span class="self">self</span>.<span class="fn">failure_count</span> >= <span class="self">self</span>.<span class="fn">failure_threshold</span>:
+                <span class="self">self</span>.<span class="fn">_transition_to_open</span>()</pre>
+
+        <h2>五、最佳实践</h2>
+
+        <h3>5.1 组合使用三种模式</h3>
+        <p>生产环境中，通常组合使用重试、限流和熔断器：</p>
+        <pre><span class="kw">class</span> <span class="cls">ResilientAPIClient</span>:
+    <span class="str">"""韧性API客户端"""</span>
+    
+    <span class="kw">def</span> __init__(<span class="self">self</span>):
+        <span class="cmt"># 重试策略：最多3次，指数退避</span>
+        <span class="self">self</span>.<span class="fn">retry_policy</span> = <span class="cls">RetryPolicy</span>(
+            max_attempts=<span class="num">3</span>,
+            base_delay=<span class="num">1.0</span>,
+            backoff_multiplier=<span class="num">2.0</span>,
+        )
+        
+        <span class="cmt"># 令牌桶限流：容量10，每秒补充5个</span>
+        <span class="self">self</span>.<span class="fn">rate_limiter</span> = <span class="cls">TokenBucket</span>(capacity=<span class="num">10</span>, refill_rate=<span class="num">5.0</span>)
+        
+        <span class="cmt"># 熔断器：5次失败后打开，30秒后半开</span>
+        <span class="self">self</span>.<span class="fn">circuit_breaker</span> = <span class="cls">CircuitBreaker</span>(
+            failure_threshold=<span class="num">5</span>,
+            recovery_timeout=<span class="num">30.0</span>,
+            success_threshold=<span class="num">2</span>,
+        )
+    
+    <span class="kw">async</span> <span class="kw">def</span> call_api(<span class="self">self</span>, func, *args, **kwargs):
+        <span class="str">"""带完整保护的API调用"""</span>
+        <span class="cmt"># 1. 检查熔断器</span>
+        <span class="kw">if</span> <span class="self">self</span>.<span class="fn">circuit_breaker</span>.<span class="fn">state</span> == <span class="cls">CircuitState</span>.<span class="cls">OPEN</span>:
+            <span class="kw">raise</span> <span class="cls">CircuitBreakerOpenError</span>(<span class="str">"服务暂时不可用"</span>)
+        
+        <span class="cmt"># 2. 检查限流</span>
+        <span class="kw">if</span> <span class="kw">not</span> <span class="self">self</span>.<span class="fn">rate_limiter</span>.<span class="fn">acquire</span>():
+            <span class="kw">raise</span> <span class="cls">RateLimitExceeded</span>(<span class="str">"请求过于频繁"</span>)
+        
+        <span class="cmt"># 3. 通过熔断器执行（带重试）</span>
+        <span class="dec">@retry_with_policy</span>(<span class="self">self</span>.<span class="fn">retry_policy</span>)
+        <span class="kw">async</span> <span class="kw">def</span> execute():
+            <span class="kw">return</span> <span class="kw">await</span> func(*args, **kwargs)
+        
+        <span class="kw">return</span> <span class="kw">await</span> <span class="self">self</span>.<span class="fn">circuit_breaker</span>.<span class="fn">call</span>(execute)</pre>
+
+        <h3>5.2 错误分类与处理策略</h3>
+        <table>
+            <tr>
+                <th>错误类型</th>
+                <th>可重试</th>
+                <th>处理策略</th>
+                <th>示例</th>
+            </tr>
+            <tr>
+                <td>网络超时</td>
+                <td>✅ 是</td>
+                <td>指数退避重试</td>
+                <td>ConnectionError, TimeoutError</td>
+            </tr>
+            <tr>
+                <td>服务器错误</td>
+                <td>✅ 是</td>
+                <td>重试 + 熔断器</td>
+                <td>HTTP 500, 502, 503</td>
+            </tr>
+            <tr>
+                <td>请求限流</td>
+                <td>✅ 是</td>
+                <td>等待 + 限流器</td>
+                <td>HTTP 429</td>
+            </tr>
+            <tr>
+                <td>认证失败</td>
+                <td>❌ 否</td>
+                <td>更新凭证后重试</td>
+                <td>HTTP 401, 403</td>
+            </tr>
+            <tr>
+                <td>参数错误</td>
+                <td>❌ 否</td>
+                <td>修正参数后重试</td>
+                <td>HTTP 400, ValueError</td>
+            </tr>
+            <tr>
+                <td>资源不存在</td>
+                <td>❌ 否</td>
+                <td>不重试，返回错误</td>
+                <td>HTTP 404</td>
+            </tr>
+        </table>
+
+        <h3>5.3 配置建议</h3>
+        <div class="warning">
+            <strong>⚠️ 生产环境配置建议：</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li><strong>重试次数</strong>：3-5次，过多会浪费资源</li>
+                <li><strong>基础延迟</strong>：1-2秒，根据API响应时间调整</li>
+                <li><strong>最大延迟</strong>：30-60秒，避免等待过长</li>
+                <li><strong>退避倍数</strong>：2.0，平衡重试频率和资源消耗</li>
+                <li><strong>熔断阈值</strong>：5-10次失败，根据服务稳定性调整</li>
+                <li><strong>恢复时间</strong>：30-60秒，根据服务恢复能力调整</li>
+                <li><strong>限流参数</strong>：根据API配额设置，预留20%缓冲</li>
+            </ul>
+        </div>
+
+        <h3>5.4 监控与告警</h3>
+        <p>生产环境必须监控以下指标：</p>
+        <pre><code class="language-python">class ResilienceMetrics:
+    """韧性指标监控"""
+    

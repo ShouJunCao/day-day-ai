@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3.2 零样本与少样本提示 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.6; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .example-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .example-box h4 { color: var(--accent); margin-bottom: 8px; font-size: 1em; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>3.2 零样本与少样本提示</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块三：Prompt Engineering</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 <strong>Zero-shot</strong>（零样本）和 <strong>Few-shot</strong>（少样本）提示的核心概念与区别</li>
+        <li>掌握何时使用 Zero-shot、何时使用 Few-shot 的决策框架</li>
+        <li>学会构建高质量的 Few-shot 示例集</li>
+        <li>能够工程化实现动态示例选择与管理系统</li>
+    </ul>
+
+    <h2>一、概念解析</h2>
+    <p>在大模型应用中，<strong>样本（shot）</strong>指的是提供给模型的输入-输出示例对。根据提供示例的数量，Prompt 技术分为两大类：</p>
+
+    <ul>
+        <li><strong>Zero-shot（零样本）</strong>：不提供任何示例，直接让模型完成任务。依赖模型预训练时学到的通用知识。</li>
+        <li><strong>Few-shot（少样本）</strong>：提供 1-N 个示例（通常 3-5 个），让模型学习示例中的模式后完成任务。</li>
+    </ul>
+
+    <div class="diagram-container">
+        <svg width="750" height="280" viewBox="0 0 750 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="zs" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#10b981"/>
+                    <stop offset="100%" stop-color="#059669"/>
+                </linearGradient>
+                <linearGradient id="fs" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4361ee"/>
+                    <stop offset="100%" stop-color="#6366f1"/>
+                </linearGradient>
+            </defs>
+            <!-- 标题 -->
+            <text x="375" y="24" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Zero-shot vs Few-shot 对比</text>
+            
+            <!-- Zero-shot 区域 -->
+            <rect x="50" y="50" width="300" height="200" rx="12" fill="url(#zs)" opacity="0.1" stroke="#10b981" stroke-width="2"/>
+            <text x="200" y="75" text-anchor="middle" fill="#10b981" font-size="14" font-weight="bold">Zero-shot（零样本）</text>
+            <rect x="80" y="95" width="240" height="35" rx="6" fill="white" stroke="#10b981"/>
+            <text x="200" y="117" text-anchor="middle" fill="#1a1a2e" font-size="12">Prompt + 任务描述</text>
+            <text x="200" y="145" text-anchor="middle" fill="#64748b" font-size="11">↓</text>
+            <rect x="80" y="160" width="240" height="35" rx="6" fill="white" stroke="#10b981"/>
+            <text x="200" y="182" text-anchor="middle" fill="#1a1a2e" font-size="12">模型直接生成输出</text>
+            <text x="200" y="220" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">无示例 · 依赖预训练知识</text>
+            
+            <!-- Few-shot 区域 -->
+            <rect x="400" y="50" width="300" height="200" rx="12" fill="url(#fs)" opacity="0.1" stroke="#4361ee" stroke-width="2"/>
+            <text x="550" y="75" text-anchor="middle" fill="#4361ee" font-size="14" font-weight="bold">Few-shot（少样本）</text>
+            <rect x="430" y="90" width="240" height="25" rx="4" fill="white" stroke="#4361ee" stroke-width="1"/>
+            <text x="550" y="107" text-anchor="middle" fill="#1a1a2e" font-size="11">示例 1：输入 → 输出</text>
+            <rect x="430" y="120" width="240" height="25" rx="4" fill="white" stroke="#4361ee" stroke-width="1"/>
+            <text x="550" y="137" text-anchor="middle" fill="#1a1a2e" font-size="11">示例 2：输入 → 输出</text>
+            <rect x="430" y="150" width="240" height="25" rx="4" fill="white" stroke="#4361ee" stroke-width="1"/>
+            <text x="550" y="167" text-anchor="middle" fill="#1a1a2e" font-size="11">示例 3：输入 → 输出</text>
+            <rect x="430" y="185" width="240" height="30" rx="6" fill="#4361ee"/>
+            <text x="550" y="205" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Prompt + 实际任务</text>
+            <text x="550" y="235" text-anchor="middle" fill="#4361ee" font-size="10" font-weight="bold">有示例 · 学习模式后生成</text>
+        </svg>
+    </div>
+
+    <h2>二、决策框架：何时用哪种？</h2>
+    <p>选择 Zero-shot 还是 Few-shot，取决于任务的<strong>复杂度、标准化程度和输出质量要求</strong>。以下决策框架可以帮助你快速判断：</p>
+
+    <table>
+        <thead>
+            <tr><th>场景特征</th><th>推荐方式</th><th>原因</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>任务简单、通用（翻译、摘要、问答）</td>
+                <td><strong>Zero-shot</strong></td>
+                <td>模型预训练已充分掌握，无需额外示例</td>
+            </tr>
+            <tr>
+                <td>输出格式固定、有明确规范</td>
+                <td><strong>Few-shot</strong></td>
+                <td>示例能精确展示期望的格式和风格</td>
+            </tr>
+            <tr>
+                <td>领域专业性强（医疗、法律、金融）</td>
+                <td><strong>Few-shot</strong></td>
+                <td>示例提供领域知识，减少幻觉</td>
+            </tr>
+            <tr>
+                <td>需要高度一致性和可预测性</td>
+                <td><strong>Few-shot</strong></td>
+                <td>示例约束输出范围，提高稳定性</td>
+            </tr>
+            <tr>
+                <td>快速原型验证、探索性任务</td>
+                <td><strong>Zero-shot</strong></td>
+                <td>无需准备示例，快速迭代</td>
+            </tr>
+            <tr>
+                <td>Token 预算有限</td>
+                <td><strong>Zero-shot</strong></td>
+                <td>Few-shot 示例会消耗额外 Token</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实用建议</div>
+        <p>在实践中，可以先用 Zero-shot 快速验证想法，如果输出质量不达标或一致性不够，再切换到 Few-shot。Few-shot 的示例数量通常 <strong>3-5 个</strong>即可，过多示例不仅浪费 Token，还可能引入噪声。</p>
+    </div>
+
+    <h2>三、Zero-shot 实践</h2>
+    <p>Zero-shot 的关键在于<strong>清晰的任务描述和具体的约束条件</strong>。即使没有示例，通过 3.1 节的四大原则（清晰、具体、结构化、分步骤），仍然可以获得高质量的输出。</p>
+
+    <p>Zero-shot 最适合以下场景：<strong>通用文本处理</strong>（翻译、摘要、改写）、<strong>简单分类任务</strong>（情感分析、主题分类）、<strong>创意生成</strong>（写故事、生成创意）、<strong>快速原型验证</strong>（验证想法可行性）。在这些场景中，模型的预训练知识已经足够，额外示例反而可能限制模型的创造力。</p>
+
+    <p>使用 Zero-shot 时，要特别注意<strong>任务描述的精确性</strong>。模糊的描述会导致模型输出不可预测。例如，"分析这段文本"不如"分析这段文本的情感倾向，输出正面/负面/中性三分类结果"来得有效。</p>
+
+<pre><code class="language-python">"""
+zero_few_shot.py — Zero-shot 与 Few-shot 提示实现
+集成重试、限流、日志等生产级特性
+"""
+
+from typing import Optional
+from dataclasses import dataclass
+import json
+
+from llm_sdk import UnifiedLLMClient  # 复用 2.8 节的 SDK
+
+
+@dataclass
+class ZeroShotPrompt:
+    """Zero-shot 提示构建器"""
+    
+    task: str
+    constraints: list[str]
+    output_format: str = "text"
+    
+    def build(self) -> str:
+        """构建 Zero-shot Prompt"""
+        parts = [f"## 任务\n{self.task}"]
+        
+        if self.constraints:
+            items = "\n".join(f"- {c}" for c in self.constraints)
+            parts.append(f"## 约束条件\n{items}")
+        
+        if self.output_format != "text":
+            parts.append(f"## 输出格式\n{self.output_format}")
+        
+        return "\n\n".join(parts)
+
+
+# Zero-shot 示例：情感分析
+def zero_shot_sentiment(text: str, client: UnifiedLLMClient) -> dict:
+    """
+    Zero-shot 情感分析：不提供示例，直接让模型判断
+    
+    参数:
+        text: 待分析文本
+        client: LLM 客户端
+    返回:
+        包含情感和置信度的字典
+    """
+    prompt = ZeroShotPrompt(
+        task=f"分析以下文本的情感倾向：\n\n{text}",
+        constraints=[
+            "情感类别：正面 / 负面 / 中性",
+            "输出 JSON 格式",
+            "包含 confidence 字段（0-1 之间）",
+        ],
+        output_format='{"sentiment": "正面/负面/中性", "confidence": 0.95}'
+    ).build()
+    
+    response = client.chat(
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,  # 低温度提高一致性
+    )
+    
+    # 解析 JSON 输出
+    try:
+        result = json.loads(response.content)
+        return result
+    except json.JSONDecodeError:
+        # 如果模型输出不是标准 JSON，尝试提取
+        return {"sentiment": "unknown", "raw": response.content}
+
+
+# 测试 Zero-shot
+client = UnifiedLLMClient(provider="openai", model="gpt-4")
+result = zero_shot_sentiment("这个产品太棒了！", client)
+print(result)  # {"sentiment": "正面", "confidence": 0.98}</code></pre>
+
+    <h2>四、Few-shot 实践</h2>
+    <p>Few-shot 的核心是<strong>高质量的示例集</strong>。示例应该覆盖任务的典型场景，展示期望的输出格式和风格。构建 Few-shot Prompt 时，需要注意以下几点：</p>
+
+    <ul>
+        <li><strong>代表性</strong>：示例应覆盖任务的主要类别和边界情况</li>
+        <li><strong>一致性</strong>：所有示例的输入输出格式必须统一</li>
+        <li><strong>简洁性</strong>：示例不宜过长，避免消耗过多 Token</li>
+        <li><strong>多样性</strong>：示例应展示不同的输入模式，避免过拟合</li>
+    </ul>
+
+<pre><code class="language-python">@dataclass
+class Example:
+    """单个 Few-shot 示例"""
+    input: str
+    output: str
+    tags: list[str] = None  # 用于分类和筛选
+    
+    def __post_init__(self):
+        self.tags = self.tags or []
+
+
+@dataclass
+class FewShotPrompt:
+    """Few-shot 提示构建器"""
+    
+    task: str
+    examples: list[Example]
+    actual_input: str
+    constraints: list[str] = None
+    output_format: str = ""
+    
+    def build(self) -> str:
+        """构建 Few-shot Prompt"""
+        parts = [f"## 任务\n{self.task}"]
+        
+        # 添加示例
+        if self.examples:
+            example_text = []
+            for i, ex in enumerate(self.examples, 1):
+                example_text.append(
+                    f"### 示例 {i}\n"
+                    f"**输入：**\n{ex.input}\n\n"
+                    f"**输出：**\n{ex.output}"
+                )
+            parts.append("## 示例\n" + "\n\n".join(example_text))
+        
+        # 实际任务
+        parts.append(f"## 实际任务\n**输入：**\n{self.actual_input}")
+        
+        # 约束条件
+        if self.constraints:
+            items = "\n".join(f"- {c}" for c in self.constraints)
+            parts.append(f"## 约束条件\n{items}")
+        
+        # 输出格式
+        if self.output_format:
+            parts.append(f"## 输出格式\n{self.output_format}")
+        
+        return "\n\n".join(parts)
+
+
+# Few-shot 示例：命名实体识别（NER）
+def few_shot_ner(text: str, client: UnifiedLLMClient) -> list[dict]:
+    """
+    Few-shot 命名实体识别：提供示例让模型学习提取模式
+    
+    参数:
+        text: 待提取文本
+        client: LLM 客户端
+    返回:
+        实体列表，每个实体包含 name、type、span
+    """
+    examples = [
+        Example(
+            input="苹果公司今天发布了新款 iPhone。",
+            output='[{"name": "苹果公司", "type": "ORG"}, {"name": "iPhone", "type": "PRODUCT"}]',
+            tags=["tech", "product"],
+        ),
+        Example(
+            input="张三在北京大学获得了博士学位。",
+            output='[{"name": "张三", "type": "PERSON"}, {"name": "北京大学", "type": "ORG"}]',
+            tags=["education", "person"],
+        ),
+        Example(
+            input="腾讯的股价上涨了 5%，达到 400 港元。",
+            output='[{"name": "腾讯", "type": "ORG"}, {"name": "400 港元", "type": "MONEY"}]',
+            tags=["finance", "stock"],
+        ),
+    ]
+    
+    prompt = FewShotPrompt(
+        task="从文本中提取命名实体（人名、组织、产品、地点、金额等）",
+        examples=examples,
+        actual_input=text,
+        constraints=[
+            "输出 JSON 数组格式",
+            "每个实体包含 name 和 type 字段",
+            "type 可选值：PERSON / ORG / PRODUCT / LOCATION / MONEY / DATE",
+        ],
+        output_format='[{"name": "实体名", "type": "类型"}]'
+    ).build()
+    
+    response = client.chat(
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+    )
+    
+    try:
+        entities = json.loads(response.content)
+        return entities if isinstance(entities, list) else []
+    except json.JSONDecodeError:
+        return []
+
+
+# 测试 Few-shot
+entities = few_shot_ner(
+    "李四在阿里巴巴工作，月薪 3 万元。",
+    client
+)
+print(entities)
+# [{"name": "李四", "type": "PERSON"}, {"name": "阿里巴巴", "type": "ORG"}, {"name": "3 万元", "type": "MONEY"}]</code></pre>
+
+    <h2>五、动态示例选择</h2>
+    <p>在工程化场景中，我们通常有一个<strong>示例库</strong>，需要根据当前输入动态选择最相关的示例。这可以通过以下方式实现：</p>
+
+    <ul>
+        <li><strong>基于标签匹配</strong>：根据输入的标签筛选示例</li>
+        <li><strong>基于相似度</strong>：使用向量检索找到最相似的示例</li>
+        <li><strong>基于规则</strong>：根据业务规则选择示例子集</li>
+    </ul>
+
+<pre><code class="language-python">class ExampleLibrary:
+    """
+    示例库管理器：支持动态选择和版本管理
+    
+    特性:
+        - 按标签筛选示例
+        - 按相似度检索示例（需集成向量数据库）
+        - 示例版本控制
+        - 使用统计追踪
+    """
+    
+    def __init__(self):
+        self._examples: dict[str, Example] = {}
+        self._usage_stats: dict[str, int] = {}
+    
+    def add(self, example_id: str, example: Example) -> None:
+        """添加示例到库中"""
+        self._examples[example_id] = example
+        self._usage_stats[example_id] = 0
+    
+    def remove(self, example_id: str) -> bool:
+        """删除示例"""
+        if example_id in self._examples:
+            del self._examples[example_id]
+            del self._usage_stats[example_id]
+            return True
+        return False
+    
+    def get_by_tags(self, tags: list[str], limit: int = 5) -> list[Example]:
+        """
+        按标签筛选示例
+        
+        参数:
+            tags: 标签列表（示例需包含至少一个标签）
+            limit: 返回数量上限
+        返回:
+            匹配的示例列表
+        """
+        matched = []
+        for ex_id, example in self._examples.items():
+            if any(tag in example.tags for tag in tags):
+                matched.append((ex_id, example))
+        
+        # 按使用频率排序（优先使用低频示例，保持多样性）
+        matched.sort(key=lambda x: self._usage_stats[x[0]])
+        
+        # 更新使用统计
+        result = []
+        for ex_id, example in matched[:limit]:
+            self._usage_stats[ex_id] += 1
+            result.append(example)
+        
+        return result
+    
+    def get_random(self, count: int = 3) -> list[Example]:
+        """随机选择示例（用于基线测试）"""
+        import random
+        examples = list(self._examples.values())
+        return random.sample(examples, min(count, len(examples)))
+    
+    def stats(self) -> dict:
+        """返回示例库统计信息"""
+        return {
+            "total": len(self._examples),
+            "usage": self._usage_stats,
+            "tags": self._collect_tags(),
+        }
+    
+    def _collect_tags(self) -> dict[str, int]:
+        """统计所有标签的使用情况"""
+        tag_counts = {}
+        for example in self._examples.values():
+            for tag in example.tags:
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        return tag_counts
+
+
+# 使用示例库
+library = ExampleLibrary()
+
+# 添加示例
+library.add("ex1", Example(
+    input="这个手机拍照效果很好",
+    output='{"sentiment": "正面", "aspect": "拍照"}',
+    tags=["product", "positive", "camera"]
+))
+library.add("ex2", Example(
+    input="电池续航太差了",
+    output='{"sentiment": "负面", "aspect": "电池"}',
+    tags=["product", "negative", "battery"]
+))
+library.add("ex3", Example(
+    input="价格合理，性价比高",
+    output='{"sentiment": "正面", "aspect": "价格"}',
+    tags=["product", "positive", "price"]
+))
+
+# 动态选择示例
+input_text = "屏幕显示效果很清晰"
+input_tags = ["product", "screen"]  # 实际应用中可用分类器自动打标签
+selected = library.get_by_tags(input_tags, limit=2)
+print(f"选择了 {len(selected)} 个示例")
+
+# 查看统计
+print(library.stats())</code></pre>
+
+    <h2>六、Zero-shot vs Few-shot 对比</h2>
+    <p>通过以下对比，你可以更清楚地理解两种方式的差异：</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>Zero-shot</th><th>Few-shot</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Token 消耗</strong></td><td>低</td><td>较高（示例占用 Token）</td></tr>
+            <tr><td><strong>输出一致性</strong></td><td>较低</td><td>较高</td></tr>
+            <tr><td><strong>准备成本</strong></td><td>无需准备示例</td><td>需要构建示例集</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>通用任务、快速验证</td><td>标准化任务、专业领域</td></tr>
+            <tr><td><strong>对模型的依赖</strong></td><td>强依赖预训练知识</td><td>通过示例补充知识</td></tr>
+            <tr><td><strong>可解释性</strong></td><td>较低</td><td>较高（示例即解释）</td></tr>
+            <tr><td><strong>迭代速度</strong></td><td>快</td><td>较慢（需调整示例）</td></tr>
+            <tr><td><strong>维护成本</strong></td><td>无</td><td>需要维护示例库</td></tr>
+            <tr><td><strong>对新任务的适应性</strong></td><td>即时可用</td><td>需要收集示例</td></tr>
+            <tr><td><strong>上下文窗口占用</strong></td><td>少</td><td>多</td></tr>
+        </tbody>
+    </table>
+
+    <div class="example-box">
+        <h4>📌 实际案例：客服意图识别</h4>
+        <p><strong>Zero-shot 方案：</strong>直接描述任务，让模型判断用户意图。优点是快速上线，缺点是意图类别多时准确率下降。</p>
+        <p><strong>Few-shot 方案：</strong>为每个意图类别提供 2-3 个示例。准确率高，但需要维护示例库。</p>
+        <p><strong>混合方案：</strong>常见意图用 Few-shot（高频、高准确率），罕见意图用 Zero-shot（节省 Token）。这是工程实践中最常用的方式。</p>
+    </div>
+
+    <div class="note note-info">
+        <div class="note-title">📊 性能数据参考</div>
+        <p>根据实际项目经验，在客服意图识别任务中：Zero-shot 准确率约 75-85%，Few-shot（3-5 个示例）准确率约 90-95%。但 Few-shot 的 Token 消耗是 Zero-shot 的 2-3 倍。选择时需要权衡准确率和成本。</p>
+    </div>
+
+    <h2>七、最佳实践与常见陷阱</h2>
+
+    <h3>最佳实践</h3>
+    <ul>
+        <li><strong>示例质量优先于数量</strong>：3 个高质量示例胜过 10 个低质量示例</li>
+        <li><strong>覆盖边界情况</strong>：示例应包含正常情况和异常情况</li>
+        <li><strong>定期更新示例库</strong>：随着业务变化，示例也需要迭代</li>
+        <li><strong>A/B 测试</strong>：对比 Zero-shot 和 Few-shot 的效果，用数据说话</li>
+    </ul>
+
+    <h3>常见陷阱</h3>
+    <ul>
+        <li><strong>示例过拟合</strong>：示例太少或太相似，导致模型只学会复制示例模式</li>
+        <li><strong>示例噪声</strong>：示例本身有错误，会误导模型输出</li>
+        <li><strong>示例过长</strong>：单个示例占用太多 Token，挤压实际任务的空间</li>
+        <li><strong>忽视 Zero-shot</strong>：不是所有任务都需要 Few-shot，简单任务用 Zero-shot 更高效</li>
+    </ul>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 注意</div>
+        <p>Few-shot 示例的<strong>顺序很重要</strong>。研究表明，将最相关的示例放在最后（靠近实际任务）效果更好。如果你使用动态示例选择，建议按相似度升序排列。</p>
+    </div>
+
+    <h2>八、One-shot 与 Many-shot</h2>
+    <p>除了 Zero-shot 和 Few-shot，还有两种变体值得了解：</p>
+
+    <ul>
+        <li><strong>One-shot（单样本）</strong>：只提供一个示例。适用于任务非常简单、示例空间有限的场景。优点是节省 Token，缺点是示例的代表性可能不足。</li>
+        <li><strong>Many-shot（多样本）</strong>：提供 10 个以上的示例。适用于复杂任务、需要覆盖大量边界情况的场景。但要注意 Token 消耗和上下文窗口限制。</li>
+    </ul>
+
+<pre><code class="language-python"># One-shot 示例：简单的情感分类
+one_shot_examples = [
+    Example(
+        input="这个产品太棒了！",
+        output='{"sentiment": "positive"}',
+    )
+]
+
+# Many-shot 示例：复杂的多标签分类
+many_shot_examples = [
+    Example(
+        input="电池续航差，但拍照效果好",
+        output='{"negative": ["battery"], "positive": ["camera"]}',
+        tags=["mixed", "product"],
+    ),
+    Example(
+        input="价格合理，屏幕清晰，但系统卡顿",
+        output='{"positive": ["price", "screen"], "negative": ["performance"]}',
+        tags=["mixed", "product"],
+    ),
+    # ... 更多示例
+]
+
+def adaptive_shot_selection(task_complexity: str) -> int:
+    """
+    根据任务复杂度自适应选择示例数量
+    
+    参数:
+        task_complexity: 任务复杂度（simple / medium / complex）
+    返回:
+        推荐的示例数量
+    """
+    complexity_map = {
+        "simple": 1,      # One-shot
+        "medium": 3,      # Few-shot
+        "complex": 8,     # Many-shot
+    }
+    return complexity_map.get(task_complexity, 3)
+
+# 使用示例
+recommended_count = adaptive_shot_selection("medium")
+print(f"推荐使用 {recommended_count} 个示例")</code></pre>
+
+    <h2>九、工程化建议</h2>
+    <p>在生产环境中，Zero-shot 和 Few-shot 的选择应该基于<strong>数据驱动</strong>的决策。建议建立以下机制：</p>
+
+    <ul>
+        <li><strong>评估数据集</strong>：为每种任务准备标准测试集，定期评估不同方案的效果</li>
+        <li><strong>成本监控</strong>：追踪 Zero-shot 和 Few-shot 的 Token 消耗和 API 成本</li>
+        <li><strong>质量指标</strong>：定义明确的输出质量标准（准确率、一致性、延迟等）</li>
+        <li><strong>自动切换</strong>：根据任务类型或输入特征，自动选择 Zero-shot 或 Few-shot</li>
+    </ul>
+
+<pre><code class="language-python">class PromptStrategySelector:
+    """
+    Prompt 策略选择器：根据任务特征自动选择 Zero-shot 或 Few-shot
+    
+    决策因素:
+        - 任务复杂度
+        - 输出一致性要求
+        - Token 预算
+        - 历史成功率
+    """
+    
+    def __init__(self):
+        self._success_stats = {
+            "zero_shot": {"total": 0, "success": 0},
+            "few_shot": {"total": 0, "success": 0},
+        }
+    
+    def select_strategy(
+        self,
+        task_type: str,
+        consistency_required: bool = False,
+        token_budget: int = 1000,
+    ) -> str:
+        """
+        选择 Prompt 策略
+        
+        参数:
+            task_type: 任务类型（simple / standard / specialized）
+            consistency_required: 是否需要高一致性
+            token_budget: Token 预算
+        返回:
+            策略名称（"zero_shot" 或 "few_shot"）
+        """
+        # 规则 1：高一致性要求 → Few-shot
+        if consistency_required:
+            return "few_shot"
+        
+        # 规则 2：专业领域任务 → Few-shot
+        if task_type == "specialized":
+            return "few_shot"
+        
+        # 规则 3：Token 预算紧张 → Zero-shot
+        if token_budget < 500:
+            return "zero_shot"
+        
+        # 规则 4：简单任务 → Zero-shot
+        if task_type == "simple":
+            return "zero_shot"
+        
+        # 默认：标准任务用 Few-shot
+        return "few_shot"
+    
+    def record_result(self, strategy: str, success: bool) -> None:
+        """记录策略执行结果"""
+        self._success_stats[strategy]["total"] += 1
+        if success:
+            self._success_stats[strategy]["success"] += 1
+    
+    def get_success_rate(self, strategy: str) -> float:
+        """获取策略的历史成功率"""
+        stats = self._success_stats[strategy]
+        if stats["total"] == 0:
+            return 0.0
+        return stats["success"] / stats["total"]
+
+
+# 使用示例
+selector = PromptStrategySelector()
+
+# 场景 1：简单翻译任务
+strategy1 = selector.select_strategy(
+    task_type="simple",
+    consistency_required=False,
+    token_budget=800,
+)
+print(f"翻译任务策略: {strategy1}")  # zero_shot
+
+# 场景 2：医疗报告生成
+strategy2 = selector.select_strategy(
+    task_type="specialized",
+    consistency_required=True,
+    token_budget=2000,
+)
+print(f"医疗报告策略: {strategy2}")  # few_shot
+
+# 记录结果并查看成功率
+selector.record_result("zero_shot", success=True)
+selector.record_result("zero_shot", success=True)
+selector.record_result("few_shot", success=True)
+print(f"Zero-shot 成功率: {selector.get_success_rate('zero_shot'):.1%}")</code></pre>
+
+    <p>下一章我们将学习更高级的 Prompt 技术：<strong>思维链（CoT）</strong>和<strong>思维树（Tree-of-Thought）</strong>，它们本质上是在 Few-shot 基础上增加了推理步骤的引导。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

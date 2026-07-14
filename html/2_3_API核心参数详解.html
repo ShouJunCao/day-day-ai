@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2.3 API 核心参数详解</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            line-height: 1.8; color: #333; max-width: 900px; margin: 0 auto; padding: 40px 20px; background: #fafafa;
+        }
+        h1 { font-size: 28px; color: #1a1a1a; margin-bottom: 8px; border-bottom: 3px solid #4A90D9; padding-bottom: 12px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
+        h2 { font-size: 22px; color: #2c3e50; margin: 35px 0 15px; padding-left: 12px; border-left: 4px solid #4A90D9; }
+        h3 { font-size: 18px; color: #34495e; margin: 25px 0 10px; }
+        p { margin: 12px 0; text-align: justify; }
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;
+            padding: 20px 25px; border-radius: 12px; margin: 20px 0;
+        }
+        .highlight-box h3 { color: white; margin-top: 0; }
+        .highlight-box p { color: rgba(255,255,255,0.95); }
+        .param-card {
+            background: white; border-radius: 12px; padding: 20px; margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #4A90D9;
+        }
+        .param-card.temp { border-left-color: #e74c3c; }
+        .param-card.topp { border-left-color: #27ae60; }
+        .param-card.tokens { border-left-color: #f39c12; }
+        .param-card.stop { border-left-color: #9b59b6; }
+        .param-card.penalty { border-left-color: #1abc9c; }
+        .param-card h3 { margin-top: 0; }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin: 3px 3px 3px 0; }
+        .tag-range { background: #e3f2fd; color: #1565c0; }
+        .tag-default { background: #fff3e0; color: #e65100; }
+        .tag-important { background: #fce4ec; color: #c62828; }
+        pre {
+            background: #282c34; border-radius: 8px; padding: 20px; overflow-x: auto;
+            margin: 20px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        pre code {
+            font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Menlo', monospace;
+            font-size: 13px; line-height: 1.7; color: #abb2bf; white-space: pre-wrap; word-break: break-word;
+        }
+        .kw { color: #c678dd; } .str { color: #98c379; } .cmt { color: #5c6370; font-style: italic; }
+        .dec { color: #e5c07b; } .cls { color: #61afef; } .num { color: #d19a66; }
+        .op { color: #56b6c2; } .slf { color: #e06c75; } .fn { color: #61afef; } .bi { color: #e5c07b; }
+        .diagram-container {
+            text-align: center; margin: 25px 0; padding: 20px;
+            background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .diagram-caption { font-size: 14px; color: #666; margin-top: 10px; }
+        table {
+            width: 100%; border-collapse: collapse; margin: 20px 0;
+            background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        th { background: #4A90D9; color: white; padding: 12px 15px; text-align: left; font-weight: 600; }
+        td { padding: 10px 15px; border-bottom: 1px solid #eee; }
+        tr:hover td { background: #f8f9fa; }
+        .summary-box {
+            background: #f0f7ff; border: 2px solid #4A90D9; border-radius: 12px; padding: 25px; margin: 30px 0;
+        }
+        .summary-box h2 { border-left: none; padding-left: 0; margin-top: 0; }
+        .references {
+            background: white; border-radius: 12px; padding: 20px; margin: 30px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .references h2 { border-left: none; padding-left: 0; margin-top: 0; font-size: 18px; }
+        .references ol { padding-left: 20px; }
+        .references li { margin: 8px 0; font-size: 14px; }
+        .references a { color: #4A90D9; text-decoration: none; }
+        .references a:hover { text-decoration: underline; }
+        .code-file {
+            background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 6px;
+            padding: 8px 12px; margin: 10px 0; font-size: 13px;
+        }
+        .code-file strong { color: #4A90D9; }
+        .tip-box {
+            background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px 20px;
+            border-radius: 6px; margin: 15px 0; font-size: 14px;
+        }
+        .scenario-table {
+            background: #e8f5e9; border-left: 4px solid #27ae60; padding: 15px 20px;
+            border-radius: 6px; margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>2.3 API 核心参数详解</h1>
+<p class="subtitle">temperature · top_p · max_tokens · stop · penalty — 控制模型输出的关键旋钮</p>
+
+<div class="highlight-box">
+    <h3>💡 核心洞察</h3>
+    <p>大模型的输出不是固定不变的，而是从一个概率分布中"采样"得到的。API 的核心参数就是用来控制这个采样过程的：temperature 决定随机性大小，top_p 决定候选范围，stop sequences 决定何时停止，penalty 参数决定如何避免重复。掌握这些参数，就能精确控制模型的输出风格。</p>
+</div>
+
+<h2>一、参数全景图</h2>
+
+<p>Chat Completions API 提供了多个参数来控制模型的输出行为。这些参数可以分为四类：<strong>采样控制</strong>（temperature、top_p）、<strong>输出限制</strong>（max_tokens、stop）、<strong>重复惩罚</strong>（presence_penalty、frequency_penalty）、<strong>确定性控制</strong>（seed）。理解每个参数的作用，是调优模型输出的基础。</p>
+
+<!-- SVG: 参数分类图 -->
+<div class="diagram-container">
+    <svg width="820" height="280" viewBox="0 0 820 280">
+        <text x="410" y="25" text-anchor="middle" fill="#4A90D9" font-size="15" font-weight="bold">API 核心参数分类图</text>
+
+        <!-- 采样控制 -->
+        <rect x="20" y="50" width="180" height="200" rx="10" fill="#e3f2fd" stroke="#4A90D9" stroke-width="2"/>
+        <text x="110" y="75" text-anchor="middle" fill="#1565c0" font-size="13" font-weight="bold">🎲 采样控制</text>
+        <rect x="35" y="90" width="150" height="45" rx="6" fill="#fff" stroke="#4A90D9"/>
+        <text x="110" y="110" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">temperature</text>
+        <text x="110" y="128" text-anchor="middle" fill="#666" font-size="9">控制随机性 (0~2)</text>
+        <rect x="35" y="145" width="150" height="45" rx="6" fill="#fff" stroke="#4A90D9"/>
+        <text x="110" y="165" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">top_p</text>
+        <text x="110" y="183" text-anchor="middle" fill="#666" font-size="9">核采样范围 (0~1)</text>
+        <rect x="35" y="200" width="150" height="40" rx="6" fill="#fff" stroke="#4A90D9"/>
+        <text x="110" y="218" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">top_k</text>
+        <text x="110" y="234" text-anchor="middle" fill="#666" font-size="9">Top-K 采样 (部分模型)</text>
+
+        <!-- 输出限制 -->
+        <rect x="220" y="50" width="180" height="200" rx="10" fill="#fff3e0" stroke="#f39c12" stroke-width="2"/>
+        <text x="310" y="75" text-anchor="middle" fill="#e65100" font-size="13" font-weight="bold">📏 输出限制</text>
+        <rect x="235" y="90" width="150" height="45" rx="6" fill="#fff" stroke="#f39c12"/>
+        <text x="310" y="110" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">max_tokens</text>
+        <text x="310" y="128" text-anchor="middle" fill="#666" font-size="9">最大输出 token 数</text>
+        <rect x="235" y="145" width="150" height="45" rx="6" fill="#fff" stroke="#f39c12"/>
+        <text x="310" y="165" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">stop</text>
+        <text x="310" y="183" text-anchor="middle" fill="#666" font-size="9">停止序列 (最多4个)</text>
+        <rect x="235" y="200" width="150" height="40" rx="6" fill="#fff" stroke="#f39c12"/>
+        <text x="310" y="218" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">stream</text>
+        <text x="310" y="234" text-anchor="middle" fill="#666" font-size="9">是否流式输出</text>
+
+        <!-- 重复惩罚 -->
+        <rect x="420" y="50" width="180" height="200" rx="10" fill="#e8f5e9" stroke="#27ae60" stroke-width="2"/>
+        <text x="510" y="75" text-anchor="middle" fill="#2e7d32" font-size="13" font-weight="bold">⚖️ 重复惩罚</text>
+        <rect x="435" y="90" width="150" height="45" rx="6" fill="#fff" stroke="#27ae60"/>
+        <text x="510" y="108" text-anchor="middle" fill="#333" font-size="10" font-weight="bold">presence_penalty</text>
+        <text x="510" y="128" text-anchor="middle" fill="#666" font-size="9">鼓励新话题 (-2~2)</text>
+        <rect x="435" y="145" width="150" height="45" rx="6" fill="#fff" stroke="#27ae60"/>
+        <text x="510" y="163" text-anchor="middle" fill="#333" font-size="10" font-weight="bold">frequency_penalty</text>
+        <text x="510" y="183" text-anchor="middle" fill="#666" font-size="9">减少重复 (-2~2)</text>
+
+        <!-- 确定性控制 -->
+        <rect x="620" y="50" width="180" height="200" rx="10" fill="#f3e5f5" stroke="#9b59b6" stroke-width="2"/>
+        <text x="710" y="75" text-anchor="middle" fill="#6a1b9a" font-size="13" font-weight="bold">🎯 确定性控制</text>
+        <rect x="635" y="90" width="150" height="45" rx="6" fill="#fff" stroke="#9b59b6"/>
+        <text x="710" y="110" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">seed</text>
+        <text x="710" y="128" text-anchor="middle" fill="#666" font-size="9">随机种子 (确定性输出)</text>
+        <rect x="635" y="145" width="150" height="45" rx="6" fill="#fff" stroke="#9b59b6"/>
+        <text x="710" y="165" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">response_format</text>
+        <text x="710" y="183" text-anchor="middle" fill="#666" font-size="9">输出格式 (JSON)</text>
+    </svg>
+    <p class="diagram-caption">图 1：API 核心参数四大分类</p>
+</div>
+
+<h2>二、temperature — 控制随机性</h2>
+
+<div class="param-card temp">
+    <h3>🌡️ temperature（温度）</h3>
+    <p>
+        <span class="tag tag-range">范围: 0 ~ 2</span>
+        <span class="tag tag-default">默认: 1.0</span>
+        <span class="tag tag-important">最常用参数</span>
+    </p>
+</div>
+
+<p>temperature 是影响模型输出最显著的参数。它控制的是 softmax 函数中概率分布的"锐度"。当 temperature 接近 0 时，模型几乎总是选择概率最高的 token，输出变得高度确定性；当 temperature 增大时，低概率 token 的采样机会增加，输出变得更加多样和"有创意"。</p>
+
+<p>可以这样理解：temperature 就像调音台上的"创造性旋钮"。向左转（低温度），模型变得更严谨、更确定；向右转（高温度），模型变得更发散、更有想象力。但温度太高，输出就会变得混乱甚至无意义。</p>
+
+<p>从数学角度看，temperature 是对 softmax 前的 logits 做缩放：<code>P(token_i) = softmax(logits_i / T)</code>。当 T=0.1 时，高概率 token 的优势被放大到极端，几乎只选最高概率的那个；当 T=2.0 时，所有 token 的概率被"拉平"，连罕见词也有机会被选中。这就是为什么低温度适合需要准确性的任务（代码、数学），而高温度适合需要创造力的任务（故事、诗歌）。</p>
+
+<p>在实际使用中，temperature 的影响因模型而异。有些模型在 temperature=0.5 时就已经相当确定，而另一些模型即使 temperature=1.5 也保持连贯性。建议在新项目开始时，先用几个不同的 temperature 值做对比实验，找到最适合你场景的值。</p>
+
+<!-- SVG: temperature 效果图 -->
+<div class="diagram-container">
+    <svg width="780" height="220" viewBox="0 0 780 220">
+        <text x="390" y="25" text-anchor="middle" fill="#e74c3c" font-size="14" font-weight="bold">temperature 对概率分布的影响</text>
+
+        <!-- temperature=0 -->
+        <g transform="translate(30,50)">
+            <text x="70" y="0" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">temp=0.0</text>
+            <rect x="10" y="10" width="25" height="120" fill="#e74c3c" rx="3"/>
+            <rect x="40" y="120" width="25" height="10" fill="#e74c3c" opacity="0.3" rx="3"/>
+            <rect x="70" y="125" width="25" height="5" fill="#e74c3c" opacity="0.2" rx="3"/>
+            <rect x="100" y="128" width="25" height="2" fill="#e74c3c" opacity="0.1" rx="3"/>
+            <text x="70" y="150" text-anchor="middle" fill="#666" font-size="9">确定性最高</text>
+            <text x="70" y="165" text-anchor="middle" fill="#666" font-size="9">几乎相同输出</text>
+        </g>
+
+        <!-- temperature=0.7 -->
+        <g transform="translate(200,50)">
+            <text x="70" y="0" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">temp=0.7 ⭐</text>
+            <rect x="10" y="30" width="25" height="100" fill="#f39c12" rx="3"/>
+            <rect x="40" y="60" width="25" height="70" fill="#f39c12" opacity="0.8" rx="3"/>
+            <rect x="70" y="80" width="25" height="50" fill="#f39c12" opacity="0.6" rx="3"/>
+            <rect x="100" y="100" width="25" height="30" fill="#f39c12" opacity="0.4" rx="3"/>
+            <text x="70" y="150" text-anchor="middle" fill="#666" font-size="9">平衡创造性</text>
+            <text x="70" y="165" text-anchor="middle" fill="#666" font-size="9">推荐默认值</text>
+        </g>
+
+        <!-- temperature=1.0 -->
+        <g transform="translate(370,50)">
+            <text x="70" y="0" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">temp=1.0</text>
+            <rect x="10" y="40" width="25" height="90" fill="#27ae60" rx="3"/>
+            <rect x="40" y="55" width="25" height="75" fill="#27ae60" opacity="0.8" rx="3"/>
+            <rect x="70" y="70" width="25" height="60" fill="#27ae60" opacity="0.7" rx="3"/>
+            <rect x="100" y="85" width="25" height="45" fill="#27ae60" opacity="0.5" rx="3"/>
+            <text x="70" y="150" text-anchor="middle" fill="#666" font-size="9">标准随机性</text>
+            <text x="70" y="165" text-anchor="middle" fill="#666" font-size="9">原始概率分布</text>
+        </g>
+
+        <!-- temperature=2.0 -->
+        <g transform="translate(540,50)">
+            <text x="70" y="0" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">temp=2.0</text>
+            <rect x="10" y="60" width="25" height="70" fill="#9b59b6" rx="3"/>
+            <rect x="40" y="65" width="25" height="65" fill="#9b59b6" opacity="0.9" rx="3"/>
+            <rect x="70" y="70" width="25" height="60" fill="#9b59b6" opacity="0.8" rx="3"/>
+            <rect x="100" y="75" width="25" height="55" fill="#9b59b6" opacity="0.7" rx="3"/>
+            <text x="70" y="150" text-anchor="middle" fill="#666" font-size="9">极高随机性</text>
+            <text x="70" y="165" text-anchor="middle" fill="#666" font-size="9">可能混乱无意义</text>
+        </g>
+    </svg>
+    <p class="diagram-caption">图 2：不同 temperature 值下 token 概率分布的变化</p>
+</div>
+
+<p><strong>各场景推荐温度：</strong></p>
+<table>
+    <tr><th>场景</th><th>推荐 temperature</th><th>理由</th></tr>
+    <tr><td>代码生成</td><td>0.0 ~ 0.3</td><td>代码需要准确性和确定性</td></tr>
+    <tr><td>事实问答</td><td>0.2 ~ 0.5</td><td>减少幻觉，提高准确性</td></tr>
+    <tr><td>通用对话</td><td>0.6 ~ 0.8</td><td>平衡准确性和自然性</td></tr>
+    <tr><td>创意写作</td><td>0.8 ~ 1.2</td><td>增加多样性和创造力</td></tr>
+    <tr><td>头脑风暴</td><td>1.2 ~ 1.5</td><td>最大化发散思维</td></tr>
+</table>
+
+<h2>三、top_p — 核采样</h2>
+
+<div class="param-card topp">
+    <h3>🎯 top_p（核采样）</h3>
+    <p>
+        <span class="tag tag-range">范围: 0 ~ 1</span>
+        <span class="tag tag-default">默认: 1.0</span>
+        <span class="tag tag-important">与 temperature 二选一调</span>
+    </p>
+</div>
+
+<p>top_p（也叫 nucleus sampling）控制的是采样范围。它不是从所有 token 中采样，而是只从累积概率达到 top_p 的那些 token 中采样。例如 top_p=0.9 表示只从概率总和占前 90% 的 token 中采样，排除了最不常见的那 10%。</p>
+
+<p>与 temperature 的区别在于：temperature 改变的是概率分布的形状（让高概率更高或更平均），top_p 改变的是采样范围的大小（直接排除低概率选项）。两者效果有重叠，通常建议<strong>只调其中一个</strong>，不要同时调整。</p>
+
+<div class="code-file">
+    <strong>📁 代码位置：</strong><code>workspace/02_api_basics/03_core_params/core_params_explorer.py</code>
+</div>
+
+<pre><code><span class="cmt"># temperature 和 top_p 的使用示例</span>
+
+<span class="kw">from</span> openai <span class="kw">import</span> <cls>OpenAI</cls>
+
+client = <cls>OpenAI</cls>(
+    base_url=<span class="str">"https://dashscope.aliyuncs.com/compatible-mode/v1"</span>,
+    api_key=os.getenv(<span class="str">"DASHSCOPE_API_KEY"</span>)
+)
+
+<span class="cmt"># 示例 1：低温度 → 确定性输出（适合代码生成）</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Python中如何读取CSV文件？"</span>}],
+    temperature=<num>0.2</num>,     <span class="cmt"># 低温度：准确优先</span>
+    max_tokens=<num>500</num>,
+)
+
+<span class="cmt"># 示例 2：高温度 → 创造性输出（适合写作）</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"写一首关于春天的诗"</span>}],
+    temperature=<num>0.9</num>,     <span class="cmt"># 高温度：创造优先</span>
+    top_p=<num>0.95</num>,         <span class="cmt"># 配合使用</span>
+    max_tokens=<num>300</num>,
+)
+
+<span class="cmt"># 示例 3：只用 top_p 控制（推荐方式之一）</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"给我一些创业建议"</span>}],
+    temperature=<num>1.0</num>,     <span class="cmt"># 保持默认</span>
+    top_p=<num>0.8</num>,          <span class="cmt"># 只从概率前 80% 的 token 中采样</span>
+    max_tokens=<num>500</num>,
+)</code></pre>
+
+<h2>四、max_tokens 与 stop sequences</h2>
+
+<div class="param-card tokens">
+    <h3>📏 max_tokens（最大输出长度）</h3>
+    <p>
+        <span class="tag tag-range">范围: 1 ~ 模型上限</span>
+        <span class="tag tag-default">默认: 模型最大值</span>
+    </p>
+</div>
+
+<p>max_tokens 限制模型生成的最大 token 数（不包含输入 token）。设置合理的 max_tokens 既能控制成本，又能避免模型生成过多无关内容。需要注意的是，如果模型在达到 max_tokens 之前就自然结束了，finish_reason 会是 "stop"；如果是被截断的，finish_reason 会是 "length"。</p>
+
+<div class="param-card stop">
+    <h3>🛑 stop sequences（停止序列）</h3>
+    <p>
+        <span class="tag tag-range">最多 4 个字符串</span>
+        <span class="tag tag-default">默认: 无</span>
+        <span class="tag tag-important">结构化输出必备</span>
+    </p>
+</div>
+
+<p>stop sequences 让模型在生成到特定字符串时立即停止。这在结构化输出场景中非常有用，比如让模型生成 JSON 后在 "}" 处停止，或者在多轮对话中用特定分隔符标记每轮回答的边界。</p>
+
+<pre><code><span class="cmt"># stop sequences 实战示例</span>
+
+<span class="cmt"># 场景 1：控制输出格式 — 生成列表后在分隔符处停止</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+               <span class="str">"content"</span>: <span class="str">"列出5个Python库，每行一个，最后写 END"</span>}],
+    stop=[<span class="str">"\nEND"</span>],       <span class="cmt"># 遇到 "\nEND" 就停止</span>
+    max_tokens=<num>300</num>,
+)
+
+<span class="cmt"># 场景 2：多轮对话边界控制</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+               <span class="str">"content"</span>: <span class="str">"回答问题后加上 [DONE]"</span>}],
+    stop=[<span class="str">"[DONE]"</span>],       <span class="cmt"># 遇到标记停止</span>
+    max_tokens=<num>500</num>,
+)
+
+<span class="cmt"># 场景 3：JSON 输出控制</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+               <span class="str">"content"</span>: <span class="str">'以JSON格式返回你的名字: {"name": "..."}'</span>}],
+    stop=[<span class="str">"}\n"</span>],          <span class="cmt"># JSON 结束后停止</span>
+    max_tokens=<num>100</num>,
+    temperature=<num>0.1</num>,     <span class="cmt"># 低温度确保格式正确</span>
+)</code></pre>
+
+<h2>五、重复惩罚参数</h2>
+
+<div class="param-card penalty">
+    <h3>⚖️ presence_penalty 与 frequency_penalty</h3>
+    <p>
+        <span class="tag tag-range">范围: -2.0 ~ 2.0</span>
+        <span class="tag tag-default">默认: 0.0</span>
+    </p>
+</div>
+
+<p>这两个参数用于控制模型的重复行为，但机制不同。<strong>presence_penalty</strong> 对已经出现过的 token 施加固定惩罚，不管它出现了几次——它鼓励模型"讨论新话题"。<strong>frequency_penalty</strong> 则根据 token 出现的频率来惩罚，出现越多惩罚越大——它鼓励模型"少重复"。</p>
+
+<!-- SVG: 两种惩罚机制对比 -->
+<div class="diagram-container">
+    <svg width="780" height="180" viewBox="0 0 780 180">
+        <text x="390" y="25" text-anchor="middle" fill="#1abc9c" font-size="14" font-weight="bold">presence_penalty vs frequency_penalty</text>
+
+        <!-- presence_penalty -->
+        <g transform="translate(30,45)">
+            <rect x="0" y="0" width="340" height="120" rx="8" fill="#e0f2f1" stroke="#1abc9c" stroke-width="1.5"/>
+            <text x="170" y="22" text-anchor="middle" fill="#00796b" font-size="12" font-weight="bold">presence_penalty（出现即惩罚）</text>
+            <text x="20" y="48" fill="#333" font-size="10">"Python" 出现1次 → 惩罚 -0.5</text>
+            <text x="20" y="68" fill="#333" font-size="10">"Python" 出现5次 → 惩罚 -0.5（相同）</text>
+            <text x="20" y="95" fill="#666" font-size="10" font-style="italic">→ 鼓励讨论新话题，不在乎重复次数</text>
+        </g>
+
+        <!-- frequency_penalty -->
+        <g transform="translate(410,45)">
+            <rect x="0" y="0" width="340" height="120" rx="8" fill="#fce4ec" stroke="#e74c3c" stroke-width="1.5"/>
+            <text x="170" y="22" text-anchor="middle" fill="#c62828" font-size="12" font-weight="bold">frequency_penalty（按频率惩罚）</text>
+            <text x="20" y="48" fill="#333" font-size="10">"Python" 出现1次 → 惩罚 -0.1</text>
+            <text x="20" y="68" fill="#333" font-size="10">"Python" 出现5次 → 惩罚 -0.5（更多）</text>
+            <text x="20" y="95" fill="#666" font-size="10" font-style="italic">→ 减少重复词句，出现越多惩罚越大</text>
+        </g>
+    </svg>
+    <p class="diagram-caption">图 3：两种重复惩罚机制的区别</p>
+</div>
+
+<pre><code><span class="cmt"># 惩罚参数实战示例</span>
+
+<span class="cmt"># 场景：长文本生成，避免重复</span>
+response = client.chat.completions.<span class="fn">create</span>(
+    model=<span class="str">"qwen-plus"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>,
+               <span class="str">"content"</span>: <span class="str">"写一篇关于人工智能的文章，500字"</span>}],
+    temperature=<num>0.8</num>,
+    presence_penalty=<num>0.5</num>,    <span class="cmt"># 鼓励讨论新话题</span>
+    frequency_penalty=<num>0.3</num>,   <span class="cmt"># 减少词句重复</span>
+    max_tokens=<num>800</num>,
+)
+
+<span class="bi">print</span>(<span class="str">f"完成原因: {response.choices[0].finish_reason}"</span>)
+<span class="cmt"># "stop" = 自然结束, "length" = 达到 max_tokens</span></code></pre>
+
+<h2>六、seed 与确定性输出</h2>
+
+<p>seed 参数允许设置随机种子，使得相同输入在相同 seed 下产生相同或极其相似的输出。这对于调试、测试和可复现性非常重要。不过需要注意，seed 并不能保证 100% 确定性——由于底层硬件和软件栈的差异，输出仍可能有微小变化。</p>
+
+<p>seed 在生产环境中的一个重要用途是<strong>A/B 测试</strong>。当你想比较不同 prompt 的效果时，使用相同的 seed 可以消除随机性带来的干扰，让对比更加公平。另外，在单元测试中，使用固定 seed 可以确保测试结果的可复现性。</p>
+
+<pre><code><span class="cmt"># seed 确定性输出示例</span>
+
+<span class="cmt"># 设置相同的 seed，多次调用得到相似结果</span>
+<span class="kw">for</span> i <span class="kw">in</span> <bi>range</bi>(<num>3</num>):
+    response = client.chat.completions.<span class="fn">create</span>(
+        model=<span class="str">"qwen-plus"</span>,
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"Python 之禅"</span>}],
+        seed=<num>42</num>,               <span class="cmt"># 固定随机种子</span>
+        temperature=<num>0.7</num>,
+        max_tokens=<num>100</num>,
+    )
+    <span class="bi">print</span>(<span class="str">f"Run {i+1}: {response.choices[0].message.content[:60]}"</span>)
+
+<span class="cmt"># 检查 system_fingerprint 确认确定性</span>
+<span class="cmt"># response.system_fingerprint 可用于验证模型版本一致性</span></code></pre>
+
+<h2>六·五、综合实战：参数调优工具</h2>
+
+<p>理解了各个参数的作用后，最关键的是能动手实验。以下是一个完整的参数调优工具，可以自动对比不同参数组合下的输出效果，帮助你快速找到最优配置：</p>
+
+<div class="code-file">
+    <strong>📁 代码位置：</strong><code>workspace/02_api_basics/03_core_params/core_params_explorer.py</code>
+</div>
+
+<pre><code><span class="cmt">"""
+API 核心参数实验工具
+
+用法：
+    # 对比不同 temperature 的效果
+    python3 core_params_explorer.py --param temperature --values 0.0,0.5,1.0,1.5
+
+    # 对比不同 top_p 的效果
+    python3 core_params_explorer.py --param top_p --values 0.1,0.5,0.9
+
+    # 演示 stop sequences
+    python3 core_params_explorer.py --demo stop_sequences
+
+    # 演示 seed 确定性
+    python3 core_params_explorer.py --demo seed_determinism
+
+    # 对比惩罚参数
+    python3 core_params_explorer.py --param penalty --presence 0,1 --frequency 0,1
+"""</span>
+
+<span class="kw">import</span> argparse
+<span class="kw">import</span> os
+<span class="kw">from</span> collections <span class="kw">import</span> <cls>Counter</cls>
+<span class="kw">from</span> openai <span class="kw">import</span> <cls>OpenAI</cls>
+
+
+<span class="kw">def</span> <fn>experiment_temperature</fn>(client, prompt, temps, runs=<num>3</num>):
+    <span class="str">"""对比不同 temperature 下模型输出的多样性"""</span>
+    <span class="kw">for</span> temp <span class="kw">in</span> temps:
+        <span class="bi">print</span>(<span class="str">f"\n📊 temperature = {temp}"</span>)
+        outputs = []
+        <span class="kw">for</span> i <span class="kw">in</span> <bi>range</bi>(runs):
+            resp = client.chat.completions.<span class="fn">create</span>(
+                model=os.getenv(<span class="str">"MODEL_NAME"</span>, <span class="str">"qwen-plus"</span>),
+                messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt}],
+                temperature=temp, max_tokens=<num>100</num>,
+            )
+            text = resp.choices[<num>0</num>].message.content.strip()
+            outputs.append(text)
+            <span class="bi">print</span>(<span class="str">f"  Run {i+1}: {text[:80]}..."</span>)
+        unique = <bi>len</bi>(<bi>set</bi>(outputs))
+        <span class="bi">print</span>(<span class="str">f"  多样性: {unique}/{runs} 个不同的输出"</span>)
+
+
+<span class="kw">def</span> <fn>get_recommended_params</fn>(scenario: <bi>str</bi>) -> <bi>dict</bi>:
+    <span class="str">"""根据场景返回推荐参数配置"""</span>
+    <span class="kw">return</span> {
+        <span class="str">"code"</span>:    {<span class="str">"temperature"</span>: <num>0.2</num>, <span class="str">"top_p"</span>: <num>0.95</num>, <span class="str">"max_tokens"</span>: <num>2000</num>},
+        <span class="str">"chat"</span>:    {<span class="str">"temperature"</span>: <num>0.7</num>, <span class="str">"top_p"</span>: <num>0.9</num>,  <span class="str">"max_tokens"</span>: <num>1000</num>},
+        <span class="str">"write"</span>:   {<span class="str">"temperature"</span>: <num>0.9</num>, <span class="str">"top_p"</span>: <num>0.95</num>, <span class="str">"max_tokens"</span>: <num>1500</num>},
+        <span class="str">"json"</span>:    {<span class="str">"temperature"</span>: <num>0.1</num>, <span class="str">"top_p"</span>: <num>0.95</num>, <span class="str">"max_tokens"</span>: <num>500</num>},
+    }.get(scenario, {<span class="str">"temperature"</span>: <num>0.7</num>, <span class="str">"top_p"</span>: <num>0.9</num>, <span class="str">"max_tokens"</span>: <num>1000</num>})</code></pre>
+
+<h2>七、各场景推荐参数配置</h2>
+
+<div class="scenario-table">
+    <strong>📋 场景化参数推荐表</strong>
+</div>
+
+<table>
+    <tr><th>场景</th><th>temperature</th><th>top_p</th><th>max_tokens</th><th>presence</th><th>frequency</th></tr>
+    <tr><td><strong>代码生成</strong></td><td>0.2</td><td>0.95</td><td>2000</td><td>0.0</td><td>0.0</td></tr>
+    <tr><td><strong>事实问答</strong></td><td>0.3</td><td>0.9</td><td>800</td><td>0.0</td><td>0.0</td></tr>
+    <tr><td><strong>通用聊天</strong></td><td>0.7</td><td>0.9</td><td>1000</td><td>0.1</td><td>0.1</td></tr>
+    <tr><td><strong>创意写作</strong></td><td>0.9</td><td>0.95</td><td>1500</td><td>0.5</td><td>0.3</td></tr>
+    <tr><td><strong>头脑风暴</strong></td><td>1.2</td><td>0.95</td><td>1000</td><td>1.0</td><td>0.5</td></tr>
+    <tr><td><strong>JSON 输出</strong></td><td>0.1</td><td>0.95</td><td>500</td><td>0.0</td><td>0.0</td></tr>
+    <tr><td><strong>翻译</strong></td><td>0.3</td><td>0.9</td><td>1500</td><td>0.0</td><td>0.0</td></tr>
+</table>
+
+<div class="tip-box">
+    <strong>💡 调参技巧：</strong>
+    <ul style="margin: 10px 0 0 20px;">
+        <li><strong>temperature 和 top_p 不要同时调</strong>，选一个作为主要调节手段</li>
+        <li><strong>先用默认值</strong>（temperature=1.0, top_p=1.0），根据输出效果逐步调整</li>
+        <li><strong>代码和事实类任务</strong>用低温度（0~0.3），<strong>创意类任务</strong>用高温度（0.8~1.2）</li>
+        <li><strong>长文本生成</strong>建议加上 presence_penalty（0.3~0.5）避免重复</li>
+        <li><strong>结构化输出</strong>配合 stop sequences 和 response_format 使用</li>
+    </ul>
+</div>
+
+<h2>八、总结</h2>
+
+<div class="summary-box">
+    <h2>📋 核心要点回顾</h2>
+    <p><strong>1. temperature 控制随机性。</strong>值越低输出越确定，值越高输出越多样。代码生成用 0~0.3，创意写作用 0.8~1.2。</p>
+    <p><strong>2. top_p 控制采样范围。</strong>只从累积概率前 top_p 的 token 中采样。与 temperature 二选一调。</p>
+    <p><strong>3. max_tokens 控制输出长度。</strong>合理设置可以控制成本和避免冗余。注意区分 finish_reason 的 "stop" 和 "length"。</p>
+    <p><strong>4. stop sequences 控制停止时机。</strong>最多 4 个停止字符串，结构化输出必备。</p>
+    <p><strong>5. penalty 参数控制重复。</strong>presence_penalty 鼓励新话题，frequency_penalty 减少重复词句。</p>
+    <p><strong>6. seed 实现确定性。</strong>相同 seed + 相同输入 ≈ 相同输出，适合调试和测试。</p>
+</div>
+
+<p>掌握了 API 核心参数，你就能精确控制模型的输出行为，针对不同场景调优出最佳效果。下一节我们将深入流式输出（SSE）的原理与实现，学习如何在生产环境中高效处理流式响应。</p>
+
+<div class="references">
+    <h2>📚 参考资料</h2>
+    <ol>
+        <li>阿里云百炼文档, <a href="https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api" target="_blank">通义千问 API 参数说明</a> — 中文，各参数的详细说明和推荐值</li>
+        <li>阿里云开发者社区, <a href="https://developer.aliyun.com/article/1596311" target="_blank">大模型 API 参数调优实战</a> — 中文，参数对输出影响的实验分析</li>
+        <li>Hugging Face Blog, <a href="https://huggingface.co/blog/how-to-generate" target="_blank">How to generate text: using different decoding methods</a> — 英文，深度解析采样策略</li>
+        <li>Lilian Weng, <a href="https://lilianweng.github.io/posts/2024-07-07-hallucination/" target="_blank">Extrinsic Hallucinations in LLMs</a> — 英文，温度参数与幻觉的关系</li>
+        <li>智谱开放平台, <a href="https://open.bigmodel.cn/dev/howuse/introduction" target="_blank">GLM 模型参数配置</a> — 中文，智谱 GLM 的参数说明</li>
+    </ol>
+</div>
+
+</body>
+</html>
