@@ -11,7 +11,7 @@ async def main() -> None:
     # 1. 初始化评估器
     judge = LLMEvaluator(
         judge_model="qwen-plus",
-        api_key="sk-492ff751fcbf424fbff4d9cd2bb981ff",
+        api_key="key",
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         rubric="评估代码的正确性、边界处理与可读性（0-100）"
     )
