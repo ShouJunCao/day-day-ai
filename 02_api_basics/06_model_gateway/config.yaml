@@ -1,0 +1,69 @@
+# 多模型网关配置文件
+gateway:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  debug: false
+
+# 模型注册表
+models:
+  - name: "gpt-4o-mini"
+    provider: "openai"
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    input_price: 0.15  # 每百万token
+    output_price: 0.60
+    max_concurrent: 10
+    timeout: 60
+    enabled: true
+    
+  - name: "gpt-4o"
+    provider: "openai"
+    api_key: "${OPENAI_API_KEY}"
+    base_url: "https://api.openai.com/v1"
+    input_price: 2.50
+    output_price: 10.00
+    max_concurrent: 5
+    timeout: 120
+    enabled: true
+    
+  - name: "deepseek-chat"
+    provider: "openai"  # OpenAI兼容API
+    api_key: "${DEEPSEEK_API_KEY}"
+    base_url: "https://api.deepseek.com/v1"
+    input_price: 0.27
+    output_price: 1.10
+    max_concurrent: 20
+    timeout: 60
+    enabled: true
+    
+  - name: "qwen-plus"
+    provider: "openai"
+    api_key: "${QWEN_API_KEY}"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    input_price: 0.40
+    output_price: 1.20
+    max_concurrent: 15
+    timeout: 60
+    enabled: true
+
+# 路由策略
+routing:
+  default_model: "gpt-4o-mini"
+  strategy: "cost_first"  # cost_first | quality_first | round_robin
+  fallback_models:
+    - "deepseek-chat"
+    - "qwen-plus"
+
+# 预算控制
+budget:
+  global_daily_limit: 100.0  # 美元
+  user_daily_limit: 10.0
+  request_max_tokens: 8000
+  rate_limit_per_minute: 120
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "gateway.log"
