@@ -12,9 +12,9 @@ import os
 async def main() -> None:
     # 1. 初始化评估器
     judge = LLMEvaluator(
-        judge_model="qwen-plus",
+        judge_model=os.getenv("MODEL"),
         api_key=os.getenv("API_KEY"),
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        base_url=os.getenv("BASE_URL"),
         rubric="评估代码的正确性、边界处理与可读性（0-100）"
     )
     rule_engine = RuleBasedEvaluator(
