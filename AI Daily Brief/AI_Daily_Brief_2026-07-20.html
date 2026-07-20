@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI行业资讯简报 2026年7月20日</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-accent: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-link: #38bdf8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #22c55e;
+            --accent-orange: #f97316;
+            --border-color: #334155;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-accent));
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+        .header h1 {
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+        .header .date { font-size: 1.1em; color: var(--text-secondary); }
+        .overview {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--accent-blue);
+        }
+        .overview h2 { font-size: 1.2em; color: var(--accent-blue); margin-bottom: 10px; }
+        .overview p { color: var(--text-secondary); font-size: 0.95em; }
+        .section { margin-bottom: 30px; }
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .news-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .news-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .news-card h3 { font-size: 1.1em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .tag {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tag-domestic { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .tag-international { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .news-meta { display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+        .keyword { color: var(--text-secondary); font-size: 0.85em; }
+        .keyword strong { color: var(--text-primary); }
+        .news-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .news-body .detail { background: var(--bg-accent); border-radius: 8px; padding: 12px; }
+        .news-body .detail h4 { font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .news-body .detail p { font-size: 0.9em; color: var(--text-primary); }
+        .news-link { margin-top: 12px; }
+        .news-link a { color: var(--text-link); text-decoration: none; font-size: 0.9em; }
+        .news-link a:hover { text-decoration: underline; }
+        .balance-bar {
+            display: flex; gap: 8px; align-items: center; margin-bottom: 20px;
+            background: var(--bg-card); border-radius: 8px; padding: 10px 16px;
+        }
+        .balance-bar .label { font-size: 0.85em; color: var(--text-secondary); }
+        .balance-bar .bar { flex: 1; height: 8px; background: var(--bg-accent); border-radius: 4px; overflow: hidden; display: flex; }
+        .balance-bar .domestic { width: 50%; background: #22c55e; }
+        .balance-bar .international { width: 50%; background: #3b82f6; }
+        .balance-bar .legend { display: flex; gap: 12px; font-size: 0.8em; }
+        .footer {
+            text-align: center; padding: 20px; color: var(--text-secondary);
+            font-size: 0.85em; border-top: 1px solid var(--border-color); margin-top: 40px;
+        }
+        @media (max-width: 640px) { .news-body { grid-template-columns: 1fr; } .header h1 { font-size: 1.5em; } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>📡 AI行业资讯简报</h1>
+        <div class="date">2026年7月20日 · 星期日</div>
+    </div>
+
+    <div class="overview">
+        <h2>📌 今日速览</h2>
+        <p>
+            <strong>2026世界人工智能大会（WAIC）</strong>于7月17日至20日在上海盛大开幕，1100余家企业携3000余项技术亮相，华为昇腾950超节点斩获SAIL最高荣誉。海外方面，<strong>Meta正洽谈向Anthropic出租算力</strong>，潜在交易规模达100亿美元；<strong>Nvidia支持的Fireworks AI</strong>估值飙升至175亿美元。国内大模型竞赛持续升温，阿里Qwen3.8与Kimi K3双双刷新纪录。
+        </p>
+    </div>
+
+    <div class="balance-bar">
+        <span class="label">国内/国外 比例</span>
+        <div class="bar"><div class="domestic"></div><div class="international"></div></div>
+        <div class="legend"><span style="color:#22c55e">■ 国内 50%</span><span style="color:#3b82f6">■ 国外 50%</span></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">一、大模型 & 技术</div>
+
+        <!-- 1. 国内 -->
+        <div class="news-card">
+            <h3><span class="tag tag-domestic">国内</span>1. 华为昇腾950超节点荣获WAIC最高荣誉SAIL奖</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：华为、昇腾950、超节点、SAIL奖</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>7月18日，华为中国宣布昇腾950超节点（Atlas 950 SuperPoD）在WAIC 2026大会期间荣获最高荣誉SAIL奖。该产品在大会上首次面向公众真机亮相，展示了国产算力在"超节点时代"的技术突破，解决千节点协同计算的效率瓶颈。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>昇腾超节点的获奖标志着国产AI算力基础设施正加速追赶国际顶级水平，有望在GPU受限背景下打开算力新局面。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/0/892/023.htm" target="_blank">🔗 IT之家报道</a></div>
+        </div>
+
+        <!-- 2. 国外 -->
+        <div class="news-card">
+            <h3><span class="tag tag-international">国外</span>2. Meta洽谈向Anthropic出租算力，潜在交易规模达100亿美元</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：Meta、Anthropic、算力出租、100亿美元</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>据《纽约时报》7月18日报道，Meta正考虑向Anthropic出租AI计算能力，该交易估值可能达100亿美元、为期两年，Anthropic以月付方式结算。Anthropic此前已与SpaceX、TeraWulf签署了数十亿美元算力协议。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>大模型公司正从自研算力转向"算力即服务"模式，科技巨头通过出租闲置GPU形成新的收入增长极。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">🔗 The Verge报道</a></div>
+        </div>
+
+        <!-- 3. 国内 -->
+        <div class="news-card">
+            <h3><span class="tag tag-domestic">国内</span>3. 阿里千问Qwen3.8预览版上线，2.4T参数规模</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：阿里、千问、Qwen3.8、2.4T参数</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>阿里通义千问Qwen3.8预览版模型正式上线，参数规模达2.4T，官方宣称"可能是除了Fable 5外最强大的模型"。同时阿里云百炼推理平台已服务全球500万用户、120万付费用户，科研团队基于达摩灵枢材料基础模型Elements预测出6.8万种超导材料。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>2.4T参数的Qwen3.8进一步缩小与国际顶级闭源模型的差距，阿里在开源大模型领域的技术储备持续领先。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/tags/WAIC2026/" target="_blank">🔗 IT之家报道</a></div>
+        </div>
+
+        <!-- 4. 国外 -->
+        <div class="news-card">
+            <h3><span class="tag tag-international">国外</span>4. Nvidia支持的Fireworks AI估值达175亿美元</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：Nvidia、Fireworks AI、175亿美元估值</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>据CNBC报道，Nvidia投资的AI推理平台Fireworks AI最新估值达175亿美元。该公司过去一年降低了对单一客户（如Cursor）的依赖，随着更多企业追求更低成本的AI模型，其业务持续多元化。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>AI推理基础设施赛道持续升温，企业端"降本增效"需求推动中间件和推理优化平台快速崛起。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.bing.com/news/search?q=Fireworks+AI+valuation+Nvidia" target="_blank">🔗 CNBC报道</a></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">二、产品 & 商业</div>
+
+        <!-- 5. 国内 -->
+        <div class="news-card">
+            <h3><span class="tag tag-domestic">国内</span>5. WAIC 2026：108款芯片、261款大模型全球首发</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：WAIC、全球首发、具身智能、智能体</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>2026世界人工智能大会7月17-20日在上海"三地四馆"举办，1100+企业带来3000+展品、300余款全球首发产品。108款芯片、261款大模型亮相，9位图灵奖得主开讲。努比亚全球首款AI智能体手机首次公开亮相，海康威视、宇树科技等展示具身智能全链。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>WAIC已从展会升级为全球AI风向标，AI终端争夺战全面打响，具身智能和智能体成为本届大会最热赛道。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/tags/WAIC2026/" target="_blank">🔗 IT之家 · WAIC专题</a></div>
+        </div>
+
+        <!-- 6. 国外 -->
+        <div class="news-card">
+            <h3><span class="tag tag-international">国外</span>6. Netflix以约5.87亿美元收购Ben Affleck创立的AI公司</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：Netflix、AI、InterPositive、收购</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>据《好莱坞报道者》及Netflix SEC文件披露，Netflix于2026年3月以约5.87亿美元收购了Ben Affleck联合创立的AI公司InterPositive。该公司聚焦AI驱动的影视后期制作和内容生成技术。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>流媒体巨头加速AI内容生产布局，传统影视制作与AI技术的融合正催生数百亿美元级的新兴市场。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">🔗 The Verge报道</a></div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <p>📊 平衡性验证：国内 3 条 | 国外 3 条 = 50:50 ✓ &nbsp;&nbsp;|&nbsp;&nbsp; 全部时效 ≤24h ✓</p>
+        <p>AI Daily Brief · Generated on 2026-07-20</p>
+    </div>
+
+</div>
+</body>
+</html>

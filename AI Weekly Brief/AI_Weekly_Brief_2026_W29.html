@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 行业资讯周报 · 2026年第29周</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-accent: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-link: #38bdf8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #22c55e;
+            --accent-orange: #f97316;
+            --border-color: #334155;
+            --tag-domestic: #22c55e;
+            --tag-international: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-accent));
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+        .header h1 {
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+        .header .date { font-size: 1.1em; color: var(--text-secondary); }
+        .overview {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--accent-blue);
+        }
+        .overview h2 { font-size: 1.2em; color: var(--accent-blue); margin-bottom: 10px; }
+        .overview p { color: var(--text-secondary); font-size: 0.95em; }
+        .section { margin-bottom: 30px; }
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .news-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .news-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .news-card h3 {
+            font-size: 1.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tag-domestic { background: rgba(34, 197, 94, 0.2); color: var(--tag-domestic); }
+        .tag-international { background: rgba(59, 130, 246, 0.2); color: var(--tag-international); }
+        .news-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            font-size: 0.85em;
+        }
+        .keyword { color: var(--text-secondary); }
+        .keyword strong { color: var(--text-primary); }
+        .news-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .news-body .detail {
+            background: var(--bg-accent);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .news-body .detail h4 {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .news-body .detail p { font-size: 0.9em; color: var(--text-primary); }
+        .news-link { margin-top: 12px; }
+        .news-link a {
+            color: var(--text-link);
+            text-decoration: none;
+            font-size: 0.85em;
+        }
+        .news-link a:hover { text-decoration: underline; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            border-top: 1px solid var(--border-color);
+            margin-top: 40px;
+        }
+        @media (max-width: 640px) {
+            .news-body { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI 行业资讯周报</h1>
+            <div class="date">2026年第29周 · 7月13日 — 7月20日</div>
+        </div>
+
+        <div class="overview">
+            <h2>📌 本周速览</h2>
+            <p>
+                本周 AI 行业迎来密集爆发：国内方面，月之暗面 Kimi K3（2.8T 参数）登顶全球 AI 榜单，ARR 创历史最大单日增幅后暂停 C 端新用户订阅；阿里千问 Qwen3.8（2.4T 参数）预览版上线并推出 Token Plan 个人版；天数智芯天垓 300 GPU 发布；29 国签署协定成立世界人工智能合作组织。国际方面，Netflix 以近 5.87 亿美元收购 AI 影视公司；Meta 与 Anthropic 洽谈 100 亿美元算力协议；Apple 起诉 OpenAI 并下架 AI 换脸应用；SpaceX 或将向五角大楼提供算力。全球 AI 竞争格局正加速演变。
+            </p>
+        </div>
+
+        <!-- 一、大模型 & 技术 -->
+        <div class="section">
+            <div class="section-title">一、大模型 &amp; 技术</div>
+
+            <!-- CN 1: Kimi K3 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    月之暗面 Kimi K3 登顶全球榜单，2.8T 参数
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>月之暗面、Kimi K3、大模型、全球榜单</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>月之暗面于 7 月 16 日发布 Kimi K3，拥有 2.8 万亿参数、100 万 Tokens 上下文，在 Frontend Code Arena 以 1679 分超越 Claude Fable 5 位居全球第一。UC 伯克利教授 Ion Stoica 称 Kimi K3 的性能"让不少人意外"。</p></div>
+                    <div class="detail"><h4>原理</h4><p>K3 主打长程编程与端到端知识工作，支持百万级 Token 上下文窗口，在代码生成和理解任务上超越此前领先的 Anthropic Claude 系列模型。</p></div>
+                    <div class="detail"><h4>价值</h4><p>彭博社报道指出，Kimi K3 打破了"美国 AI 领先中国"的固有认知，越来越多企业开始通过"模型路由"自动选择成本更低的中国模型。</p></div>
+                    <div class="detail"><h4>影响</h4><p>中国大模型在国际权威评测中首次全面超越 Claude，全球 AI 竞争格局被重新定义，开源模型与商业模型的差距进一步缩小。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/670.htm" target="_blank">来源：IT之家 / 彭博社</a>
+                </div>
+            </div>
+
+            <!-- CN 2: Qwen3.8 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    阿里千问 Qwen3.8 预览版上线，2.4T 参数量
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>阿里、千问、Qwen3.8、大模型</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>阿里千问宣布 Qwen3.8-Max-Preview 正式上线，参数量达 2.4 万亿，自称"可能是除 Fable 5 外最强大的模型"。在全栈开发、数据分析、Office 办公等复杂多 Agent 长程任务中显著提升。</p></div>
+                    <div class="detail"><h4>原理</h4><p>Qwen3.8 在 MoE 架构和 Attention 机制上进行了深度优化，支持大规模并行推理，已首发上线阿里 Token Plan、Qoder 及 QoderWork，正式版计划开源。</p></div>
+                    <div class="detail"><h4>价值</h4><p>国内双万亿参数模型（Kimi K3 2.8T + Qwen3.8 2.4T）同台竞技，大模型军备竞赛全面升级，为企业级 AI 应用提供更多选择。</p></div>
+                    <div class="detail"><h4>影响</h4><p>阿里通过 Token Plan 订阅制降低 AI 服务门槛，正式版的开源将进一步推动国产模型生态建设，形成与海外开源模型的直接竞争。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/730.htm" target="_blank">来源：IT之家</a>
+                </div>
+            </div>
+
+            <!-- INT 1: Netflix AI acquisition -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    Netflix 以近 5.87 亿美元收购 Ben Affleck 的 AI 公司
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-18</span>
+                    <span class="keyword"><strong>关键词：</strong>Netflix、AI、收购、InterPositive</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>Netflix 在 SEC 文件中披露，以约 5.87 亿美元收购 Ben Affleck 创办的 AI 公司 InterPositive，该公司专注于 AI 驱动的影视制作技术，交易于 3 月达成。</p></div>
+                    <div class="detail"><h4>原理</h4><p>InterPositive 利用 AI 技术优化影视后期制作流程，包括视觉特效生成、画面修复和智能剪辑等环节，大幅缩短制作周期并降低成本。</p></div>
+                    <div class="detail"><h4>价值</h4><p>流媒体巨头重金押注 AI 内容制作，为 Netflix 在原创内容生产上建立技术壁垒，AI 辅助制作或成为行业新标准。</p></div>
+                    <div class="detail"><h4>影响</h4><p>标志着 AI 技术正从聊天机器人向影视娱乐产业深度渗透，影视制作流程可能被 AI 全面重构，好莱坞技术体系面临变革。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge / The Hollywood Reporter（SEC 文件披露）</a>
+                </div>
+            </div>
+
+            <!-- INT 2: Meta-Anthropic compute deal -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    Meta 与 Anthropic 洽谈 100 亿美元算力租赁协议
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-18</span>
+                    <span class="keyword"><strong>关键词：</strong>Meta、Anthropic、算力租赁、AI基础设施</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>据《纽约时报》报道，Meta 正考虑向 Anthropic 出租算力，交易价值或达 100 亿美元/两年，Anthropic 按月支付。尽管 Anthropic 计划自建 500 亿美元数据中心，但仍需外部算力。</p></div>
+                    <div class="detail"><h4>原理</h4><p>Meta 拥有大规模 GPU 集群基础设施，通过算力租赁模式为 Anthropic 提供训练和推理所需的算力资源，Anthropic 按使用量月度结算。</p></div>
+                    <div class="detail"><h4>价值</h4><p>AI 算力需求远超单一公司自建能力，Meta 从 Anthropic 的竞争对手转型为基础设施提供商，算力租赁商业模式加速成熟。</p></div>
+                    <div class="detail"><h4>影响</h4><p>科技巨头之间"竞合关系"加深，算力租赁市场加速成型，未来可能出现更多类似的跨公司算力合作协议。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge / 纽约时报</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 二、AI 芯片 & 基础设施 -->
+        <div class="section">
+            <div class="section-title">二、AI 芯片 &amp; 基础设施</div>
+
+            <!-- CN 3: 天数智芯 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    天数智芯发布天垓 300 通用 GPU 旗舰芯片
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>天数智芯、GPU、天垓300、芯片</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>在 2026 世界人工智能大会期间，天数智芯发布新一代通用 GPU 旗舰产品天垓 300，支持标量/矢量/张量混合计算，已具备规模化部署条件。</p></div>
+                    <div class="detail"><h4>原理</h4><p>天垓 300 围绕 Attention、MoE、AF 分离、PD 分离及大规模系统扩展等技术进行优化。Attention 效率超 90%，64k 上下文效能高于 Hopper 方案 10%，首字延迟降低约 20%。</p></div>
+                    <div class="detail"><h4>价值</h4><p>国产 GPU 在 AI 训练和推理场景加速落地，性能指标对标国际高端方案，已与国内云厂商和服务器厂商深度适配。</p></div>
+                    <div class="detail"><h4>影响</h4><p>有助于降低国内 AI 企业对海外芯片的依赖，为"算力自主"提供硬件基础，在制裁背景下意义重大。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/781.htm" target="_blank">来源：IT之家</a>
+                </div>
+            </div>
+
+            <!-- CN 4: 面壁智能 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    面壁智能发布端侧模型 MiniCPM5-2B
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>面壁智能、MiniCPM5、端侧模型、AA-Index</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>面壁智能发布 MiniCPM5-2B 端侧模型，在 AA-Index 榜单中 4B 以下参数模型性能排名第一，面向手机、IoT 等边缘设备部署。</p></div>
+                    <div class="detail"><h4>原理</h4><p>MiniCPM5-2B 采用知识蒸馏和量化技术，在保持 2B 参数规模的同时，通过结构优化和训练策略在 AA-Index 评测中达到同级别最优性能。</p></div>
+                    <div class="detail"><h4>价值</h4><p>端侧小模型性能持续突破，为手机、IoT 等边缘设备上的本地 AI 推理提供高质量方案，减少对云端算力的依赖。</p></div>
+                    <div class="detail"><h4>影响</h4><p>边缘 AI 推理市场加速成熟，更多消费电子设备将具备本地 AI 能力，隐私保护和响应速度同时提升。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/" target="_blank">来源：IT之家</a>
+                </div>
+            </div>
+
+            <!-- INT 3: SpaceX Pentagon -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    SpaceX 或将向五角大楼提供 AI 算力服务
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-18</span>
+                    <span class="keyword"><strong>关键词：</strong>SpaceX、五角大楼、AI算力、云服务</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>据《华尔街日报》报道，五角大楼正与 SpaceX 洽谈，可能支付数十亿美元购买其算力服务。SpaceX 目前已为 Google 和 Anthropic 提供算力，希望进一步拓展云计算业务。</p></div>
+                    <div class="detail"><h4>原理</h4><p>SpaceX 利用其卫星通信和地面基础设施构建算力网络，为军事 AI 应用提供低延迟、高可靠的云计算和推理服务。</p></div>
+                    <div class="detail"><h4>价值</h4><p>AI 算力需求已延伸至国防领域，SpaceX 从航天公司转型为云计算+AI 基础设施服务商，与 Google Cloud、AWS 形成直接竞争。</p></div>
+                    <div class="detail"><h4>影响</h4><p>军事 AI 算力供应商多元化，传统云厂商面临新竞争对手，国防 AI 应用的供应链安全成为新议题。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge / 华尔街日报</a>
+                </div>
+            </div>
+
+            <!-- INT 4: Apple 下架 AI 换脸应用 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    Apple 确认下架 AI "换脸"应用，Google 同步跟进
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-17</span>
+                    <span class="keyword"><strong>关键词：</strong>Apple、Google、AI监管、深度伪造</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>旧金山城市检察官 David Chiu 要求 Apple 和 Google 下架 13 款可生成非自愿裸体图像的应用。Apple 发言人确认已下架 3 款应用并正在终止相关开发者账户。</p></div>
+                    <div class="detail"><h4>原理</h4><p>这些应用利用 AI 生成技术（"nudification"）将普通照片转化为不雅图像，违反加州法律和两家公司的应用商店审核指南。</p></div>
+                    <div class="detail"><h4>价值</h4><p>平台方对 AI 生成内容的监管力度持续加强，标志着 AI 伦理治理从政策层面落地到应用商店执行层面。</p></div>
+                    <div class="detail"><h4>影响</h4><p>AI 应用审核标准趋严，类似"换脸"和深度伪造类应用将面临更大合规压力，平台治理 AI 滥用的责任进一步明确。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge / Wired</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 三、AI 商业化 & 产品 -->
+        <div class="section">
+            <div class="section-title">三、AI 商业化 &amp; 产品</div>
+
+            <!-- CN 5: Kimi 暂停订阅 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    月之暗面 Kimi 暂停 C 端新用户订阅，ARR 创历史最大增幅
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>月之暗面、Kimi K3、订阅制、商业化</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>7 月 19 日，月之暗面发布公告暂停 C 端新用户订阅，将全部算力投入服务已订阅用户。Kimi 总裁张予彤此前透露 K3 发布次日 ARR 创历史最大单日增幅。按量计费为输入 $9/M Tokens、输出 $35/M Tokens。</p></div>
+                    <div class="detail"><h4>原理</h4><p>K3 模型因 2.8T 参数和百万 Token 上下文导致推理成本极高，新用户涌入挤占已有用户算力，因此暂停新订阅以保障服务质量。</p></div>
+                    <div class="detail"><h4>价值</h4><p>ARR 创历史最大增幅说明市场对该模型的强烈需求，但高昂算力成本成为制约大规模用户增长的关键瓶颈。</p></div>
+                    <div class="detail"><h4>影响</h4><p>大模型商业化进入"供需矛盾"阶段——需求远超算力供给能力。Kimi 估值涨至 315 亿美元，收入曲线已呈现 Anthropic 早期特征。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/808.htm" target="_blank">来源：IT之家</a>
+                </div>
+            </div>
+
+            <!-- CN 6: 阿里 Token Plan -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    阿里 Token Plan 个人版发布，限时优惠每月 39 元起
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>阿里、Token Plan、千问、商业化</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>阿里云推出 Token Plan 个人版订阅，分 Lite、Standard、Pro 三档，限时优惠每月 39 元起。白天 Credits 消耗 1 折，夜间（22:00-08:00）再享 2 折。用户可抢先体验 Qwen3.8-Max-Preview。</p></div>
+                    <div class="detail"><h4>原理</h4><p>Token Plan 采用 Credits 订阅模式，用户购买 Credits 后可调用各类模型 API。通过分时段折扣策略引导用户错峰使用，优化算力调度效率。</p></div>
+                    <div class="detail"><h4>价值</h4><p>以极低门槛让个人开发者和爱好者体验前沿模型，降低 AI 服务使用门槛，加速开发者生态培育。</p></div>
+                    <div class="detail"><h4>影响</h4><p>订阅制+分时段定价或成为国内 AI 服务主流商业模式，与 OpenAI 的 API 按量计费和 Anthropic 的订阅制形成差异化竞争。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/775.htm" target="_blank">来源：IT之家</a>
+                </div>
+            </div>
+
+            <!-- INT 5: Apple vs OpenAI -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    Apple 对 40 名前 OpenAI 员工发出法律警告
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-17</span>
+                    <span class="keyword"><strong>关键词：</strong>Apple、OpenAI、法律诉讼、商业机密</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>据《金融时报》报道，Apple 向约 40 名前员工发出法律警告信，要求其"保存文件和通信记录"。Apple 上周已对 OpenAI 提起诉讼，指控两名前员工帮助 AI 巨头窃取其商业机密。</p></div>
+                    <div class="detail"><h4>原理</h4><p>Apple 指控前员工在跳槽至 OpenAI 时携带了 Apple 的专有技术信息，包括 Siri 和 Apple Intelligence 相关的项目细节，通过法律手段追查信息流向。</p></div>
+                    <div class="detail"><h4>价值</h4><p>科技巨头之间的人才争夺战升级，商业机密保护从预防性保密升级为主动诉讼，AI 领域知识产权保护成为焦点。</p></div>
+                    <div class="detail"><h4>影响</h4><p>人才流动的法律风险显著上升，AI 公司在招聘竞争对手员工时将面临更高的合规审查成本，行业人才竞争格局可能因此重塑。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge / 金融时报</a>
+                </div>
+            </div>
+
+            <!-- INT 6: Suno AI 音乐 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    AI 音乐创作平台 Suno 引发创作者热议
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-20</span>
+                    <span class="keyword"><strong>关键词：</strong>Suno、AI音乐、创作工具、版权</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>创作者 Benja 使用 Suno AI 生成的曲目"Semiramis' Dream"引发热议，作品质量超出预期，The Verge 报道称"AI 在合适的人手中远不止是垃圾引擎"。</p></div>
+                    <div class="detail"><h4>原理</h4><p>Suno 基于大规模音乐数据集训练的生成模型，用户通过文本提示即可生成完整的音乐作品，涵盖旋律、和声、编曲和人声。</p></div>
+                    <div class="detail"><h4>价值</h4><p>AI 音乐创作从"技术演示"走向"可用工具"，为独立创作者提供低成本高质量的音乐生产能力。</p></div>
+                    <div class="detail"><h4>影响</h4><p>AI 音乐版权和原创性争议将持续升温，传统音乐产业面临来自 AI 生成内容的新竞争，音乐创作民主化趋势不可逆转。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 四、AI 治理 & 生态 -->
+        <div class="section">
+            <div class="section-title">四、AI 治理 &amp; 生态</div>
+
+            <!-- CN 7: 世界AI合作组织 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    29 国签署协定成立世界人工智能合作组织
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>WAIC、国际合作、开源生态、上海</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>《关于成立世界人工智能合作组织的协定》签署仪式在上海举行，来自亚洲、非洲、拉美和欧洲的 29 个国家现场签署成为创始成员国，总部设上海。</p></div>
+                    <div class="detail"><h4>原理</h4><p>该组织由中方倡导推动，旨在促进 AI 技术和服务可及性，鼓励共建开源生态，确保发展中国家在智能浪潮中平等受益。</p></div>
+                    <div class="detail"><h4>价值</h4><p>全球 AI 治理框架出现新组织形态，与现有的联合国 AI 治理框架形成互补，中国在国际 AI 规则制定中的话语权显著提升。</p></div>
+                    <div class="detail"><h4>影响</h4><p>开源生态有望成为全球 AI 协作新范式，发展中国家通过合作组织获得 AI 技术和服务，可能改变全球 AI 发展不平衡的格局。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/797.htm" target="_blank">来源：IT之家</a>
+                </div>
+            </div>
+
+            <!-- CN 8: 华为引望 -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-domestic">国内</span>
+                    华为引望 CEO 靳玉志："境"和"界"互补，乾崑智驾打造公共平台
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>华为、引望、鸿蒙智行、乾崑智驾</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>华为高级副总裁、引望公司 CEO 靳玉志接受采访，强调引望坚持"电子螺丝钉"战略定位，不与整车厂产生冲突。梳理了鸿蒙智行（"界"系列，30 万以上）与"境"系列（30 万以下）的互补关系。</p></div>
+                    <div class="detail"><h4>原理</h4><p>引望作为华为智能汽车解决方案公司，定位为向车企提供智能化零部件和方案，"界"系列主打高端市场，"境"系列（启境、奕境等）覆盖中端市场，双轨并行。</p></div>
+                    <div class="detail"><h4>价值</h4><p>目标是让华为乾崑智驾成为汽车行业智能化公共平台，全价格段覆盖华为智能驾驶技术，扩大市场渗透率。</p></div>
+                    <div class="detail"><h4>影响</h4><p>华为在智能汽车领域的布局从高端向中端延伸，"电子螺丝钉"定位避免了与整车厂的直接竞争，有利于构建更广泛的行业生态。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.ithome.com/0/978/801.htm" target="_blank">来源：IT之家 / 36 氪</a>
+                </div>
+            </div>
+
+            <!-- INT 7: MLB bans AI iPads -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    MLB 禁止球队在休息区使用 AI 辅助决策 iPad 应用
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-17</span>
+                    <span class="keyword"><strong>关键词：</strong>MLB、AI监管、体育、辅助决策</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>MLB（美国职业棒球大联盟）禁止球队在联盟配发的 iPad 上安装自定义 AI 应用来辅助比赛决策。此前约三分之一的球队使用这些应用推荐替补、投球策略等。</p></div>
+                    <div class="detail"><h4>原理</h4><p>球队利用生成式 AI 分析实时比赛数据，给出换人建议、投球策略等传统上由教练和球员做出的决策，改变了比赛的公平性。</p></div>
+                    <div class="detail"><h4>价值</h4><p>体育赛事首次对 AI 辅助决策实施限制，标志着 AI 应用的伦理边界扩展到体育领域。</p></div>
+                    <div class="detail"><h4>影响</h4><p>AI 在体育中的应用将受到更严格的规则约束，"技术辅助"与"技术替代"的界限将成为体育赛事管理的新议题。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge / The Athletic</a>
+                </div>
+            </div>
+
+            <!-- INT 8: Dave Eggers OpenAI -->
+            <div class="news-card">
+                <h3>
+                    <span class="tag tag-international">国外</span>
+                    作家 Dave Eggers 批评 ChatGPT 正在"让整整一代人沉默"
+                </h3>
+                <div class="news-meta">
+                    <span class="keyword"><strong>日期：</strong>2026-07-19</span>
+                    <span class="keyword"><strong>关键词：</strong>OpenAI、AI伦理、创作、教育</span>
+                </div>
+                <div class="news-body">
+                    <div class="detail"><h4>核心</h4><p>作家 Dave Eggers 在 Sam Altman 邀请下对 OpenAI 员工发表演讲，借机批评 ChatGPT 正在"silencing an entire generation"（让整整一代人沉默），引发 AI 对创造力和表达能力影响的讨论。</p></div>
+                    <div class="detail"><h4>原理</h4><p>过度依赖 AI 写作工具可能导致学生和工作者的原创表达能力退化，AI 生成内容的便利性削弱了人们独立思考和写作的动力。</p></div>
+                    <div class="detail"><h4>价值</h4><p>从人文视角提出 AI 时代最重要的教育议题之一——如何在利用 AI 效率的同时保持和培养人类的原创表达能力。</p></div>
+                    <div class="detail"><h4>影响</h4><p>AI 在教育领域的伦理争议将持续升温，学校和教育机构可能需要制定更明确的 AI 使用规范，平衡效率与能力培养。</p></div>
+                </div>
+                <div class="news-link">
+                    <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>AI Weekly Brief · 2026年第29周（7月13日 — 7月20日） · 国内 8 条 / 国外 8 条 · 严格 1:1 平衡 · 共 16 条</p>
+        </div>
+    </div>
+</body>
+</html>

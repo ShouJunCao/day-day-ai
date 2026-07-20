@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.2 对话状态机设计与状态追踪 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .compare-box { display: flex; gap: 16px; margin: 16px 0; }
+        .compare-box > div { flex: 1; padding: 16px; border-radius: 8px; }
+        .compare-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .compare-good { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .compare-box h4 { margin-bottom: 8px; font-size: 0.95em; }
+        .compare-bad h4 { color: var(--red); }
+        .compare-good h4 { color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>4.2 对话状态机设计与状态追踪</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块四：对话系统设计</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解对话状态机的核心概念与有限状态机（FSM）模型</li>
+        <li>掌握<strong>状态、事件、转换规则</strong>三要素的设计方法</li>
+        <li>学会结合意图识别与槽位填充构建完整的对话流程</li>
+        <li>实现状态历史追踪、超时处理与兜底策略</li>
+        <li>能够设计可复用、可扩展的对话状态机系统</li>
+    </ul>
+
+    <h2>一、为什么需要对话状态机？</h2>
+    <p>在上一节 4.1 中，我们学习了多轮对话的上下文管理——解决了"记住之前说过什么"的问题。但这还不够。一个完整的对话系统还需要知道"<strong>当前处于对话的哪个阶段</strong>"以及"<strong>下一步应该做什么</strong>"。这就是状态机的价值。</p>
+
+    <p>想象一下客服场景：用户进线后，系统需要依次完成问候、意图识别、信息收集、确认、执行等环节。如果缺少状态管理，系统可能在用户已经确认订单后还在追问信息，或者在信息还没收集全时就跳转到确认环节。这些都会导致糟糕的用户体验。</p>
+
+    <p>对话状态机（Dialogue State Machine）本质上是一个<strong>有限状态机（Finite State Machine, FSM）</strong>在对话系统中的应用。它通过<strong>状态（State）</strong>、<strong>事件（Event）</strong>和<strong>转换规则（Transition）</strong>三个核心要素，将不可预测的自然语言对话转化为确定性的流程控制。</p>
+
+    <div class="diagram-container">
+        <svg width="820" height="520" viewBox="0 0 820 520" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="idle" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6b7c93"/><stop offset="100%" stop-color="#4a5a6b"/></linearGradient>
+                <linearGradient id="greeting" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+                <linearGradient id="intent" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#6d28d9"/></linearGradient>
+                <linearGradient id="slot" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="confirm" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+                <linearGradient id="process" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#0891b2"/></linearGradient>
+                <linearGradient id="complete" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+                <linearGradient id="fallback" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#6b7c93"/>
+                </marker>
+            </defs>
+            <!-- Title -->
+            <text x="410" y="28" text-anchor="middle" fill="#1a1a2e" font-size="18" font-weight="bold">对话状态机转换图</text>
+            <!-- States -->
+            <rect x="330" y="50" width="140" height="44" rx="22" fill="url(#idle)"/>
+            <text x="400" y="78" text-anchor="middle" fill="white" font-size="13" font-weight="bold">IDLE 空闲</text>
+
+            <rect x="50" y="140" width="140" height="44" rx="22" fill="url(#greeting)"/>
+            <text x="120" y="168" text-anchor="middle" fill="white" font-size="13" font-weight="bold">GREETING 问候</text>
+
+            <rect x="330" y="140" width="140" height="44" rx="22" fill="url(#intent)"/>
+            <text x="400" y="168" text-anchor="middle" fill="white" font-size="13" font-weight="bold">INTENT 意图识别</text>
+
+            <rect x="610" y="140" width="140" height="44" rx="22" fill="url(#fallback)"/>
+            <text x="680" y="168" text-anchor="middle" fill="white" font-size="13" font-weight="bold">FALLBACK 兜底</text>
+
+            <rect x="160" y="250" width="140" height="44" rx="22" fill="url(#slot)"/>
+            <text x="230" y="278" text-anchor="middle" fill="white" font-size="13" font-weight="bold">SLOT 槽位填充</text>
+
+            <rect x="430" y="250" width="140" height="44" rx="22" fill="url(#confirm)"/>
+            <text x="500" y="278" text-anchor="middle" fill="white" font-size="13" font-weight="bold">CONFIRM 确认</text>
+
+            <rect x="280" y="360" width="140" height="44" rx="22" fill="url(#process)"/>
+            <text x="350" y="388" text-anchor="middle" fill="white" font-size="13" font-weight="bold">PROCESS 处理中</text>
+
+            <rect x="50" y="460" width="140" height="44" rx="22" fill="url(#complete)"/>
+            <text x="120" y="488" text-anchor="middle" fill="white" font-size="13" font-weight="bold">COMPLETED 完成</text>
+
+            <rect x="230" y="460" width="140" height="44" rx="22" fill="url(#complete)"/>
+            <text x="300" y="488" text-anchor="middle" fill="white" font-size="13" font-weight="bold">IDLE 重置</text>
+
+            <!-- Transitions -->
+            <line x1="365" y1="94" x2="155" y2="140" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="240" y="108" fill="#4361ee" font-size="10">user_start</text>
+
+            <line x1="190" y1="162" x2="330" y2="162" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="248" y="155" fill="#7c3aed" font-size="10">user_reply</text>
+
+            <line x1="400" y1="184" x2="260" y2="248" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="310" y="210" fill="#f59e0b" font-size="10">intent_found</text>
+
+            <line x1="470" y1="162" x2="610" y2="162" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="520" y="155" fill="#ef4444" font-size="10">intent_unknown</text>
+
+            <line x1="680" y1="184" x2="560" y2="248" stroke="#10b981" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+            <text x="635" y="210" fill="#10b981" font-size="10">user_reply</text>
+
+            <line x1="300" y1="272" x2="430" y2="272" stroke="#10b981" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="345" y="265" fill="#10b981" font-size="10">slot_complete</text>
+
+            <!-- slot_missing loop -->
+            <path d="M 160,272 C 120,290 120,240 160,252" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+            <text x="105" y="275" fill="#f59e0b" font-size="9">slot_missing</text>
+
+            <line x1="430" y1="294" x2="380" y2="358" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="395" y="335" fill="#06b6d4" font-size="10">user_confirm</text>
+
+            <!-- user_deny -->
+            <line x1="430" y1="250" x2="300" y2="250" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+            <text x="340" y="244" fill="#ef4444" font-size="9">user_deny</text>
+
+            <line x1="280" y1="382" x2="120" y2="460" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+            <text x="180" y="430" fill="#22c55e" font-size="10">process_done</text>
+
+            <line x1="120" y1="410" x2="300" y2="410" stroke="#6b7c93" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="195" y="405" fill="#6b7c93" font-size="10">reset</text>
+
+            <!-- timeout -->
+            <line x1="120" y1="184" x2="365" y2="94" stroke="#6b7c93" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowhead)"/>
+            <text x="210" y="130" fill="#6b7c93" font-size="9">timeout</text>
+
+            <line x1="230" y1="250" x2="365" y2="94" stroke="#6b7c93" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowhead)"/>
+            <text x="275" y="165" fill="#6b7c93" font-size="9">timeout</text>
+
+            <line x1="500" y1="250" x2="400" y2="94" stroke="#6b7c93" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrowhead)"/>
+            <text x="460" y="165" fill="#6b7c93" font-size="9">timeout</text>
+
+            <!-- Legend -->
+            <rect x="610" y="360" width="180" height="145" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="700" y="382" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">图例</text>
+            <line x1="630" y1="400" x2="660" y2="400" stroke="#4361ee" stroke-width="2"/>
+            <text x="670" y="404" fill="#333" font-size="10">正常转换</text>
+            <line x1="630" y1="420" x2="660" y2="420" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,3"/>
+            <text x="670" y="424" fill="#333" font-size="10">自循环追问</text>
+            <line x1="630" y1="440" x2="660" y2="440" stroke="#6b7c93" stroke-width="1.5" stroke-dasharray="3,3"/>
+            <text x="670" y="444" fill="#333" font-size="10">超时处理</text>
+            <rect x="630" y="455" width="12" height="12" rx="6" fill="#ef4444"/>
+            <text x="650" y="466" fill="#333" font-size="10">异常路径</text>
+        </svg>
+    </div>
+
+    <div class="note note-info">
+    <div class="note-title">📌 核心理解</div>
+    <p>对话状态机不是要限制灵活性，而是要在<strong>灵活性</strong>（用户可以说任何话）和<strong>确定性</strong>（系统知道下一步该做什么）之间找到平衡。状态机负责"流程控制"，LLM 负责"语义理解"——两者结合才是现代对话系统的最佳实践。</p>
+    </div>
+
+    <h2>二、有限状态机（FSM）三要素</h2>
+    <p>有限状态机是对话系统的"骨架"，由三个基本要素组成。理解这三要素后，你就能设计出覆盖各种对话场景的状态机。</p>
+
+    <table>
+    <thead>
+        <tr><th>要素</th><th>含义</th><th>对话系统中的对应物</th><th>示例</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>状态 (State)</strong></td>
+            <td>系统在某一时刻所处的"阶段"</td>
+            <td>对话所处的环节</td>
+            <td>IDLE、GREETING、SLOT_FILLING、CONFIRMATION</td>
+        </tr>
+        <tr>
+            <td><strong>事件 (Event)</strong></td>
+            <td>触发状态变化的"信号"</td>
+            <td>用户行为或系统判断结果</td>
+            <td>user_start、intent_found、slot_complete</td>
+        </tr>
+        <tr>
+            <td><strong>转换 (Transition)</strong></td>
+            <td>状态 → 事件 → 新状态的映射规则</td>
+            <td>流程控制逻辑</td>
+            <td>INTENT_REC + intent_found → SLOT_FILLING</td>
+        </tr>
+    </tbody>
+    </table>
+
+    <p>FSM 的核心特点是<strong>确定性</strong>：给定当前状态和输入事件，下一个状态是唯一确定的。这种确定性在对话系统中极其重要——它可以防止"状态漂移"（比如系统突然从确认跳回问候），保证用户体验的一致性。</p>
+
+    <h2>三、状态定义：设计对话的生命周期</h2>
+    <p>状态定义是对话状态机的第一步。一个好的状态集合应该满足两个条件：<strong>互斥性</strong>（同一时刻只能处于一个状态）和<strong>完备性</strong>（覆盖所有可能的对话阶段）。</p>
+
+    <p>在典型的任务型对话中，一个完整的生命周期包含以下阶段：</p>
+
+    <div class="diagram-container">
+    <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="ls1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#6b7c93"/><stop offset="100%" stop-color="#4a5a6b"/></linearGradient>
+        </defs>
+        <text x="390" y="22" text-anchor="middle" fill="#1a1a2e" font-size="14" font-weight="bold">对话生命周期：从进线到结束</text>
+        <rect x="10" y="40" width="90" height="40" rx="8" fill="url(#ls1)"/>
+        <text x="55" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">空闲</text>
+        <polygon points="102,60 112,55 112,65" fill="#4361ee"/>
+        <rect x="115" y="40" width="90" height="40" rx="8" fill="#4361ee"/>
+        <text x="160" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">问候</text>
+        <polygon points="207,60 217,55 217,65" fill="#4361ee"/>
+        <rect x="220" y="40" width="90" height="40" rx="8" fill="#7c3aed"/>
+        <text x="265" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">意图识别</text>
+        <polygon points="312,60 322,55 322,65" fill="#4361ee"/>
+        <rect x="325" y="40" width="90" height="40" rx="8" fill="#f59e0b"/>
+        <text x="370" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">槽位填充</text>
+        <polygon points="417,60 427,55 427,65" fill="#4361ee"/>
+        <rect x="430" y="40" width="90" height="40" rx="8" fill="#10b981"/>
+        <text x="475" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">确认</text>
+        <polygon points="522,60 532,55 532,65" fill="#4361ee"/>
+        <rect x="535" y="40" width="90" height="40" rx="8" fill="#06b6d4"/>
+        <text x="580" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">处理中</text>
+        <polygon points="627,60 637,55 637,65" fill="#4361ee"/>
+        <rect x="640" y="40" width="120" height="40" rx="8" fill="#22c55e"/>
+        <text x="700" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">完成</text>
+        <!-- 底部标注 -->
+        <text x="390" y="120" text-anchor="middle" fill="#6b7c93" font-size="12">典型任务型对话的 7 个阶段</text>
+        <!-- 异常分支 -->
+        <rect x="220" y="130" width="120" height="40" rx="8" fill="#ef4444" opacity="0.85"/>
+        <text x="280" y="155" text-anchor="middle" fill="white" font-size="11" font-weight="bold">兜底/澄清</text>
+        <line x1="265" y1="80" x2="265" y2="130" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <rect x="535" y="130" width="120" height="40" rx="8" fill="#ef4444" opacity="0.85"/>
+        <text x="595" y="155" text-anchor="middle" fill="white" font-size="11" font-weight="bold">转人工/异常</text>
+        <line x1="580" y1="80" x2="580" y2="130" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>
+    </svg>
+    </div>
+
+    <p>在代码实现中，我们用 Python 的 <code>Enum</code> 来定义状态集合。这样做的好处是<strong>类型安全</strong>——编辑器可以提供自动补全，运行时也避免了拼写错误导致的状态不一致。</p>
+
+    <pre><code class="language-python">"""
+    dialogue_state_machine.py — 对话状态机的核心模型
+    定义状态、事件、转换规则，支持完整的状态追踪与校验。
+    """
+    from dataclasses import dataclass, field
+    from enum import Enum
+    from typing import Optional
+    from datetime import datetime
+
+
+    class DialogueState(Enum):
+    """对话生命周期中的核心状态"""
+    IDLE = "idle"                          # 空闲，等待用户发起
+    GREETING = "greeting"                  # 问候阶段
+    INTENT_RECOGNITION = "intent_rec"      # 意图识别中
+    SLOT_FILLING = "slot_filling"          # 槽位填充中
+    CONFIRMATION = "confirmation"          # 等待用户确认
+    PROCESSING = "processing"              # 处理用户请求
+    COMPLETED = "completed"                # 对话完成
+    FALLBACK = "fallback"                  # 兜底/澄清中
+    ERROR = "error"                        # 异常状态
+
+
+    class DialogueEvent(Enum):
+    """触发状态转换的事件"""
+    USER_START = "user_start"              # 用户发起对话
+    USER_REPLY = "user_reply"              # 用户回复
+    INTENT_FOUND = "intent_found"          # 意图识别成功
+    INTENT_UNKNOWN = "intent_unknown"      # 意图未识别
+    SLOT_COMPLETE = "slot_complete"        # 所有槽位已填满
+    SLOT_MISSING = "slot_missing"          # 仍有槽位缺失
+    USER_CONFIRM = "user_confirm"          # 用户确认
+    USER_DENY = "user_deny"                # 用户否认
+    PROCESS_DONE = "process_done"          # 处理完成
+    TIMEOUT = "timeout"                    # 超时
+    USER_ESCALATE = "user_escalate"        # 用户要求转人工</code></pre>
+
+    <h2>四、转换规则：设计确定性的流程控制</h2>
+    <p>转换规则是状态机的"大脑"，决定了在某个状态下收到某个事件后，应该跳转到哪个新状态。设计转换规则时，有几个关键原则需要遵守。</p>
+
+    <h3>4.1 规则表设计</h3>
+    <p>最直观的做法是用一张表格来枚举所有合法的（状态，事件）→ 新状态映射。这种声明式方式的优势是<strong>可审查、可测试、可文档化</strong>——你一眼就能看出系统支持哪些流程。</p>
+
+    <table>
+    <thead>
+        <tr><th>当前状态</th><th>事件</th><th>新状态</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>IDLE</td><td>USER_START</td><td>GREETING</td><td>用户发起对话</td></tr>
+        <tr><td>GREETING</td><td>USER_REPLY</td><td>INTENT_RECOGNITION</td><td>收到输入，识别意图</td></tr>
+        <tr><td>INTENT_RECOGNITION</td><td>INTENT_FOUND</td><td>SLOT_FILLING</td><td>意图明确，开始填槽</td></tr>
+        <tr><td>INTENT_RECOGNITION</td><td>INTENT_UNKNOWN</td><td>FALLBACK</td><td>意图不明，进入澄清</td></tr>
+        <tr><td>SLOT_FILLING</td><td>SLOT_MISSING</td><td>SLOT_FILLING</td><td>继续追问（自循环）</td></tr>
+        <tr><td>SLOT_FILLING</td><td>SLOT_COMPLETE</td><td>CONFIRMATION</td><td>槽位齐了，等确认</td></tr>
+        <tr><td>CONFIRMATION</td><td>USER_CONFIRM</td><td>PROCESSING</td><td>用户确认，开始处理</td></tr>
+        <tr><td>CONFIRMATION</td><td>USER_DENY</td><td>SLOT_FILLING</td><td>用户否认，返回修改</td></tr>
+        <tr><td>PROCESSING</td><td>PROCESS_DONE</td><td>COMPLETED</td><td>处理完成</td></tr>
+    </tbody>
+    </table>
+
+    <p>在代码中，我们将每条转换规则建模为一个 <code>StateTransition</code> 对象，并用列表存储所有规则。<code>fire()</code> 方法遍历规则表，找到匹配的转换并执行跳转。</p>
+
+    <pre><code class="language-python">@dataclass
+    class StateTransition:
+    """单条状态转换规则"""
+    from_state: DialogueState
+    event: DialogueEvent
+    to_state: DialogueState
+    description: str = ""
+
+    def matches(self, current: DialogueState, event: DialogueEvent) -> bool:
+    """检查当前状态和事件是否匹配该转换"""
+    return self.from_state == current and self.event == event
+
+
+    @dataclass
+    class DialogueStateMachine:
+    """对话状态机：管理对话流程的状态转换与追踪"""
+
+    transitions: list[StateTransition] = field(default_factory=list)
+    history: list = field(default_factory=list)
+    current_state: DialogueState = DialogueState.IDLE
+    _enter_time: Optional[datetime] = None
+
+    def fire(self, event: DialogueEvent) -> tuple[bool, str]:
+    """
+    触发一个事件，执行状态转换。
+
+    Returns:
+        (success, message): 转换是否成功及描述信息
+    """
+    for transition in self.transitions:
+        if transition.matches(self.current_state, event):
+            self._record_transition(event, transition)
+            self.current_state = transition.to_state
+            self._enter_time = datetime.now()
+            return True, transition.description
+
+    # 未找到匹配的转换
+    return False, (
+        f"无效转换: 当前状态={self.current_state.value}, "
+        f"事件={event.value}"
+    )</code></pre>
+
+    <div class="note note-tip">
+    <div class="note-title">💡 为什么用 for 循环遍历而不是字典？</div>
+    <p>对于规则数少于 20 条的场景，列表遍历性能完全可接受（微秒级）。列表的优势是<strong>支持多条规则共享同一个（状态，事件）组合</strong>，后续可以扩展优先级、条件判断等逻辑。</p>
+    </div>
+
+    <h3>4.2 超时处理</h3>
+    <p>超时是对话状态机中<strong>最容易被忽视但最重要的异常路径</strong>。用户可能在任何阶段突然消失（关掉页面、切出去回消息等），如果没有超时处理，状态机会永远卡在中间状态，导致后续对话无法正常开始。</p>
+
+    <p>超时的处理策略是：为关键状态（GREETING、SLOT_FILLING、CONFIRMATION）定义 TIMEOUT 事件，触发后回到 IDLE 状态。在实现中，我们在每次状态进入时记录时间戳，下次收到用户消息时检查是否超时。</p>
+
+    <pre><code class="language-python">import time
+    from datetime import datetime, timedelta
+
+    # 超时配置（单位：秒）
+    TIMEOUT_CONFIG = {
+    DialogueState.GREETING: 300,         # 问候阶段 5 分钟超时
+    DialogueState.SLOT_FILLING: 600,     # 槽位填充 10 分钟超时
+    DialogueState.CONFIRMATION: 180,     # 确认阶段 3 分钟超时
+    }
+
+    def check_timeout(sm: DialogueStateMachine) -> bool:
+    """检查当前状态是否超时"""
+    if sm._enter_time is None:
+    return False
+
+    timeout_sec = TIMEOUT_CONFIG.get(sm.current_state)
+    if timeout_sec is None:
+    return False  # 该状态没有超时限制
+
+    elapsed = (datetime.now() - sm._enter_time).total_seconds()
+    if elapsed > timeout_sec:
+    sm.fire(DialogueEvent.TIMEOUT)
+    return True
+    return False</code></pre>
+
+    <h2>五、状态追踪：记录对话的完整历史</h2>
+    <p>状态机不仅要知道"现在在哪"，还要知道"怎么到这里的"。状态历史追踪对于<strong>问题排查、用户分析、对话质量评估</strong>都非常有价值。</p>
+
+    <p>我们记录每次状态转换的四个关键信息：<strong>从哪个状态</strong>、<strong>因为什么事件</strong>、<strong>什么时候发生的</strong>、<strong>在该状态停留了多久</strong>。这些数据可以用于后续的对话分析。</p>
+
+    <pre><code class="language-python">@dataclass
+    class StateEntry:
+    """状态历史记录中的单条记录"""
+    state: DialogueState
+    event: DialogueEvent
+    timestamp: datetime
+    duration_ms: int = 0  # 在该状态停留的时长
+
+
+    # 在 DialogueStateMachine 中的记录方法
+    def _record_transition(self, event: DialogueEvent, transition):
+    """记录一次状态转换到历史"""
+    now = datetime.now()
+    duration = 0
+    if self._enter_time:
+    delta = now - self._enter_time
+    duration = int(delta.total_seconds() * 1000)
+
+    entry = StateEntry(
+    state=transition.from_state,
+    event=event,
+    timestamp=now,
+    duration_ms=duration,
+    )
+    self.history.append(entry)
+
+
+    def get_history_summary(self) -> list[dict]:
+    """返回状态历史的摘要列表"""
+    return [
+    {
+        "from": entry.state.value,
+        "event": entry.event.value,
+        "duration_ms": entry.duration_ms,
+        "time": entry.timestamp.isoformat(),
+    }
+    for entry in self.history
+    ]</code></pre>
+
+    <p>通过状态历史，我们可以回答很多工程问题：用户的平均对话轮次是多少？哪个状态最容易导致用户流失？兜底（FALLBACK）被触发的频率如何？这些都是优化对话系统的关键指标。</p>
+
+    <h2>六、意图识别：状态机的"眼睛"</h2>
+    <p>意图识别决定了状态机应该走向哪条路径。在简单的场景中，我们可以用<strong>关键词匹配</strong>实现意图分类；在生产环境中，通常接入 LLM 或专用的 NLU 模型。</p>
+
+    <p>这里我们先实现一个轻量级的关键词意图路由器，它的优势是<strong>零依赖、可调试、响应快</strong>，适合快速原型和简单场景。</p>
+
+    <pre><code class="language-python">"""
+    intent_router.py — 轻量级意图路由器
+    基于关键词匹配和规则映射识别用户意图。
+    """
+    from dataclasses import dataclass, field
+    from typing import Optional
+
+
+    @dataclass
+    class IntentDefinition:
+    """意图定义"""
+    name: str                     # 意图名称
+    keywords: list[str]           # 关键词列表
+    examples: list[str] = field(default_factory=list)
+    confidence: float = 0.0
+    response_template: str = ""
+
+
+    @dataclass
+    class IntentRouter:
+    """意图路由器：根据用户输入文本匹配预定义意图"""
+
+    intents: list[IntentDefinition] = field(default_factory=list)
+    default_intent: str = "unknown"
+    min_confidence: float = 0.3
+
+    def classify(self, text: str) -> dict:
+    """
+    对用户输入进行意图分类。
+
+    Returns:
+        {"intent": str, "confidence": float, "matched_keywords": list}
+    """
+    text_lower = text.lower().strip()
+    best_score = 0.0
+    best_intent = self.default_intent
+    best_keywords = []
+
+    for intent in self.intents:
+        score = self._compute_score(text_lower, intent)
+        if score > best_score:
+            best_score = score
+            best_intent = intent.name
+            best_keywords = [
+                kw for kw in intent.keywords
+                if kw.lower() in text_lower
+            ]
+
+    is_default = best_score < self.min_confidence
+    if is_default:
+        best_intent = self.default_intent
+        best_score = 0.0
+        best_keywords = []
+
+    return {
+        "intent": best_intent,
+        "confidence": round(best_score, 2),
+        "matched_keywords": best_keywords,
+        "is_default": is_default,
+    }</code></pre>
+
+    <div class="note note-warn">
+    <div class="note-title">⚠️ 关键词匹配的局限性</div>
+    <p>关键词匹配无法处理同义表达（"订房" ≠ "预订房间"）、上下文依赖（"便宜的"依赖前文的"酒店"）、和复杂意图（"我想订一个下周五去北京、住两晚、预算 500 以内的酒店"）。生产环境应使用 <strong>LLM 意图分类</strong>或微调的分类模型，这里仅作为教学示例。</p>
+    </div>
+
+    <h2>七、槽位填充：收集关键信息</h2>
+    <p>槽位填充（Slot Filling）是任务型对话的核心环节。当意图被识别后，系统需要收集完成该任务所需的<strong>关键参数</strong>——这就是槽位。</p>
+
+    <p>以酒店预订为例：意图是 <code>book_hotel</code>，需要的槽位包括 <code>city</code>（城市）、<code>check_in</code>（入住日期）、<code>check_out</code>（退房日期）、<code>guests</code>（人数）。每个槽位都有独立的校验规则，比如日期必须符合 <code>YYYY-MM-DD</code> 格式。</p>
+
+    <pre><code class="language-python">"""
+    slot_tracker.py — 槽位追踪器
+    管理对话中的槽位收集、验证和完整性检查。
+    """
+    from dataclasses import dataclass, field
+    from typing import Any, Callable, Optional
+    from datetime import datetime
+
+
+    @dataclass
+    class Slot:
+    """单个槽位的定义"""
+    name: str                          # 槽位名称
+    description: str                   # 槽位说明（用于向用户提问）
+    value: Any = None                  # 当前值
+    required: bool = True              # 是否必填
+    validator: Optional[Callable] = None  # 校验函数
+    prompt_template: str = "请问{desc}？"
+
+    @property
+    def is_filled(self) -> bool:
+    """判断槽位是否已填充"""
+    return self.value is not None
+
+    def validate(self, value: Any) -> tuple[bool, str]:
+    """校验输入值是否合法"""
+    if self.validator:
+        try:
+            result = self.validator(value)
+            if isinstance(result, tuple):
+                return result
+            return (bool(result), "")
+        except Exception as e:
+            return (False, f"校验失败: {e}")
+    return (True, "")
+
+    def fill(self, value: Any) -> tuple[bool, str]:
+    """尝试填充槽位值"""
+    is_valid, error = self.validate(value)
+    if is_valid:
+        self.value = value
+        return (True, f"槽位 '{self.name}' 已填充")
+    return (False, error)</code></pre>
+
+    <p>槽位追踪器管理一组槽位的生命周期。每次用户回复后，系统尝试将回复映射到缺失的槽位上，并检查是否所有必填槽位都已填满。如果填满了，状态机就从 <code>SLOT_FILLING</code> 转换到 <code>CONFIRMATION</code>。</p>
+
+    <pre><code class="language-python">def create_booking_slots() -> SlotTracker:
+    """创建酒店预订场景的槽位配置"""
+
+    def validate_date(value: str) -> tuple[bool, str]:
+    """校验日期格式 YYYY-MM-DD"""
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+        return (True, "")
+    except ValueError:
+        return (False, "日期格式应为 YYYY-MM-DD")
+
+    def validate_positive_int(value: Any) -> tuple[bool, str]:
+    """校验正整数"""
+    try:
+        n = int(value)
+        if n <= 0:
+            return (False, "请输入大于 0 的整数")
+        return (True, "")
+    except (ValueError, TypeError):
+        return (False, "请输入有效的整数")
+
+    return SlotTracker(
+    slots=[
+        Slot(name="city", description="您要预订哪个城市"),
+        Slot(name="check_in", description="入住日期",
+             validator=validate_date),
+        Slot(name="check_out", description="退房日期",
+             validator=validate_date),
+        Slot(name="guests", description="入住人数",
+             validator=validate_positive_int, required=False),
+    ]
+    )</code></pre>
+
+    <h2>八、集成演示：完整的对话流程</h2>
+    <p>将状态机、意图路由器、槽位追踪器三者集成，就构成了一个完整的多轮对话系统。下面是一个端到端的演示，展示用户从进线到完成酒店预订的完整流程。</p>
+
+    <pre><code class="language-python">"""
+    完整对话流程：状态机 + 意图识别 + 槽位填充
+    """
+    from dialogue_state_machine import DialogueStateMachine, DialogueEvent
+    from slot_tracker import create_booking_slots
+    from intent_router import create_hotel_intent_router
+
+
+    def demo_full_dialogue_flow():
+    sm = DialogueStateMachine()
+    tracker = create_booking_slots()
+    router = create_hotel_intent_router()
+
+    # 模拟用户输入序列
+    dialogue_turns = [
+    {"user": "你好", "fill": []},
+    {"user": "我想预订酒店", "fill": []},
+    {"user": "北京", "fill": [("city", "北京")]},
+    {"user": "2026-08-01", "fill": [("check_in", "2026-08-01")]},
+    {"user": "2026-08-05", "fill": [("check_out", "2026-08-05")]},
+    {"user": "是的，确认", "fill": []},
+    ]
+
+    # 用户发起对话
+    sm.fire(DialogueEvent.USER_START)
+
+    for i, turn in enumerate(dialogue_turns, 1):
+    user_input = turn["user"]
+    print(f"[轮次 {i}] 用户: {user_input}")
+
+    # 意图识别（在问候阶段触发）
+    if sm.current_state == DialogueState.GREETING:
+        sm.fire(DialogueEvent.USER_REPLY)
+        result = router.classify(user_input)
+        if not result["is_default"]:
+            sm.fire(DialogueEvent.INTENT_FOUND)
+
+    # 槽位填充
+    if sm.current_state == DialogueState.SLOT_FILLING:
+        for name, value in turn["fill"]:
+            tracker.fill_slot(name, value)
+        if tracker.is_complete():
+            sm.fire(DialogueEvent.SLOT_COMPLETE)
+
+    # 确认阶段
+    if sm.current_state == DialogueState.CONFIRMATION:
+        if "确认" in user_input:
+            sm.fire(DialogueEvent.USER_CONFIRM)
+            sm.fire(DialogueEvent.PROCESS_DONE)
+
+    print(f"  状态: {sm.current_state.value}")</code></pre>
+
+    <div class="diagram-container">
+    <svg width="760" height="420" viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="g_client" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+            <linearGradient id="g_api" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+            <linearGradient id="g_svc" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+        </defs>
+        <text x="380" y="22" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">完整对话流程时序图</text>
+        <!-- Participants -->
+        <rect x="30" y="40" width="120" height="32" rx="8" fill="url(#g_client)"/>
+        <text x="90" y="61" text-anchor="middle" fill="white" font-size="12" font-weight="bold">👤 用户</text>
+        <line x1="90" y1="72" x2="90" y2="410" stroke="#4361ee" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <rect x="320" y="40" width="120" height="32" rx="8" fill="url(#g_api)"/>
+        <text x="380" y="61" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🤖 对话系统</text>
+        <line x1="380" y1="72" x2="380" y2="410" stroke="#10b981" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <rect x="610" y="40" width="120" height="32" rx="8" fill="url(#g_svc)"/>
+        <text x="670" y="61" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🔧 状态机</text>
+        <line x1="670" y1="72" x2="670" y2="410" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,4"/>
+
+        <!-- T1: user_start -->
+        <text x="30" y="100" fill="#555" font-size="11">[T1] "你好"</text>
+        <line x1="90" y1="108" x2="380" y2="108" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="235" y="102" fill="#4361ee" font-size="10">USER_START</text>
+        <rect x="650" y="96" width="40" height="24" rx="4" fill="#6b7c93"/>
+        <text x="670" y="113" text-anchor="middle" fill="white" font-size="9">IDLE</text>
+        <line x1="380" y1="108" x2="670" y2="108" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+        <!-- T2: intent -->
+        <text x="30" y="150" fill="#555" font-size="11">[T2] "我想订酒店"</text>
+        <line x1="90" y1="158" x2="380" y2="158" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="220" y="152" fill="#7c3aed" font-size="10">意图: book_hotel</text>
+        <line x1="380" y1="158" x2="670" y2="158" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <rect x="650" y="146" width="40" height="24" rx="4" fill="#f59e0b"/>
+        <text x="670" y="163" text-anchor="middle" fill="white" font-size="9">SLOT</text>
+
+        <!-- T3: slot fill -->
+        <text x="30" y="200" fill="#555" font-size="11">[T3] "北京"</text>
+        <line x1="90" y1="208" x2="380" y2="208" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="210" y="202" fill="#f59e0b" font-size="10">填槽: city=北京</text>
+        <rect x="650" y="196" width="40" height="24" rx="4" fill="#f59e0b"/>
+        <text x="670" y="213" text-anchor="middle" fill="white" font-size="9">SLOT</text>
+
+        <!-- T4 -->
+        <text x="30" y="250" fill="#555" font-size="11">[T4] "2026-08-01"</text>
+        <line x1="90" y1="258" x2="380" y2="258" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="200" y="252" fill="#f59e0b" font-size="10">填槽: check_in</text>
+        <rect x="650" y="246" width="40" height="24" rx="4" fill="#f59e0b"/>
+        <text x="670" y="263" text-anchor="middle" fill="white" font-size="9">SLOT</text>
+
+        <!-- T5 -->
+        <text x="30" y="300" fill="#555" font-size="11">[T5] "2026-08-05"</text>
+        <line x1="90" y1="308" x2="380" y2="308" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="200" y="302" fill="#f59e0b" font-size="10">填槽: check_out</text>
+        <line x1="380" y1="308" x2="670" y2="308" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="510" y="302" fill="#10b981" font-size="10">slot_complete</text>
+        <rect x="650" y="296" width="40" height="24" rx="4" fill="#10b981"/>
+        <text x="670" y="313" text-anchor="middle" fill="white" font-size="9">CONF</text>
+
+        <!-- T6 -->
+        <text x="30" y="350" fill="#555" font-size="11">[T6] "是的，确认"</text>
+        <line x1="90" y1="358" x2="380" y2="358" stroke="#4361ee" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="220" y="352" fill="#06b6d4" font-size="10">user_confirm</text>
+        <line x1="380" y1="358" x2="670" y2="358" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="510" y="352" fill="#10b981" font-size="10">PROCESS_DONE</text>
+        <rect x="645" y="346" width="50" height="24" rx="4" fill="#22c55e"/>
+        <text x="670" y="363" text-anchor="middle" fill="white" font-size="9">DONE</text>
+
+        <!-- Response -->
+        <text x="380" y="400" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="bold">✅ 预订成功！入住北京 8/1-8/5</text>
+    </svg>
+    </div>
+
+    <h2>九、对比：状态机 vs 纯 LLM 对话管理</h2>
+    <p>有人可能会问：既然 LLM 已经能理解自然语言，为什么还需要状态机？不能全靠 LLM 来判断下一步吗？答案是——可以，但不推荐。下面是两种方案的对比。</p>
+
+    <table>
+    <thead>
+        <tr><th>维度</th><th>状态机方案</th><th>纯 LLM 方案</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>可控性</strong></td><td>确定性转换，可预测行为</td><td>概率生成，可能"跳过"步骤</td></tr>
+        <tr><td><strong>可调试性</strong></td><td>规则表一目了然，易排查</td><td>黑盒判断，难追踪原因</td></tr>
+        <tr><td><strong>延迟</strong></td><td>毫秒级（纯逻辑判断）</td><td>秒级（需要调用 LLM API）</td></tr>
+        <tr><td><strong>成本</strong></td><td>零成本（本地运行）</td><td>每次判断消耗 Token</td></tr>
+        <tr><td><strong>灵活性</strong></td><td>需要手动添加规则</td><td>自动适应新表达方式</td></tr>
+        <tr><td><strong>适用场景</strong></td><td>任务型对话（预订、查询）</td><td>开放域聊天</td></tr>
+    </tbody>
+    </table>
+
+    <p>最佳实践是<strong>两者结合</strong>：状态机控制高层流程（阶段跳转），LLM 负责每个阶段内的语义理解（意图分类、槽位提取、回复生成）。这样既保证了流程的确定性，又保留了理解的灵活性。</p>
+
+    <h2>十、工程化建议</h2>
+
+    <h3>10.1 可扩展的转换规则</h3>
+    <p>随着业务复杂度增加，转换规则可能从 10 条增长到 50+ 条。建议将规则定义外置为配置文件（YAML/JSON），而不是硬编码在代码中。这样业务人员可以直接修改流程而不需要改代码。</p>
+
+    <pre><code class="language-python">import yaml
+    from pathlib import Path
+
+    def load_transitions_from_yaml(path: str) -> list[StateTransition]:
+    """从 YAML 文件加载转换规则"""
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    transitions = []
+    for rule in data.get("transitions", []):
+    transitions.append(StateTransition(
+        from_state=DialogueState(rule["from"]),
+        event=DialogueEvent(rule["event"]),
+        to_state=DialogueState(rule["to"]),
+        description=rule.get("description", ""),
+    ))
+    return transitions
+
+    # transitions.yaml 示例:
+    # transitions:
+    #   - from: IDLE
+    #     event: USER_START
+    #     to: GREETING
+    #     description: 用户发起对话</code></pre>
+
+    <h3>10.2 嵌套状态机</h3>
+    <p>当某个状态内部的逻辑变得复杂时（比如 SLOT_FILLING 内部有多个子步骤），可以引入<strong>嵌套状态机</strong>——每个"宏状态"本身又是一个小型状态机。这类似于函数调用中的"栈帧"概念。</p>
+
+    <pre><code class="language-python">class HierarchicalStateMachine:
+    """
+    分层状态机：支持状态的嵌套。
+    外层控制对话阶段，内层控制每个阶段的子步骤。
+    """
+
+    def __init__(self, parent: "HierarchicalStateMachine" = None):
+    self.parent = parent
+    self.children: dict[str, "HierarchicalStateMachine"] = {}
+    self.local_state: Optional[DialogueState] = None
+
+    def enter_state(self, state: DialogueState):
+    """进入一个状态，创建子状态机"""
+    child = HierarchicalStateMachine(parent=self)
+    child.local_state = state
+    self.children[state.value] = child
+    return child
+
+    def get_current_path(self) -> list[str]:
+    """获取从根到当前状态的完整路径"""
+    path = []
+    node: Optional[HierarchicalStateMachine] = self
+    while node:
+        if node.local_state:
+            path.append(node.local_state.value)
+        node = node.parent
+    return list(reversed(path))</code></pre>
+
+    <h3>10.3 可观测性与监控</h3>
+    <p>生产环境中，状态机的每次转换都应该被记录到日志和监控系统中。关键指标包括：</p>
+
+    <table>
+    <thead>
+        <tr><th>指标</th><th>计算方式</th><th>告警阈值</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>平均对话轮次</td><td>总消息数 / 对话数</td><td>低于 3 轮说明用户容易流失</td></tr>
+        <tr><td>FALLBACK 触发率</td><td>FALLBACK 次数 / 总对话数</td><td>超过 20% 说明意图识别不准</td></tr>
+        <tr><td>平均槽位填充时间</td><td>从 SLOT_FILLING 到 SLOT_COMPLETE 的时长</td><td>超过 5 分钟说明交互不流畅</td></tr>
+        <tr><td>超时率</td><td>TIMEOUT 事件数 / 总事件数</td><td>超过 15% 说明追问设计有问题</td></tr>
+        <tr><td>转人工率</td><td>USER_ESCALATE 事件数 / 总对话数</td><td>超过 10% 说明系统能力不足</td></tr>
+    </tbody>
+    </table>
+
+    <div class="note note-tip">
+    <div class="note-title">💡 生产化 Checklist</div>
+    <p>将状态机部署到生产环境前，确保：<strong>①</strong>所有转换规则有单元测试覆盖；<strong>②</strong>超时参数根据业务场景合理设置；<strong>③</strong>状态历史持久化到数据库用于分析；<strong>④</strong>有降级策略（状态机异常时回退到纯 LLM 模式）；<strong>⑤</strong>关键指标接入实时监控面板。</p>
+    </div>
+
+    <h2>十一、常见误区</h2>
+
+    <h3>误区一：状态定义过多或过少</h3>
+    <p>状态太多会导致转换规则爆炸增长（n 个状态可能需要 n² 条规则），维护成本极高。状态太少又无法准确描述对话阶段。经验法则是：<strong>以用户可感知的阶段为边界</strong>，而不是以每个微小的系统变化为一个状态。</p>
+
+    <h3>误区二：忽略异常路径</h3>
+    <p>很多初版状态机只设计了"快乐路径"（Happy Path），用户一切配合的情况下走得很顺畅。但一旦用户说了意料之外的话、或者中途消失，系统就崩溃了。<strong>超时、转人工、用户打断、槽位修改</strong>这些异常路径必须在设计阶段就考虑进去。</p>
+
+    <h3>误区三：状态机与 LLM 职责不清</h3>
+    <p>把意图分类、槽位提取这些语义理解的工作也塞进状态机的规则中，或者反过来让 LLM 来决定状态跳转。正确的分工是：<strong>状态机管流程、LLM 管理解</strong>。两者各司其职，通过事件进行通信。</p>
+
+    <h3>误区四：缺少状态重置机制</h3>
+    <p>如果用户在对话中途想"重新开始"，但状态机没有提供 reset 路径，用户就只能退出重进。这在实际使用中非常影响体验。应该在每个状态都允许用户通过特定关键词（如"重新开始"、"从头来"）触发重置。</p>
+
+    <h2>十二、小结</h2>
+    <p>对话状态机是任务型对话系统的核心架构组件。通过<strong>状态、事件、转换规则</strong>三要素的精心设计，我们可以将不可预测的自然语言对话转化为可控的流程管理。结合意图识别和槽位填充，状态机能够驱动用户从进线到完成目标的完整旅程。</p>
+
+    <p>在下一节 4.3 中，我们将深入探讨<strong>意图识别与槽位填充</strong>的更高级实现——包括如何利用 LLM 来提升意图分类准确率，以及如何处理复杂的多槽位同时提取场景。</p>
+
+    </div>
+    <script>Prism.highlightAll();</script>
+    </body>
+    </html>

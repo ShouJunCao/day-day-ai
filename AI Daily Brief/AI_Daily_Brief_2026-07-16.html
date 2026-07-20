@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年7月16日</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+  :root {
+    --bg-primary: #0f1117;
+    --bg-card: #1a1d2e;
+    --bg-card-hover: #222640;
+    --border-color: #2a2f45;
+    --text-primary: #e8eaf0;
+    --text-secondary: #9ca3b8;
+    --text-muted: #6b7394;
+    --accent-blue: #6c8cff;
+    --accent-purple: #a78bfa;
+    --accent-green: #34d399;
+    --accent-orange: #fb923c;
+    --accent-pink: #f472b6;
+    --accent-red: #f87171;
+    --tag-domestic: #34d399;
+    --tag-foreign: #6c8cff;
+    --gradient-header: linear-gradient(135deg, #6c8cff 0%, #a78bfa 50%, #f472b6 100%);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 48px 32px 40px;
+    background: var(--bg-card);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--gradient-header);
+  }
+
+  .header-date {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-purple);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .header h1 {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    background: var(--gradient-header);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .header-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  /* ===== Quick Summary ===== */
+  .quick-summary {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 36px;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--accent-blue);
+  }
+
+  .quick-summary-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+
+  .quick-summary p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+  }
+
+  .quick-summary strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* ===== Section ===== */
+  .section {
+    margin-bottom: 36px;
+  }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-icon {
+    font-size: 24px;
+  }
+
+  /* ===== Card ===== */
+  .card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+  }
+
+  .card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .card-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .card-number.domestic {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--tag-domestic);
+  }
+
+  .card-number.foreign {
+    background: rgba(108, 140, 255, 0.15);
+    color: var(--tag-foreign);
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .tag.domestic {
+    background: rgba(52, 211, 153, 0.12);
+    color: var(--tag-domestic);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+  }
+
+  .tag.foreign {
+    background: rgba(108, 140, 255, 0.12);
+    color: var(--tag-foreign);
+    border: 1px solid rgba(108, 140, 255, 0.25);
+  }
+
+  .card-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .keyword {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(167, 139, 250, 0.1);
+    color: var(--accent-purple);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    font-weight: 500;
+  }
+
+  .card-body {
+    display: grid;
+    gap: 12px;
+  }
+
+  .card-field {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .card-field-label {
+    font-weight: 700;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    min-width: 48px;
+  }
+
+  .card-field-value {
+    color: var(--text-primary);
+  }
+
+  .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+  }
+
+  .card-link:hover {
+    color: var(--accent-purple);
+    text-decoration: underline;
+  }
+
+  .card-link svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ===== Balance Badge ===== */
+  .balance-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 24px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 36px;
+  }
+
+  .balance-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .balance-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .balance-dot.domestic { background: var(--tag-domestic); }
+  .balance-dot.foreign { background: var(--tag-foreign); }
+
+  .balance-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+  }
+
+  .balance-label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-color);
+    margin-top: 40px;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .container { padding: 20px 16px 40px; }
+    .header { padding: 32px 20px 28px; }
+    .header h1 { font-size: 28px; }
+    .card { padding: 20px; }
+    .card-header { flex-wrap: wrap; }
+    .card-title { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-date">2026年7月16日 · 星期三</div>
+    <h1>AI行业资讯简报</h1>
+    <div class="header-subtitle">AI Industry Daily Brief</div>
+  </div>
+
+  <!-- Quick Summary -->
+  <div class="quick-summary">
+    <div class="quick-summary-label">⚡ 今日速览</div>
+    <p>
+      <strong>OpenAI</strong>同日连发两弹：推出专攻AI红队的<strong>GPT-Red</strong>模型，并发布首款硬件产品<strong>Codex Micro</strong>；前OpenAI CTO Mira Murati创办的Thinking Machines Lab携开源多模态大模型<strong>Inkling</strong>亮相。国内方面，<strong>DeepSeek</strong>全面启动A股IPO筹备，估值达4800亿元；<strong>苹果AI国行版</strong>通过备案并接入阿里千问；<strong>字节跳动</strong>被曝入局物理AI领域。
+    </p>
+  </div>
+
+  <!-- Balance Indicator -->
+  <div class="balance-bar">
+    <div class="balance-item">
+      <span class="balance-dot domestic"></span>
+      <span>国内 3 条</span>
+    </div>
+    <div class="balance-divider"></div>
+    <div class="balance-item">
+      <span class="balance-dot foreign"></span>
+      <span>国外 3 条</span>
+    </div>
+    <div class="balance-label">1:1 均衡 · 6条精选</div>
+  </div>
+
+  <!-- Section 1: 大模型 & 技术 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="section-icon">🧠</span>
+      一、大模型 &amp; 技术
+    </div>
+
+    <!-- Card 1: Foreign -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-number foreign">1</div>
+        <div class="card-title">OpenAI发布GPT-Red：专攻AI红队测试的安全模型</div>
+        <span class="tag foreign">国外</span>
+      </div>
+      <div class="card-keywords">
+        <span class="keyword">GPT-Red</span>
+        <span class="keyword">AI安全</span>
+        <span class="keyword">红队测试</span>
+        <span class="keyword">提示注入</span>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-field-label">核心</span>
+          <span class="card-field-value">7月16日，OpenAI发布GPT-Red，专为红队测试其他AI系统设计。官方称该模型"几乎能攻破所有对抗模型"，并已用于发现GPT-5.6 Sol的漏洞，成为OpenAI"抗提示注入能力最强的模型"。</span>
+        </div>
+        <div class="card-field">
+          <span class="card-field-label">影响</span>
+          <span class="card-field-value">AI安全测试进入自动化时代，GPT-Red可能成为行业红队基准工具，加速模型安全性竞赛升级。</span>
+        </div>
+      </div>
+      <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/966117/openai-trained-an-ai-for-red-teaming-ai" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        The Verge · 2026-07-16
+      </a>
+    </div>
+
+    <!-- Card 2: Domestic -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-number domestic">2</div>
+        <div class="card-title">DeepSeek冲刺A股IPO，投前估值约4800亿元</div>
+        <span class="tag domestic">国内</span>
+      </div>
+      <div class="card-keywords">
+        <span class="keyword">DeepSeek</span>
+        <span class="keyword">A股IPO</span>
+        <span class="keyword">4800亿估值</span>
+        <span class="keyword">腾讯入股</span>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-field-label">核心</span>
+          <span class="card-field-value">7月15日披露，DeepSeek全面启动A股IPO筹备，计划年内递交申报材料、2027年完成上市。公司刚完成首轮超500亿元融资，投前估值710亿美元（约4800亿元），腾讯、宁德时代、国家人工智能产业基金悉数入局。</span>
+        </div>
+        <div class="card-field">
+          <span class="card-field-label">影响</span>
+          <span class="card-field-value">DeepSeek将成为A股AI大模型第一股，消息带动AI板块全线上涨，MiniMax单日涨超13%、智谱涨超6%。</span>
+        </div>
+      </div>
+      <a class="card-link" href="https://36kr.com/p/3896949637695363" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        36氪 · 2026-07-16
+      </a>
+    </div>
+
+    <!-- Card 3: Foreign -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-number foreign">3</div>
+        <div class="card-title">Mira Murati的Thinking Machines Lab发布首个开源模型Inkling</div>
+        <span class="tag foreign">国外</span>
+      </div>
+      <div class="card-keywords">
+        <span class="keyword">Thinking Machines</span>
+        <span class="keyword">Inkling</span>
+        <span class="keyword">975B MoE</span>
+        <span class="keyword">开源多模态</span>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-field-label">核心</span>
+          <span class="card-field-value">7月16日，前OpenAI CTO Mira Murati创办的Thinking Machines Lab发布首个开源模型Inkling——9750亿参数MoE架构，原生支持文本、图像、音频多模态，采用Apache 2.0许可证。同时预告了2760亿参数的小模型Inkling-Small，主打低成本与"抗审查"特性。</span>
+        </div>
+        <div class="card-field">
+          <span class="card-field-label">影响</span>
+          <span class="card-field-value">OpenAI系创业力量加速崛起，Inkling以开源+多模态+抗审查差异化定位，直接挑战闭源大模型的市场地位。</span>
+        </div>
+      </div>
+      <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/966134/mira-muratis-thinking-machines-lab-has-debuted-its-first-ai-model" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        The Verge · 2026-07-16
+      </a>
+    </div>
+
+    <!-- Card 4: Domestic -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-number domestic">4</div>
+        <div class="card-title">国行苹果AI通过备案，接入阿里千问大模型</div>
+        <span class="tag domestic">国内</span>
+      </div>
+      <div class="card-keywords">
+        <span class="keyword">Apple智能</span>
+        <span class="keyword">阿里千问</span>
+        <span class="keyword">网信办备案</span>
+        <span class="keyword">端侧AI</span>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-field-label">核心</span>
+          <span class="card-field-value">7月15日，网信办公告Apple智能、华为小艺、OPPO AndesGPT、vivo蓝心、小米澎湃AI等7款手机端侧AI服务通过备案。阿里千问将作为AI能力集成至Apple智能，为iOS、iPadOS、macOS和visionOS中国用户提供文本与图像理解、内容生成等服务，阿里股价应声上涨超5%。</span>
+        </div>
+        <div class="card-field">
+          <span class="card-field-label">影响</span>
+          <span class="card-field-value">苹果AI国行落地进入倒计时，千问借力苹果生态获得亿级潜在用户入口，国内手机AI竞争格局进一步清晰。</span>
+        </div>
+      </div>
+      <a class="card-link" href="https://36kr.com/p/3896830991320962" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        36氪 · 2026-07-15
+      </a>
+    </div>
+  </div>
+
+  <!-- Section 2: 产品 & 商业 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="section-icon">🚀</span>
+      二、产品 &amp; 商业
+    </div>
+
+    <!-- Card 5: Foreign -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-number foreign">5</div>
+        <div class="card-title">OpenAI发布首款硬件产品Codex Micro</div>
+        <span class="tag foreign">国外</span>
+      </div>
+      <div class="card-keywords">
+        <span class="keyword">Codex Micro</span>
+        <span class="keyword">OpenAI硬件</span>
+        <span class="keyword">Work Louder</span>
+        <span class="keyword">$230</span>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-field-label">核心</span>
+          <span class="card-field-value">7月16日，OpenAI发布首款硬件产品Codex Micro，与机械键盘厂商Work Louder合作打造。售价230美元，配备13个机械开关、摇杆、旋钮和触控传感器，可实时监控Codex智能体线程状态。该项目独立于此前传闻的Jony Ive智能音箱计划。</span>
+        </div>
+        <div class="card-field">
+          <span class="card-field-label">影响</span>
+          <span class="card-field-value">OpenAI从纯软件迈向软硬一体，Codex Micro定位为AI开发者专属生产力工具，探索AI agent的新型交互形态。</span>
+        </div>
+      </div>
+      <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence/965901/openai-hardware-codex-micro-launch" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        The Verge · 2026-07-16
+      </a>
+    </div>
+
+    <!-- Card 6: Domestic -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-number domestic">6</div>
+        <div class="card-title">字节跳动被曝入局物理AI，探索无人物流自动驾驶</div>
+        <span class="tag domestic">国内</span>
+      </div>
+      <div class="card-keywords">
+        <span class="keyword">字节跳动</span>
+        <span class="keyword">物理AI</span>
+        <span class="keyword">无人物流</span>
+        <span class="keyword">自动驾驶</span>
+      </div>
+      <div class="card-body">
+        <div class="card-field">
+          <span class="card-field-label">核心</span>
+          <span class="card-field-value">7月15日，字节跳动被曝探索入局自动驾驶领域（聚焦无人物流场景）。官方回应称在AI大模型前沿探索中包括物理AI领域的早期研究，但暂无智能驾驶业务计划。分析指出科技企业已达成共识：大模型内卷见顶，AI的增量空间在物理世界。</span>
+        </div>
+        <div class="card-field">
+          <span class="card-field-label">影响</span>
+          <span class="card-field-value">物理AI成为大模型厂商新战场，字节若以无人物流为切入点，将与特斯拉Optimus、华为车BU等形成直接竞争。</span>
+        </div>
+      </div>
+      <a class="card-link" href="https://36kr.com/p/3896703522292865" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        36氪 · 2026-07-15
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    AI行业资讯简报 · 2026年7月16日 · 由 Hermes Agent 自动生成
+  </div>
+
+</div>
+</body>
+</html>

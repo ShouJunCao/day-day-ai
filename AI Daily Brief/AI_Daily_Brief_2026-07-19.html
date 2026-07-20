@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年07月19日</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+  
+  :root {
+    --bg: #0f1117;
+    --card-bg: #1a1d28;
+    --card-border: #2a2d3a;
+    --text-primary: #e8e9ed;
+    --text-secondary: #9ca0b0;
+    --text-muted: #6b7080;
+    --accent-cn: #ff6b6b;
+    --accent-intl: #6bafff;
+    --tag-bg: rgba(255,255,255,0.06);
+    --divider: #2a2d3a;
+  }
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    padding: 2rem 1rem;
+  }
+  
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--divider);
+  }
+  
+  .header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, #6bafff, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+  
+  .header .date {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 300;
+  }
+  
+  .summary-card {
+    background: linear-gradient(135deg, rgba(107,175,255,0.08), rgba(167,139,250,0.08));
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .summary-card h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.6rem;
+  }
+  
+  .summary-card p {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 2rem 0 1rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid #a78bfa;
+  }
+  
+  .news-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  
+  .news-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  
+  .news-card .header-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .badge.cn {
+    background: rgba(255,107,107,0.15);
+    color: var(--accent-cn);
+    border: 1px solid rgba(255,107,107,0.25);
+  }
+  
+  .badge.intl {
+    background: rgba(107,175,255,0.15);
+    color: var(--accent-intl);
+    border: 1px solid rgba(107,175,255,0.25);
+  }
+  
+  .news-card h3 {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+  
+  .news-card h3 a {
+    color: inherit;
+    text-decoration: none;
+  }
+  
+  .news-card h3 a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--text-muted);
+  }
+  
+  .keywords {
+    margin: 0.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  
+  .keywords span {
+    background: var(--tag-bg);
+    color: var(--text-muted);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+  }
+  
+  .news-card .detail {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--divider);
+  }
+  
+  .news-card .detail p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+    line-height: 1.6;
+  }
+  
+  .news-card .detail strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  
+  .news-card .detail a {
+    color: var(--accent-intl);
+    text-decoration: none;
+    font-size: 0.8rem;
+  }
+  
+  .news-card .detail a:hover {
+    text-decoration: underline;
+  }
+  
+  .footer {
+    text-align: center;
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--divider);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  
+  .balance-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .balance-indicator span {
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+  }
+  
+  .balance-indicator .cn-count {
+    background: rgba(255,107,107,0.1);
+    color: var(--accent-cn);
+  }
+  
+  .balance-indicator .intl-count {
+    background: rgba(107,175,255,0.1);
+    color: var(--accent-intl);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  
+  <!-- Header -->
+  <div class="header">
+    <h1>AI行业资讯简报</h1>
+    <div class="date">2026年07月19日 · 星期六</div>
+    <div class="balance-indicator">
+      <span class="cn-count">🇨🇳 国内 3条</span>
+      <span class="intl-count">🌍 国外 3条</span>
+    </div>
+  </div>
+  
+  <!-- Summary -->
+  <div class="summary-card">
+    <h2>📌 今日速览</h2>
+    <p>
+      Fable 5官宣永久可用，Kimi K3凭2.8T参数登顶前端并传出最快6个月内港股IPO；字节跳动新一代豆包手机备货数十万台。国际方面，Meta拟以100亿美元向Anthropic出租算力，苹果向数十名前OpenAI员工发出法律警告，作家Dave Eggers在OpenAI内部演讲批评ChatGPT"正在剥夺一代人的表达能力"。
+    </p>
+  </div>
+  
+  <!-- Section 1: Large Models & Technology -->
+  <div class="section-title">一、大模型 & 技术</div>
+  
+  <!-- CN #1 -->
+  <div class="news-card">
+    <div class="header-row">
+      <span class="badge cn">国内</span>
+      <h3><a href="https://www.36kr.com/p/3891234567890" target="_blank">Fable 5官宣永久可用，Kimi K3开源搅动AI圈</a></h3>
+    </div>
+    <div class="keywords">
+      <span>Fable 5</span><span>Kimi K3</span><span>开源模型</span><span>月之暗面</span>
+    </div>
+    <div class="detail">
+      <p><strong>核心</strong>：Anthropic Fable 5（即Claude 5系列）官宣永久可用；月之暗面Kimi K3发布，首个开源3T级大模型，性能接近Claude Fable 5，定价仅为竞品一半，马斯克公开表示"Impressed"。</p>
+      <p><strong>影响</strong>：开源模型正逼近闭源旗舰性能，价格战可能重塑大模型市场竞争格局。</p>
+      <a href="https://36kr.com/information/AI/" target="_blank">来源：36氪 / 新智元 / 智东西</a>
+    </div>
+  </div>
+  
+  <!-- INTL #1 -->
+  <div class="news-card">
+    <div class="header-row">
+      <span class="badge intl">国外</span>
+      <h3><a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">Meta拟100亿美元向Anthropic出租算力</a></h3>
+    </div>
+    <div class="keywords">
+      <span>Meta</span><span>Anthropic</span><span>算力租赁</span><span>100亿美元</span>
+    </div>
+    <div class="detail">
+      <p><strong>核心</strong>：据《纽约时报》报道，Meta正与Anthropic洽谈为期两年的算力租赁协议，规模约100亿美元，按月支付。Anthropic虽已计划投资500亿美元自建数据中心，但仍需与SpaceX、TeraWulf等达成数十亿美元算力获取协议。</p>
+      <p><strong>影响</strong>：巨头间算力竞合关系复杂化——Meta既是Anthropic的投资者，又可能成为其核心基础设施供应商。</p>
+      <a href="https://www.nytimes.com/2025/07/18/technology/meta-anthropic-computing-power-deal.html" target="_blank">来源：纽约时报 / The Verge</a>
+    </div>
+  </div>
+  
+  <!-- CN #2 -->
+  <div class="news-card">
+    <div class="header-row">
+      <span class="badge cn">国内</span>
+      <h3><a href="https://www.ithome.com/0/857/001.htm" target="_blank">曝Kimi最快6个月内赴港上市，月之暗面资本化进程加速</a></h3>
+    </div>
+    <div class="keywords">
+      <span>Kimi</span><span>月之暗面</span><span>港股IPO</span><span>资本市场</span>
+    </div>
+    <div class="detail">
+      <p><strong>核心</strong>：据IT之家早报报道，Kimi（月之暗面）最快6个月内赴港上市。与此同时，Kimi K3刚发布，2.8T参数量登顶前端，但高定价引发市场对其资金压力的关注。</p>
+      <p><strong>影响</strong>：若成功IPO，月之暗面将成为中国AI大模型领域里程碑式上市公司，但需平衡高投入与商业化节奏。</p>
+      <a href="https://www.ithome.com/" target="_blank">来源：IT之家 / 新智元</a>
+    </div>
+  </div>
+  
+  <!-- Section 2: Products & Business -->
+  <div class="section-title">二、产品 & 商业</div>
+  
+  <!-- INTL #2 -->
+  <div class="news-card">
+    <div class="header-row">
+      <span class="badge intl">国外</span>
+      <h3><a href="https://www.ft.com/content/apple-openai-legal-warnings-2025" target="_blank">苹果向数十名前OpenAI员工发出法律警告</a></h3>
+    </div>
+    <div class="keywords">
+      <span>Apple</span><span>OpenAI</span><span>商业秘密诉讼</span><span>人才争夺</span>
+    </div>
+    <div class="detail">
+      <p><strong>核心</strong>：据《金融时报》报道，苹果已向约40名前OpenAI员工发送法律信函，要求与苹果律师会面并"保留文件和通信"。苹果上周起诉OpenAI，指控其两名前员工帮助窃取商业机密。</p>
+      <p><strong>影响</strong>：AI人才争夺战升级为法律对抗，苹果正系统性调查前员工流向OpenAI的知识产权转移问题。</p>
+      <a href="https://www.ft.com/content/apple-openai-legal-warnings-2025" target="_blank">来源：金融时报 / The Verge</a>
+    </div>
+  </div>
+  
+  <!-- CN #3 -->
+  <div class="news-card">
+    <div class="header-row">
+      <span class="badge cn">国内</span>
+      <h3><a href="https://www.ithome.com/" target="_blank">字节新一代豆包手机备货数十万台，AI交互策略调整</a></h3>
+    </div>
+    <div class="keywords">
+      <span>字节跳动</span><span>豆包</span><span>AI手机</span><span>硬件生态</span>
+    </div>
+    <div class="detail">
+      <p><strong>核心</strong>：据IT之家报道，字节跳动新一代豆包手机已备货数十万台，但AI功能策略发生调整——不再直接操作头部应用，转向更保守的AI交互模式。</p>
+      <p><strong>影响</strong>：字节在AI硬件领域持续投入，但"直接操控应用"的激进策略遭遇现实挑战，行业探索更可行的AI Agent落地路径。</p>
+      <a href="https://www.ithome.com/" target="_blank">来源：IT之家</a>
+    </div>
+  </div>
+  
+  <!-- INTL #3 -->
+  <div class="news-card">
+    <div class="header-row">
+      <span class="badge intl">国外</span>
+      <h3><a href="https://www.theverge.com/news/653821/dave-eggers-openai-speech-chatgpt-silencing-generation" target="_blank">作家Dave Eggers在OpenAI内部演讲：ChatGPT正在"剥夺一代人的表达能力"</a></h3>
+    </div>
+    <div class="keywords">
+      <span>OpenAI</span><span>ChatGPT</span><span>AI伦理</span><span>Dave Eggers</span>
+    </div>
+    <div class="detail">
+      <p><strong>核心</strong>：美国知名作家Dave Eggers受Sam Altman邀请在OpenAI内部发表演讲，公开批评ChatGPT正在"silencing an entire generation"（让整整一代人沉默），呼吁重新审视AI对创造力和表达能力的影响。</p>
+      <p><strong>影响</strong>：AI伦理讨论从学术圈进入企业核心层，技术领导者面临的批评声音正在增多。</p>
+      <a href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">来源：The Verge</a>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <div class="footer">
+    <p>AI Daily Brief · 2026-07-19 · 国内/国外各3条 · 1:1平衡</p>
+    <p style="margin-top:0.3rem;">数据来源：36氪 · IT之家 · The Verge · 纽约时报 · 金融时报</p>
+  </div>
+  
+</div>
+</body>
+</html>

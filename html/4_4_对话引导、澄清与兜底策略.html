@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.4 对话引导、澄清与兜底策略 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .compare-box { display: flex; gap: 16px; margin: 16px 0; }
+        .compare-box > div { flex: 1; padding: 16px; border-radius: 8px; }
+        .compare-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .compare-good { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .compare-box h4 { margin-bottom: 8px; font-size: 0.95em; }
+        .compare-bad h4 { color: var(--red); }
+        .compare-good h4 { color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>4.4 对话引导、澄清与兜底策略</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块四：对话系统设计</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解对话引导在提升用户体验中的关键作用</li>
+        <li>掌握<strong>澄清引擎</strong>的设计方法与多级策略</li>
+        <li>学会根据场景设计<strong>多级兜底策略</strong>（重试→引导→转人工）</li>
+        <li>实现可复用、可 A/B 测试的话术模板管理系统</li>
+        <li>能够结合状态机与意图识别构建完整的对话引导体系</li>
+    </ul>
+
+    <h2>一、为什么对话引导如此重要？</h2>
+    <p>在上一节中，我们学习了对话状态机——它解决了"流程怎么走"的问题。但还有一个关键问题没有解决：<strong>当用户输入不符合预期时，系统该怎么回应</strong>？</p>
+
+    <p>用户永远会说出你意料之外的话。他们可能用含糊的表述（"随便看看"）、省略关键信息（"我要订个房"不说城市）、或者提出超出系统能力的问题（"帮我推荐一部电影"）。没有引导、澄清和兜底策略的对话系统，遇到这些情况只会僵硬地回复"我不理解"，然后陷入沉默。这是对话体验中最致命的失败。</p>
+
+    <p>对话引导的本质是<strong>帮助用户把模糊的意图转化为系统可以处理的结构化输入</strong>。它包含三个层面：<strong>主动引导</strong>（告诉用户能做什么）、<strong>澄清追问</strong>（当用户输入模糊时）、<strong>兜底降级</strong>（当系统确实无能为力时）。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="350" viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="g_guide" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+                <linearGradient id="g_clarify" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="g_fallback" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+                <linearGradient id="g_good" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+            </defs>
+            <text x="400" y="28" text-anchor="middle" fill="#1a1a2e" font-size="17" font-weight="bold">对话引导的三层防御体系</text>
+            <!-- Layer 1: Guidance -->
+            <rect x="30" y="55" width="230" height="90" rx="12" fill="url(#g_guide)"/>
+            <text x="145" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">第一层：主动引导</text>
+            <text x="145" y="110" text-anchor="middle" fill="white" font-size="11">告诉用户能做什么</text>
+            <text x="145" y="130" text-anchor="middle" fill="white" font-size="11">预设选项、快捷入口</text>
+            <!-- Arrow -->
+            <polygon points="260,100 275,95 275,105" fill="#4361ee"/>
+            <!-- Layer 2: Clarification -->
+            <rect x="285" y="55" width="230" height="90" rx="12" fill="url(#g_clarify)"/>
+            <text x="400" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">第二层：澄清追问</text>
+            <text x="400" y="110" text-anchor="middle" fill="white" font-size="11">意图不明时主动确认</text>
+            <text x="400" y="130" text-anchor="middle" fill="white" font-size="11">选项引导、歧义消除</text>
+            <!-- Arrow -->
+            <polygon points="515,100 530,95 530,105" fill="#f59e0b"/>
+            <!-- Layer 3: Fallback -->
+            <rect x="540" y="55" width="230" height="90" rx="12" fill="url(#g_fallback)"/>
+            <text x="655" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">第三层：兜底降级</text>
+            <text x="655" y="110" text-anchor="middle" fill="white" font-size="11">系统无法处理时</text>
+            <text x="655" y="130" text-anchor="middle" fill="white" font-size="11">重试 → 建议 → 转人工</text>
+
+            <!-- Result -->
+            <rect x="250" y="210" width="300" height="60" rx="12" fill="url(#g_good)"/>
+            <text x="400" y="240" text-anchor="middle" fill="white" font-size="15" font-weight="bold">✅ 用户意图明确化</text>
+            <text x="400" y="260" text-anchor="middle" fill="white" font-size="12">从模糊 → 结构化的完整转化</text>
+
+            <!-- Connection arrows -->
+            <line x1="145" y1="145" x2="400" y2="210" stroke="#4361ee" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <line x1="400" y1="145" x2="400" y2="210" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <line x1="655" y1="145" x2="400" y2="210" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+            <!-- Bottom: failure case -->
+            <rect x="100" y="290" width="600" height="50" rx="10" fill="#fef2f2" stroke="#fecaca"/>
+            <text x="400" y="322" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="bold">❌ 无引导的后果：用户流失、满意度下降、重复进线</text>
+        </svg>
+    </div>
+
+    <div class="note note-info">
+        <div class="note-title">📌 核心原则</div>
+        <p>好的对话引导是<strong>隐形的</strong>。用户不应该感觉到被"引导"，而是觉得系统在自然、体贴地帮助他们。引导的目的是降低用户的<strong>认知负担</strong>——不是让用户理解系统，而是让系统理解用户。</p>
+    </div>
+
+    <h2>二、主动引导：告诉用户能做什么</h2>
+    <p>主动引导是对话系统的"第一印象"。当用户进入对话时，他们通常不知道系统能做什么、不能做什么。系统的第一个回复就应该清晰地展示能力边界，并提供快捷入口。</p>
+
+    <h3>2.1 欢迎话术设计</h3>
+    <p>欢迎话术需要同时传达三个信息：<strong>我是谁</strong>、<strong>我能帮你什么</strong>、<strong>你现在可以做什么</strong>。一个设计良好的欢迎话术可以将用户的"冷启动"问题消除掉一大半。</p>
+
+    <div class="compare-box">
+        <div class="compare-bad">
+            <h4>❌ 糟糕的欢迎话术</h4>
+            <p>"你好，我是智能助手。"</p>
+            <p><em>问题：用户不知道能做什么</em></p>
+        </div>
+        <div class="compare-good">
+            <h4>✅ 好的欢迎话术</h4>
+            <p>"您好！我是酒店预订助手，可以帮您：<br>🔹 预订酒店 &nbsp;🔹 查询订单<br>🔹 取消预订 &nbsp;🔹 价格咨询<br>请告诉我您的需求，或点击下方快捷按钮。"</p>
+        </div>
+    </div>
+
+    <h3>2.2 快捷选项设计</h3>
+    <p>在对话界面上提供<strong>预设选项按钮</strong>，让用户可以一键选择常见需求。这不仅降低了输入成本，也为系统提供了明确的结构化输入。</p>
+
+    <p>快捷选项的设计原则：</p>
+
+    <table>
+        <thead>
+            <tr><th>原则</th><th>说明</th><th>示例</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>覆盖 80% 场景</strong></td><td>分析历史数据，选择最高频的 4-6 个需求</td><td>预订、查询、取消、改签</td></tr>
+            <tr><td><strong>动词开头</strong></td><td>用动作词描述选项，更直观</td><td>"预订酒店"而非"酒店"</td></tr>
+            <tr><td><strong>互斥且并列</strong></td><td>选项之间不应该有重叠</td><td>不要同时出现"查询"和"查找"</td></tr>
+            <tr><td><strong>动态更新</strong></td><td>根据对话阶段切换选项</td><td>预订后显示"查看订单"</td></tr>
+        </tbody>
+    </table>
+
+    <h2>三、澄清引擎：当用户输入模糊时</h2>
+    <p>澄清是对话系统最重要的能力之一。当用户的输入不足以确定唯一意图时，系统需要主动提问来缩小范围。但提问本身也是一门艺术——问得太开放，用户可能更困惑；问得太封闭，可能遗漏真实需求。</p>
+
+    <h3>3.1 多级澄清策略</h3>
+    <p>我们设计了四种不同类型的澄清问题，根据场景选择最合适的策略：</p>
+
+    <table>
+        <thead>
+            <tr><th>策略类型</th><th>触发场景</th><th>示例</th><th>优先级</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>歧义消除</strong><br>Disambiguation</td>
+                <td>多个候选意图的置信度接近</td>
+                <td>"您是想取消预订还是修改预订？"</td>
+                <td>最高</td>
+            </tr>
+            <tr>
+                <td><strong>槽位请求</strong><br>Slot Request</td>
+                <td>意图已确定，但关键信息缺失</td>
+                <td>"请问您想预订哪个城市的酒店？"</td>
+                <td>高</td>
+            </tr>
+            <tr>
+                <td><strong>范围缩小</strong><br>Scope Narrow</td>
+                <td>用户输入过于宽泛</td>
+                <td>"您更关心哪个方面：价格、位置还是设施？"</td>
+                <td>中</td>
+            </tr>
+            <tr>
+                <td><strong>开放式追问</strong><br>Open Probe</td>
+                <td>用户输入完全不匹配任何意图</td>
+                <td>"您能更具体地描述一下需求吗？"</td>
+                <td>低</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>在代码实现中，我们将澄清策略建模为规则驱动的引擎。每条规则包含触发条件、话术模板和优先级。引擎按优先级从高到低匹配，选择最适合当前场景的澄清策略。</p>
+
+<div class="code-file">04_dialogue_system/04_dialogue_guidance/clarification_engine.py</div>
+<pre><code class="language-python">"""
+clarification_engine.py — 澄清引擎
+当用户输入模糊、意图不明或信息不足时，
+生成合适的澄清问题。
+"""
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+import re
+
+
+class ClarificationType(Enum):
+    """澄清问题的类型"""
+    DISAMBIGUATION = "disambiguation"    # 消除歧义
+    SLOT_REQUEST = "slot_request"        # 请求缺失槽位
+    CONFIRMATION = "confirmation"        # 确认理解
+    SCOPE_NARROW = "scope_narrow"        # 缩小范围
+    OPEN_PROBE = "open_probe"            # 开放式追问
+
+
+@dataclass
+class ClarificationRule:
+    """单条澄清规则"""
+    trigger_pattern: str               # 触发条件（正则或关键词）
+    clarification_type: ClarificationType
+    templates: list[str]               # 澄清话术模板
+    options: list[str] = field(default_factory=list)
+    priority: int = 5                  # 优先级（1最高，10最低）
+
+    def matches(self, text: str, context: dict) -> bool:
+        """检查是否触发此规则"""
+        if self.trigger_pattern in text.lower():
+            return True
+        try:
+            if re.search(self.trigger_pattern, text, re.IGNORECASE):
+                return True
+        except re.error:
+            pass
+        return False</code></pre>
+
+    <p>澄清引擎的核心 <code>generate()</code> 方法按照策略优先级依次尝试：</p>
+
+<pre><code class="language-python">    def generate(
+        self,
+        user_input: str,
+        context: Optional[dict] = None,
+        intent_candidates: Optional[list[dict]] = None,
+        missing_slots: Optional[list[str]] = None,
+    ) -> dict:
+        """
+        生成澄清问题。
+
+        Args:
+            user_input: 用户输入文本
+            context: 对话上下文
+            intent_candidates: 多个候选意图（用于歧义消除）
+            missing_slots: 缺失的槽位列表
+
+        Returns:
+            {"clarification": str, "type": str, "options": list}
+        """
+        context = context or {}
+
+        # 策略 1：多意图歧义消除（最高优先级）
+        if intent_candidates and len(intent_candidates) > 1:
+            return self._disambiguate(intent_candidates)
+
+        # 策略 2：缺失槽位追问
+        if missing_slots:
+            return self._request_slot(missing_slots[0], context)
+
+        # 策略 3：匹配澄清规则
+        matched = self._match_rules(user_input, context)
+        if matched:
+            return self._format_clarification(matched, context)
+
+        # 策略 4：默认兜底
+        return self._fallback(context)</code></pre>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 歧义消除的最佳实践</div>
+        <p>当模型返回多个候选意图时，不要只看最高置信度的那个。如果 Top 2 的置信度差距小于 0.2，主动提供选项让用户选择，比"猜一个可能错的"要安全得多。宁可多问一句，也不要自作主张。</p>
+    </div>
+
+    <h3>3.2 追问话术的自然度</h3>
+    <p>同一个澄清需求，不同的表述方式会带来截然不同的用户体验。我们需要一套<strong>话术模板系统</strong>来管理不同场景下的回应，同时支持变体和 A/B 测试。</p>
+
+<div class="code-file">04_dialogue_system/04_dialogue_guidance/response_templates.py</div>
+<pre><code class="language-python">"""
+response_templates.py — 对话引导话术模板管理
+按对话阶段和意图分类组织引导话术，支持 A/B 测试。
+"""
+from dataclasses import dataclass, field
+from typing import Optional
+from pathlib import Path
+import json
+import random
+
+
+@dataclass
+class DialogueTemplate:
+    """单条话术模板"""
+    template_id: str                     # 模板唯一标识
+    stage: str                           # 对话阶段
+    intent: str                          # 匹配的意图
+    text: str                            # 模板文本
+    variants: list[str] = field(default_factory=list)  # A/B 测试变体
+    is_active: bool = True               # 是否启用
+
+
+@dataclass
+class TemplateManager:
+    """
+    话术模板管理器：组织和管理对话各阶段的引导话术。
+    支持模板检索、变体随机选择、A/B 测试。
+    """
+
+    templates: list[DialogueTemplate] = field(default_factory=list)
+    _template_index: dict = field(default_factory=dict)
+
+    def get_template(
+        self, stage: str, intent: str, use_variant: bool = True
+    ) -> Optional[str]:
+        """
+        获取指定阶段和意图的话术模板。
+
+        Args:
+            stage: 对话阶段
+            intent: 意图名称
+            use_variant: 是否随机选择变体（用于 A/B 测试）
+
+        Returns:
+            模板文本，或 None
+        """
+        # 精确匹配
+        for tpl in self.templates:
+            if (tpl.stage == stage and tpl.intent == intent
+                    and tpl.is_active):
+                if use_variant and tpl.variants:
+                    return random.choice([tpl.text] + tpl.variants)
+                return tpl.text
+
+        # 回退：匹配阶段但忽略意图
+        for tpl in self.templates:
+            if tpl.stage == stage and tpl.is_active:
+                return tpl.text
+
+        return None</code></pre>
+
+    <h2>四、多级兜底策略：当系统确实无能为力时</h2>
+    <p>兜底（Fallback）是对话系统的最后一道防线。当用户的输入确实超出了系统的处理能力——无论是因为意图无法识别、信息严重不足、还是需求超出了业务范围——系统需要有体面的退出策略。</p>
+
+    <h3>4.1 五级兜底梯度</h3>
+    <p>我们不是一上来就转人工，而是根据<strong>连续失败的次数</strong>逐步升级兜底级别。这样可以避免过早放弃用户，也能防止用户陷入无限循环的挫败。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="320" viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="fb1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+                <linearGradient id="fb2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#84cc16"/><stop offset="100%" stop-color="#65a30d"/></linearGradient>
+                <linearGradient id="fb3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="fb4" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#ea580c"/></linearGradient>
+                <linearGradient id="fb5" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+            </defs>
+            <text x="390" y="24" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">五级兜底梯度：逐步升级的降级策略</text>
+            <!-- L1 -->
+            <rect x="10" y="50" width="140" height="65" rx="10" fill="url(#fb1)"/>
+            <text x="80" y="72" text-anchor="middle" fill="white" font-size="13" font-weight="bold">L1 重试引导</text>
+            <text x="80" y="92" text-anchor="middle" fill="white" font-size="10">第 1 次失败</text>
+            <text x="80" y="108" text-anchor="middle" fill="white" font-size="9">"换种方式说"</text>
+            <!-- Arrow -->
+            <polygon points="152,82 167,78 167,86" fill="#22c55e"/>
+
+            <!-- L2 -->
+            <rect x="170" y="50" width="140" height="65" rx="10" fill="url(#fb2)"/>
+            <text x="240" y="72" text-anchor="middle" fill="white" font-size="13" font-weight="bold">L2 建议选项</text>
+            <text x="240" y="92" text-anchor="middle" fill="white" font-size="10">第 2 次失败</text>
+            <text x="240" y="108" text-anchor="middle" fill="white" font-size="9">"您是想问A还是B？"</text>
+            <!-- Arrow -->
+            <polygon points="312,82 327,78 327,86" fill="#84cc16"/>
+
+            <!-- L3 -->
+            <rect x="330" y="50" width="140" height="65" rx="10" fill="url(#fb3)"/>
+            <text x="400" y="72" text-anchor="middle" fill="white" font-size="13" font-weight="bold">L3 部分响应</text>
+            <text x="400" y="92" text-anchor="middle" fill="white" font-size="10">第 3 次失败</text>
+            <text x="400" y="108" text-anchor="middle" fill="white" font-size="9">"以下信息可能有帮助"</text>
+            <!-- Arrow -->
+            <polygon points="472,82 487,78 487,86" fill="#f59e0b"/>
+
+            <!-- L4 -->
+            <rect x="490" y="50" width="140" height="65" rx="10" fill="url(#fb4)"/>
+            <text x="560" y="72" text-anchor="middle" fill="white" font-size="13" font-weight="bold">L4 转人工</text>
+            <text x="560" y="92" text-anchor="middle" fill="white" font-size="10">第 4 次失败</text>
+            <text x="560" y="108" text-anchor="middle" fill="white" font-size="9">"为您转接人工客服"</text>
+            <!-- Arrow -->
+            <polygon points="632,82 647,78 647,86" fill="#f97316"/>
+
+            <!-- L5 -->
+            <rect x="650" y="50" width="120" height="65" rx="10" fill="url(#fb5)"/>
+            <text x="710" y="72" text-anchor="middle" fill="white" font-size="13" font-weight="bold">L5 礼貌结束</text>
+            <text x="710" y="92" text-anchor="middle" fill="white" font-size="10">最终兜底</text>
+            <text x="710" y="108" text-anchor="middle" fill="white" font-size="9">"感谢使用，再见"</text>
+
+            <!-- 底部指标 -->
+            <rect x="10" y="140" width="760" height="165" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="165" text-anchor="middle" fill="#1a1a2e" font-size="14" font-weight="bold">兜底决策逻辑</text>
+
+            <table_font_x1>
+            <text x="30" y="195" fill="#333" font-size="11">
+                <tspan x="30" dy="0">用户输入 → 意图识别（置信度 &lt; 阈值） → 重试计数器 +1</tspan>
+                <tspan x="30" dy="20">计数器 = 1 → L1: "您能换一种方式描述吗？"</tspan>
+                <tspan x="30" dy="20">计数器 = 2 → L2: "您是想了解以下内容吗？[选项列表]"</tspan>
+                <tspan x="30" dy="20">计数器 ≤ 3 → L3: "我没有找到完全匹配的答案..."</tspan>
+                <tspan x="30" dy="20">计数器 &gt; 3 → L4: "正在为您转接人工客服..."</tspan>
+                <tspan x="30" dy="20">无响应/不可达 → L5: "感谢您的使用，祝您生活愉快！"</tspan>
+            </text>
+        </svg>
+    </div>
+
+    <p>在实现中，我们用 <code>FallbackHandler</code> 来管理兜底级别和重试计数。每次处理失败时，自动选择下一个更高级别的兜底策略。</p>
+
+<div class="code-file">04_dialogue_system/04_dialogue_guidance/fallback_handler.py</div>
+<pre><code class="language-python">"""
+fallback_handler.py — 兜底策略处理器
+当用户输入超出系统处理能力时，执行降级策略。
+支持多级兜底：重试引导、意图推测、转人工、礼貌结束。
+"""
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+
+
+class FallbackLevel(Enum):
+    """兜底级别"""
+    LEVEL1_RETRY = "retry"                    # 一级：引导重试
+    LEVEL2_SUGGEST = "suggest"                # 二级：建议选项
+    LEVEL3_PARTIAL = "partial"                # 三级：部分响应
+    LEVEL4_TRANSFER = "transfer"              # 四级：转人工
+    LEVEL5_END = "end"                        # 五级：礼貌结束
+
+
+@dataclass
+class FallbackHandler:
+    """
+    兜底策略处理器：根据上下文和失败次数
+    选择合适的降级策略。
+    """
+
+    max_retries: int = 3
+    current_retry_count: int = 0
+    transfer_threshold: int = 3
+
+    def handle(self, context: Optional[dict] = None) -> "FallbackResponse":
+        """根据当前重试次数选择适当的兜底级别"""
+        self.current_retry_count += 1
+
+        if self.current_retry_count == 1:
+            return FallbackResponse(
+                level=FallbackLevel.LEVEL1_RETRY,
+                text="抱歉，我没有完全理解您的意思。\n"
+                     "您能换一种方式描述一下吗？",
+                confidence=0.3,
+            )
+        elif self.current_retry_count == 2:
+            return FallbackResponse(
+                level=FallbackLevel.LEVEL2_SUGGEST,
+                text="我可能理解有误，您是想了解以下内容吗？",
+                options=["预订酒店", "查询订单", "取消预订"],
+                confidence=0.2,
+            )
+        elif self.current_retry_count <= self.transfer_threshold:
+            return FallbackResponse(
+                level=FallbackLevel.LEVEL3_PARTIAL,
+                text="我没有找到完全匹配的答案，\n"
+                     "但以下信息可能对您有帮助...",
+                confidence=0.1,
+            )
+        else:
+            return FallbackResponse(
+                level=FallbackLevel.LEVEL4_TRANSFER,
+                text="这个问题超出了我的处理能力。\n"
+                     "正在为您转接人工客服，请稍候...",
+                should_transfer=True,
+                confidence=0.0,
+            )
+
+    def reset(self):
+        """重置重试计数器"""
+        self.current_retry_count = 0</code></pre>
+
+    <h3>4.2 兜底参数的调优</h3>
+    <p>兜底策略不是固定不变的，需要根据<strong>业务场景</strong>和<strong>用户群体</strong>调整参数：</p>
+
+    <table>
+        <thead>
+            <tr><th>参数</th><th>简单场景</th><th>复杂场景</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>转人工阈值</td><td>3 次</td><td>5 次</td><td>越复杂的业务，给系统越多尝试机会</td></tr>
+            <tr><td>L1 话术语气</td><td>轻松友好</td><td>专业正式</td><td>根据品牌调性调整</td></tr>
+            <tr><td>选项数量</td><td>3-4 个</td><td>5-6 个</td><td>更多选项意味着更精准但也更冗长</td></tr>
+            <tr><td>超时时间</td><td>5 分钟</td><td>10 分钟</td><td>兜底期间用户可能仍在思考如何表达</td></tr>
+        </tbody>
+    </table>
+
+    <h2>五、与状态机的集成</h2>
+    <p>对话引导、澄清和兜底策略需要与 4.2 节中的对话状态机无缝集成。具体来说：</p>
+
+    <ul>
+        <li><strong>引导</strong>在 <code>GREETING</code> 阶段触发——系统主动展示能力范围</li>
+        <li><strong>澄清</strong>在 <code>INTENT_RECOGNITION</code> 阶段触发——当意图置信度低于阈值时</li>
+        <li><strong>槽位追问</strong>在 <code>SLOT_FILLING</code> 阶段触发——当关键槽位缺失时</li>
+        <li><strong>兜底</strong>在任何阶段都可以触发——当连续失败超过阈值时</li>
+    </ul>
+
+    <p>下面是一个完整的集成流程，展示了三个组件如何协同工作：</p>
+
+<div class="code-file">04_dialogue_system/04_dialogue_guidance/example_usage.py</div>
+<pre><code class="language-python">"""
+集成演示：澄清引擎 + 兜底策略 + 话术模板
+展示从用户模糊输入到系统引导、追问、最终完成任务的全过程。
+"""
+from clarification_engine import ClarificationEngine
+from fallback_handler import FallbackHandler
+from response_templates import create_hotel_templates
+
+
+def demo_integrated_flow():
+    engine = ClarificationEngine()
+    handler = FallbackHandler()
+    mgr = create_hotel_templates()
+
+    # 模拟对话轮次
+    turns = [
+        {"input": "你好", "stage": "greeting", "intent": "greeting"},
+        {"input": "随便看看", "stage": "intent", "intent": "unknown"},
+        {"input": "订酒店", "stage": "intent", "intent": "book_hotel"},
+        {"input": "北京", "stage": "slot", "intent": "book_hotel"},
+        # 用户输入不完整（缺少具体日期）
+        {"input": "下个月", "stage": "slot", "intent": "book_hotel",
+         "missing_slots": ["check_in", "check_out"]},
+        {"input": "2026-08-01 到 8月5号", "stage": "confirm",
+         "intent": "book_hotel"},
+    ]
+
+    for i, turn in enumerate(turns, 1):
+        stage = turn.get("stage", "")
+        intent = turn.get("intent", "")
+
+        # 意图不明时触发澄清
+        if intent == "unknown":
+            result = engine.generate(turn["input"])
+            print(f"[轮次 {i}] [澄清] {result['clarification']}")
+
+        # 缺失槽位时追问
+        if turn.get("missing_slots"):
+            result = engine.generate(
+                turn["input"],
+                missing_slots=turn["missing_slots"],
+            )
+            print(f"[轮次 {i}] [追问] {result['clarification']}")
+
+        # 获取阶段话术
+        stage_text = mgr.get_template(stage, intent)
+        if stage_text and stage not in ("slot", "confirm"):
+            print(f"[轮次 {i}] [话术] {stage_text}")</code></pre>
+
+    <h2>六、对比：有无引导的对话体验差异</h2>
+    <p>下面通过一个完整的场景对比，展示引导策略对用户体验的影响。</p>
+
+    <table>
+        <thead>
+            <tr><th>轮次</th><th>❌ 无引导系统</th><th>✅ 有引导系统</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>1</strong></td>
+                <td>用户："你好"<br>系统："你好"</td>
+                <td>用户："你好"<br>系统："您好！我是酒店预订助手，可以帮您预订、查询或取消。您需要什么帮助？"</td>
+            </tr>
+            <tr>
+                <td><strong>2</strong></td>
+                <td>用户："我想住酒店"<br>系统："请提供更多信息"</td>
+                <td>用户："我想住酒店"<br>系统："好的！请问您想预订哪个城市？"（主动引导）</td>
+            </tr>
+            <tr>
+                <td><strong>3</strong></td>
+                <td>用户："北京"<br>系统："我不理解"（因为没有说"城市"）</td>
+                <td>用户："北京"<br>系统："好的，北京的酒店。请问您的入住日期是？"（上下文推理）</td>
+            </tr>
+            <tr>
+                <td><strong>4</strong></td>
+                <td>用户："？"<br>系统："我不理解"</td>
+                <td>用户："8月1号到5号"<br>系统："请确认：北京 8/1-8/5。确认请回复「是的」"（主动确认）</td>
+            </tr>
+            <tr>
+                <td><strong>5</strong></td>
+                <td>用户离开，差评</td>
+                <td>用户："是的"<br>系统："✅ 预订成功！订单号 #20260001"</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>七、工程化建议</h2>
+
+    <h3>7.1 话术管理外置化</h3>
+    <p>所有引导话术都应该<strong>外置为配置文件或数据库记录</strong>，而不是硬编码在代码里。话术是运营人员最常修改的内容，如果每次改话术都要发版上线，效率太低。</p>
+
+<pre><code class="language-python">import yaml
+from pathlib import Path
+
+def load_templates_from_yaml(path: str) -> list[DialogueTemplate]:
+    """从 YAML 文件加载话术模板"""
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    templates = []
+    for item in data.get("templates", []):
+        tpl = DialogueTemplate(
+            template_id=item["id"],
+            stage=item["stage"],
+            intent=item["intent"],
+            text=item["text"],
+            variants=item.get("variants", []),
+            is_active=item.get("active", True),
+        )
+        templates.append(tpl)
+    return templates
+
+# templates.yaml:
+# templates:
+#   - id: greeting_welcome
+#     stage: greeting
+#     intent: any
+#     text: "您好！我是酒店预订助手..."
+#     variants:
+#       - "欢迎使用酒店预订服务..."
+#     active: true</code></pre>
+
+    <h3>7.2 A/B 测试框架</h3>
+    <p>话术模板支持变体（variants），每次获取时随机选择一个。系统需要记录每个变体的效果指标（用户满意度、任务完成率），以便运营人员分析哪个版本更好。</p>
+
+<pre><code class="language-python">from dataclasses import dataclass, field
+from typing import Optional
+from datetime import datetime
+
+
+@dataclass
+class TemplateMetric:
+    """话术效果指标"""
+    template_id: str
+    variant_index: int
+    impressions: int = 0          # 展示次数
+    completions: int = 0          # 完成次数（用户按预期回复）
+    escalations: int = 0          # 升级次数（触发兜底）
+
+    @property
+    def completion_rate(self) -> float:
+        """完成率"""
+        if self.impressions == 0:
+            return 0.0
+        return self.completions / self.impressions
+
+    @property
+    def escalation_rate(self) -> float:
+        """升级率（越低越好）"""
+        if self.impressions == 0:
+            return 0.0
+        return self.escalations / self.impressions
+
+
+class ABTestTracker:
+    """A/B 测试追踪器"""
+
+    def __init__(self):
+        self.metrics: dict[str, TemplateMetric] = {}
+
+    def record_impression(self, template_id: str, variant_index: int):
+        """记录一次展示"""
+        key = f"{template_id}_{variant_index}"
+        if key not in self.metrics:
+            self.metrics[key] = TemplateMetric(
+                template_id=template_id,
+                variant_index=variant_index,
+            )
+        self.metrics[key].impressions += 1
+
+    def record_completion(self, template_id: str, variant_index: int):
+        """记录一次成功完成"""
+        key = f"{template_id}_{variant_index}"
+        if key in self.metrics:
+            self.metrics[key].completions += 1
+
+    def record_escalation(self, template_id: str, variant_index: int):
+        """记录一次兜底升级"""
+        key = f"{template_id}_{variant_index}"
+        if key in self.metrics:
+            self.metrics[key].escalations += 1
+
+    def get_best_variant(self, template_id: str) -> Optional[int]:
+        """返回完成率最高的变体索引"""
+        candidates = [
+            m for k, m in self.metrics.items()
+            if k.startswith(template_id + "_")
+        ]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda m: m.completion_rate).variant_index</code></pre>
+
+    <h3>7.3 多语言支持</h3>
+    <p>对于国际化产品，话术模板需要支持多语言。最简单的做法是在模板 ID 中嵌入语言代码，或者按语言组织模板文件。</p>
+
+<pre><code class="language-python">class MultiLanguageTemplateManager:
+    """多语言话术模板管理器"""
+
+    def __init__(self):
+        self.managers: dict[str, TemplateManager] = {}
+
+    def add_language(self, lang_code: str, templates: list[DialogueTemplate]):
+        """添加一种语言的模板"""
+        mgr = TemplateManager(templates=templates)
+        self.managers[lang_code] = mgr
+
+    def get_template(
+        self, lang_code: str, stage: str, intent: str
+    ) -> Optional[str]:
+        """获取指定语言的模板，回退到英文"""
+        mgr = self.managers.get(lang_code)
+        if mgr:
+            text = mgr.get_template(stage, intent)
+            if text:
+                return text
+
+        # 回退到英文
+        if lang_code != "en":
+            en_mgr = self.managers.get("en")
+            if en_mgr:
+                return en_mgr.get_template(stage, intent)
+
+        return None</code></pre>
+
+    <h2>八、常见误区</h2>
+
+    <h3>误区一：引导话术过长</h3>
+    <p>很多设计者倾向于把所有可能性都写在欢迎话术中，导致第一段消息就有几百字。用户根本不会仔细看。正确的做法是：<strong>简洁明了 + 可探索的帮助菜单</strong>。欢迎话术控制在 2-3 句话内，然后提供快捷按钮让用户自己选择。</p>
+
+    <h3>误区二：兜底策略过于激进</h3>
+    <p>有些系统在第一次识别失败后就直接转人工，放弃了所有挽回的机会。这不仅浪费人力成本，也无法让系统通过数据积累来改进。记住：<strong>用户可能只是换了一种说法</strong>，给他们第二次机会。</p>
+
+    <h3>误区三：忽略沉默用户</h3>
+    <p>很多引导策略只考虑了"用户说了什么"，但没有考虑"用户什么都没说"。当用户在某个环节停留时间过长（比如 30 秒没有回复），系统应该主动发送引导消息，而不是干等。</p>
+
+<pre><code class="language-python">import asyncio
+from datetime import datetime, timedelta
+
+
+class IdleDetector:
+    """
+    空闲检测器：当用户长时间不回复时，
+    主动发送引导消息。
+    """
+
+    def __init__(self, timeout_sec: int = 30):
+        self.timeout = timeout_sec
+        self._last_activity: Optional[datetime] = None
+        self._timer_task = None
+
+    def on_activity(self):
+        """用户有新消息时调用"""
+        self._last_activity = datetime.now()
+
+    def check_idle(self) -> bool:
+        """检查是否超时"""
+        if self._last_activity is None:
+            return False
+        elapsed = (datetime.now() - self._last_activity).total_seconds()
+        return elapsed > self.timeout
+
+    async def monitor(self, callback):
+        """
+        持续监控用户是否空闲。
+        当检测到超时时，调用 callback 发送引导消息。
+        """
+        while True:
+            await asyncio.sleep(10)  # 每 10 秒检查一次
+            if self.check_idle():
+                await callback(
+                    "您好，我还在。如果您暂时没有需要帮助的，"
+                    "可以随时回复我。"
+                )</code></pre>
+
+    <h3>误区四：话术一成不变</h3>
+    <p>上线后就不管话术了，这是最常见的错误。话术需要根据数据持续优化——哪个版本的完成率更高？哪个场景的兜底率异常？这些都需要通过 A/B 测试和指标监控来发现。</p>
+
+    <h2>九、小结</h2>
+    <p>对话引导、澄清和兜底策略是决定对话系统成败的关键组件。它们构成了三层防御体系：<strong>主动引导</strong>帮助用户快速找到入口，<strong>澄清引擎</strong>在意图不明时优雅地追问，<strong>多级兜底</strong>在系统确实无能为力时体面地降级。</p>
+
+    <p>好的引导策略不是一套写死的规则，而是<strong>持续迭代的运营工作</strong>。通过 A/B 测试、指标监控和用户反馈，话术质量会随着时间稳步提升。在下一节 4.5 中，我们将学习如何<strong>量化评估对话质量</strong>——用数据驱动引导策略的优化。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

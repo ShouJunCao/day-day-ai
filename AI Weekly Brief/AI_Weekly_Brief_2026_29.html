@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI行业资讯简报 2026年7月第29周</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #020617; --card: #0f172a; --text: #e2e8f0; --muted: #94a3b8; --border: #1e293b; --accent: #38bdf8; --tag-cn: #4ade80; --tag-us: #f472b6; }
+        body { background: var(--bg); color: var(--text); font-family: 'Noto Sans SC', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        h1 { font-size: 28px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 5px; }
+        .subtitle { color: var(--muted); margin-bottom: 30px; font-size: 14px; }
+        
+        .summary-box { background: #1e3a8a; padding: 20px; border-radius: 8px; border-left: 5px solid var(--accent); margin-bottom: 40px; }
+        .summary-box h3 { margin: 0 0 10px 0; color: #fff; font-size: 16px; }
+        .summary-box p { margin: 0; font-size: 14px; color: #cbd5e1; }
+
+        .section { margin-bottom: 40px; }
+        .section-title { font-size: 20px; color: #fff; border-left: 4px solid var(--accent); padding-left: 12px; margin-bottom: 20px; }
+        
+        .news-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; transition: transform 0.2s; }
+        .news-item:hover { transform: translateY(-2px); border-color: var(--accent); }
+        
+        .news-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+        .news-title { font-size: 18px; font-weight: bold; margin: 0; }
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .tag-cn { background: rgba(74, 222, 128, 0.15); color: var(--tag-cn); }
+        .tag-us { background: rgba(244, 114, 182, 0.15); color: var(--tag-us); }
+        
+        .meta { font-size: 12px; color: var(--accent); margin-bottom: 15px; }
+        .meta a { color: var(--accent); text-decoration: none; margin-right: 15px; }
+        
+        .keywords { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .keyword { background: #334155; color: var(--muted); font-size: 11px; padding: 2px 8px; border-radius: 12px; }
+        
+        .details p { margin: 6px 0; font-size: 14px; color: var(--muted); }
+        .details strong { color: #f8fafc; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI行业资讯简报</h1>
+        <div class="subtitle">2026年7月第29周 (07.07 - 07.14) · 第29期</div>
+
+        <div class="summary-box">
+            <h3>本周三大主线</h3>
+            <p><strong>1. 大模型与 Agent 爆发</strong>：OpenAI 发布 ChatGPT Work 进军企业市场，SpaceX/Grok 4.5 以极致低价搅局 Agent 赛道；腾讯混元 Hy3 登顶 OpenRouter 算力榜首。</p>
+            <p><strong>2. 监管合规与法律战</strong>：中国出台《类人 AI 交互服务规定》，字节/阿里紧急下架 Agent 功能；Apple 正式起诉 OpenAI 窃取商业机密，Siri 转而接入 Google。</p>
+            <p><strong>3. 底层基建与商业化</strong>：Meta 投入 500 亿美元建设 5GW 数据中心，欧洲防务 AI 独角兽 Helsing 融资 18 亿美元；DeepSeek 降价 75% 引发行业价格战焦虑。</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">一、大模型资讯</div>
+            
+            <!-- 1 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">1. 国外：OpenAI 发布 ChatGPT Work (GPT-5.6)，进军企业 Agent 市场</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">ChatGPT Work</span><span class="keyword">GPT-5.6</span><span class="keyword">Agent</span><span class="keyword">IPO</span></div>
+                <div class="meta"><a href="https://venturebeat.com/technology/openai-introduces-chatgpt-work-a-cloud-based-ai-agent-that-manages-tasks-across-email-slack-and-calendars" target="_blank">🔗 VentureBeat</a> <span>2026-07-10</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> OpenAI 推出 ChatGPT Work，基于 GPT-5.6，这是一个拥有持久云环境的自主 Agent，可管理邮件、Slack、GitHub 等任务，面向所有付费层级开放。</p>
+                    <p><strong>原理：</strong> 采用 MCP 协议插件，在云端虚拟机中持续运行，支持长达数小时的自主多步操作，不再局限于单次对话窗口。</p>
+                    <p><strong>价值：</strong> 首次将 Codex 级别的代码与任务管理能力普及给非工程团队用户，大幅降低企业自动化的使用门槛。</p>
+                    <p><strong>影响：</strong> 标志着 OpenAI 从"聊天工具"向"企业生产力平台"的关键转型，为其即将到来的千亿美元 IPO 注入了最强的增长故事。</p>
+                </div>
+            </div>
+
+            <!-- 2 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">2. 国外：SpaceX/Grok 发布 4.5 模型，主打编程与 Agent 性价比</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">Grok 4.5</span><span class="keyword">Cursor 数据</span><span class="keyword">价格战</span></div>
+                <div class="meta"><a href="https://venturebeat.com/technology/spacexs-grok-4-5-launches-at-half-the-price-of-rivals-heres-why-that-could-rattle-anthropic-and-openai" target="_blank">🔗 VentureBeat</a> <span>2026-07-08</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> SpaceX 发布 Grok 4.5，这是其首个专为编程和 Agent 训练的大模型，使用了 Cursor 的交互数据进行训练，定价仅为竞品的 50%。</p>
+                    <p><strong>原理：</strong> 利用海量的高质量代码编辑与补全数据进行针对性微调，优化了推理速度与成本，而非盲目追求参数规模。</p>
+                    <p><strong>价值：</strong> 提供每百万 token 输入 2 美元、输出 6 美元的极低价格，单次任务成本比 Claude Opus 低 90%。</p>
+                    <p><strong>影响：</strong> 挑战了“模型越聪明越好”的行业共识，证明了在 Agent 任务中低成本和高速度才是关键，可能迫使 OpenAI 和 Anthropic 跟进降价。</p>
+                </div>
+            </div>
+
+            <!-- 3 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">3. 国内：DeepSeek V4-Pro 价格暴跌 75%，行业再现“百模大战”</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">V4-Pro</span><span class="keyword">降价 75%</span><span class="keyword">100x 问题</span></div>
+                <div class="meta"><a href="https://venturebeat.com/orchestration/deepseek-cut-prices-75-the-100x-problem-remains" target="_blank">🔗 VentureBeat</a> <span>2026-07-12</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> DeepSeek 宣布将 V4-Pro 模型价格削减 75%，再次刷新行业底价，但 SaaS 厂商面临 Agent 消耗量激增 700 倍的"100 倍问题”。</p>
+                    <p><strong>原理：</strong> 通过架构优化和推理加速技术大幅降低单次调用成本，以价格优势抢占市场份额。</p>
+                    <p><strong>价值：</strong> 极大地降低了企业 API 调用的门槛，加速了模型在中小开发者中的普及。</p>
+                    <p><strong>影响：</strong> 加剧了算力成本焦虑。Nvidia 副总裁确认算力支出已超过员工成本，迫使企业重新思考基于“人头”的 SaaS 定价模式是否还有效。</p>
+                </div>
+            </div>
+
+            <!-- 4 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">4. 国内：腾讯 WorkBuddy 上线，混元 Hy3 登顶 OpenRouter</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">WorkBuddy</span><span class="keyword">混元 Hy3</span><span class="keyword">OpenRouter 第一</span></div>
+                <div class="meta"><a href="https://www.ifanr.com/1671739" target="_blank">🔗 爱范儿</a> <span>2026-07-14</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 腾讯发布桌面端 AI Agent WorkBuddy，集成微信；其混元 Hy3 模型以单周 6.13T Token 处理量登顶 OpenRouter 榜首。</p>
+                    <p><strong>原理：</strong> WorkBuddy 基于 CodeBuddy 架构，支持微信“爪爪”机器人、本地文件操作和 Agent Mail；Hy3 模型通过免费策略吸引海量开发者调用。</p>
+                    <p><strong>价值：</strong> 成为中国首个深度集成微信生态的 Codex 竞品，Hy3 性能超越 MiMo-V2.5 和 DeepSeek V4 Flash。</p>
+                    <p><strong>影响：</strong> 证明了腾讯在 AI 基础设施层面的强大号召力，微信的私域流量成为其推广 AI Agent 的独特护城河。</p>
+                </div>
+            </div>
+             <!-- 5 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">5. 国外：Google Gemini 集成至 Chrome 浏览器 (英国上线)</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">Gemini</span><span class="keyword">Chrome 集成</span><span class="keyword">欧盟监管</span></div>
+                <div class="meta"><a href="https://www.theverge.com/tech/965252/gemini-in-chrome-is-rolling-out-in-the-uk" target="_blank">🔗 The Verge</a> <span>2026-07-14</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> Google 开始在 Chrome 浏览器中直接内置 Gemini 聊天界面，首批在 UK 上线，欧盟仍因监管原因暂缓。</p>
+                    <p><strong>原理：</strong> 支持跨标签页信息对比、网页内容总结，无需离开当前页面即可调用 AI 问答。</p>
+                    <p><strong>价值：</strong> 极大缩短了用户获取信息的链路，将搜索与浏览合二为一。</p>
+                    <p><strong>影响：</strong> 巩固了 Google 在浏览器入口的统治地位，但也引发了关于数据隐私和反垄断的进一步担忧。</p>
+                </div>
+            </div>
+
+            <!-- 6 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">6. 国内：长鑫存储 (CXMT) 产能激增，突破制裁对标美光</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">DRAM</span><span class="keyword">多重曝光</span><span class="keyword">算力瓶颈</span></div>
+                <div class="meta"><a href="https://www.cnbeta.com.tw/articles/tech/1568836.htm" target="_blank">🔗 cnBeta</a> <span>2026-07-14</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 长鑫存储计划 2026 年底 DRAM 晶圆月产能达到 35 万片，规模直逼美国巨头美光。</p>
+                    <p><strong>原理：</strong> 在无法获取 EUV 光刻机的情况下，利用多重曝光 DUV 技术突破瓶颈，大幅扩充存储芯片产线。</p>
+                    <p><strong>价值：</strong> 缓解了国内 AI 算力集群面临的内存短缺危机，降低了对海外供应链的依赖。</p>
+                    <p><strong>影响：</strong> 标志着中国半导体在存储领域实现了从“跟随”到“并行”的跨越，增强了 AI 基础设施的自主可控性。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">二、AI 技术资讯</div>
+
+            <!-- 7 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">7. 国内：蚂蚁集团具身智能突破：攻克机器人“玻璃感知”难题</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">具身智能</span><span class="keyword">玻璃感知</span><span class="keyword">视觉模型</span></div>
+                <div class="meta"><a href="https://www.scmp.com/tech/big-tech/article/3359747/glass-crashes-slashed-ant-group-embodied-ai-unit-claims-breakthrough-robot-sensing" target="_blank">🔗 SCMP</a> <span>2026-07-07</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 蚂蚁集团推出新型视觉感知模型，解决了机器人长期存在的误撞玻璃、镜面等透明物体的难题，以小规模训练超越了 Meta 模型。</p>
+                    <p><strong>原理：</strong> 采用针对透明材质的特殊视觉算法，增强了机器人对无纹理、高反射表面的深度感知能力。</p>
+                    <p><strong>价值：</strong> 消除了具身智能在复杂室内环境（如写字楼、商场）部署的最大安全隐患。</p>
+                    <p><strong>影响：</strong> 将大幅加速物流和服务机器人的落地进程，标志着 AI 从“数字大脑”向“物理身体”的进化迈出了关键一步。</p>
+                </div>
+            </div>
+
+            <!-- 8 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">8. 国外：Google TabFM 颠覆传统 ML，无需训练直接预测表格</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">TabFM</span><span class="keyword">表格预测</span><span class="keyword">Zero-shot</span></div>
+                <div class="meta"><a href="https://venturebeat.com/technology/googles-tabfm-skips-per-dataset-training-and-still-predicts-on-tables-its-never-seen" target="_blank">🔗 VentureBeat</a> <span>2026-07-10</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> Google 发布 TabFM 基础模型，无需针对特定数据集训练或微调，仅需一次 API 调用即可预测未见过的表格数据。</p>
+                    <p><strong>原理：</strong> 基于海量表格数据进行预训练，具备强大的 Zero-shot 泛化能力，替代了传统的梯度提升树（XGBoost）流程。</p>
+                    <p><strong>价值：</strong> 将企业级预测建模从数周的数据清洗、管道工程缩减至一次 API 调用，极大降低了 AI 应用门槛。</p>
+                    <p><strong>影响：</strong> 可能对传统的机器学习工作流造成降维打击，推动基础模型在结构化数据领域的全面普及。</p>
+                </div>
+            </div>
+
+             <!-- 9 -->
+             <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">9. 国外：Google TPU 战略转向商用，Anthropic 部署百万颗芯片</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">TPU v7</span><span class="keyword">商业化</span><span class="keyword">挑战 Nvidia</span></div>
+                <div class="meta"><a href="https://www.cnbeta.com.tw/articles/tech/1568806.htm" target="_blank">🔗 cnBeta</a> <span>2026-07-14</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> Google 开始将内部专用的 TPU 转为商用芯片对外销售，Anthropic 已部署上百万颗 7 代 TPU 训练 Claude，直接挑战 Nvidia 86% 的市场份额。</p>
+                    <p><strong>原理：</strong> 利用自研架构的能效优势，配合开放的云 API，打破 Nvidia GPU 在算力市场的垄断地位。</p>
+                    <p><strong>价值：</strong> 为大型模型厂商提供了高性价比的算力替代方案，降低了对单一供应商的依赖。</p>
+                    <p><strong>影响：</strong> 标志着云厂商不再仅是芯片的消费者，而是直接下场做供应商，算力基础设施格局面临重构。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">三、AI 产品资讯</div>
+
+            <!-- 10 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">10. 国内：腾讯洽谈收购 Manus，意图控制 Agent 独角兽</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">Manus</span><span class="keyword">收购</span><span class="keyword">红杉</span></div>
+                <div class="meta"><a href="https://www.cnbeta.com.tw/articles/tech/1568572.htm" target="_blank">🔗 cnBeta</a> <span>2026-07-10</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 在 Meta 收购 Manus 被监管叫停后，腾讯接手谈判，意图成为其最大股东，延续其在该领域的早期布局。</p>
+                    <p><strong>原理：</strong> 通过资本运作获取顶级 Agent 产品的控制权，弥补自身在通用 Agent 领域的短板。</p>
+                    <p><strong>价值：</strong> Manus 作为全球现象级的 Agent 产品，具有极高的战略价值和流量潜力。</p>
+                    <p><strong>影响：</strong> 腾讯通过资本手段强化 AI Agent 版图，预示着中美科技巨头对“具身智能/Agent"赛道的争夺进入白热化。</p>
+                </div>
+            </div>
+
+             <!-- 11 -->
+             <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">11. 国内：快手可灵 (Kling) AI 独立拆分，腾讯领投 30 亿美元</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">可灵 AI</span><span class="keyword">拆分融资</span><span class="keyword">视频生成</span></div>
+                <div class="meta"><a href="https://www.scmp.com/tech/big-tech/article/3359664/kuaishou-shares-tumble-tencent-slashes-stake-after-us3b-kling-ai-deal" target="_blank">🔗 SCMP</a> <span>2026-07-12</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 腾讯领投快手旗下 AI 视频产品“可灵”30 亿美元融资，随后快手出售股份，可灵迈向独立运营。</p>
+                    <p><strong>原理：</strong> 独立融资有利于产品脱离单一母公司的束缚，建立更灵活的商业模式和估值体系。</p>
+                    <p><strong>价值：</strong> 获得了充裕的资金支持，用于提升视频生成质量和拓展全球市场。</p>
+                    <p><strong>影响：</strong> 标志着中国 AI 视频产品进入独立融资、独立发展的新阶段，有利于行业格局的进一步分化。</p>
+                </div>
+            </div>
+
+            <!-- 12 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">12. 国外：Microsoft Copilot 新增"PC Insights"技能，深入系统底层</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">PC Insights</span><span class="keyword">系统分析</span><span class="keyword">Copilot</span></div>
+                <div class="meta"><a href="https://www.zdnet.com/article/microsoft-copilot-analyze-windows/" target="_blank">🔗 ZDNET</a> <span>2026-07-14</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> Microsoft Copilot Windows 应用新增"PC Insights"技能，支持 AI 分析系统设置与配置。</p>
+                    <p><strong>原理：</strong> 利用本地系统 API 获取硬件与软件状态，结合 LLM 的推理能力提供优化建议。</p>
+                    <p><strong>价值：</strong> 将 AI 助手从“聊天工具”升级为“系统管家”，提升了 Windows 生态的粘性。</p>
+                    <p><strong>影响：</strong> 深化了 Copilot 在操作系统底层的渗透，使得 OS 级别的智能化成为新的竞争高地。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">四、AI 商业资讯</div>
+
+            <!-- 13 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">13. 国内：字节与阿里紧急下架 AI Agent 功能，应对新规生效</h3>
+                    <span class="tag tag-cn">国内</span>
+                </div>
+                <div class="keywords"><span class="keyword">合规监管</span><span class="keyword">类人交互</span><span class="keyword">下架</span></div>
+                <div class="meta"><a href="https://www.scmp.com/tech/big-tech/article/3359482/bytedance-and-alibaba-disable-humanlike-ai-custom-agents-new-rules-loom" target="_blank">🔗 SCMP</a> <span>2026-07-10</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 随着《类人 AI 交互服务规定》于 7 月 15 日生效，字节（豆包）和阿里（通义）紧急禁用定制化 AI Agent 功能。</p>
+                    <p><strong>原理：</strong> 新规禁止 AI 模拟人类人格、思维模式并提供持续情感交互，平台需对存量数据进行清理。</p>
+                    <p><strong>价值：</strong> 保障了用户知情权，防止了 AI 在情感依赖上的滥用，确立了合规底线。</p>
+                    <p><strong>影响：</strong> 标志着中国 AI 监管进入实质性执行期，为全球的 AI 透明度监管树立了先例，短期影响了产品的商业化进程。</p>
+                </div>
+            </div>
+
+            <!-- 14 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">14. 国外：Apple 正式起诉 OpenAI 窃取商业机密，Siri 弃用其模型</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">商业机密</span><span class="keyword">硬件诉讼</span><span class="keyword">Siri 换芯</span></div>
+                <div class="meta"><a href="https://www.cnbc.com/2026/07/10/apple-openai-lawsuit-trade-secrets.html" target="_blank">🔗 CNBC</a> <span>2026-07-10</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> Apple 提起诉讼，指控 OpenAI 窃取硬件 IP，并指控其硬件负责人（前 Apple VP）指使员工在面试中展示机密零件。同时 Siri 已改用 Google 模型。</p>
+                    <p><strong>原理：</strong> Apple 通过法律手段打击潜在的硬件竞争对手，保护其核心供应链和设计机密。</p>
+                    <p><strong>价值：</strong> 维护了 Apple 的知识产权霸权，同时也切断了与 OpenAI 的蜜月期合作。</p>
+                    <p><strong>影响：</strong> 科技巨头的法律战升级，OpenAI 的硬件 ambitions 遭遇重挫，AI 行业的“人才流动”与“商业窃密”界限将受到严厉审视。</p>
+                </div>
+            </div>
+
+            <!-- 15 -->
+            <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">15. 国外：欧洲防务 AI 独角兽 Helsing 融资 18 亿美元</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">国防 AI</span><span class="keyword">180 亿估值</span><span class="keyword">无人机</span></div>
+                <div class="meta"><a href="https://www.cnbc.com/2026/07/13/helsing-fund-raise-defense-18-billion.html" target="_blank">🔗 CNBC</a> <span>2026-07-13</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> 慕尼黑防务 AI 公司 Helsing 完成 18 亿美元融资，估值达 180 亿美元，由 JPMorgan 等领投，被称为欧洲的 Anduril。</p>
+                    <p><strong>原理：</strong> 将 AI 应用于无人机群控制和军事指挥系统，提供自主作战能力。</p>
+                    <p><strong>价值：</strong> 资金将用于扩大 HX-2 无人机的生产和软件迭代，满足欧洲日益增长的防务需求。</p>
+                    <p><strong>影响：</strong> 标志着欧洲国防科技领域的资本爆发，AI 正在重塑全球地缘政治与安全格局。</p>
+                </div>
+            </div>
+
+             <!-- 16 -->
+             <div class="news-item">
+                <div class="news-header">
+                    <h3 class="news-title">16. 国外：Meta 投入 500 亿美元建设 5GW 数据中心，AI 基建狂飙</h3>
+                    <span class="tag tag-us">国外</span>
+                </div>
+                <div class="keywords"><span class="keyword">数据中心</span><span class="keyword">500 亿投资</span><span class="keyword">Hyperion</span></div>
+                <div class="meta"><a href="https://www.cnbc.com/2026/07/13/meta-louisiana-data-center-investment-reaches-50-billion-amid-ai-push.html" target="_blank">🔗 CNBC</a> <span>2026-07-13</span></div>
+                <div class="details">
+                    <p><strong>核心：</strong> Meta 路易斯安那州 Hyperion 数据中心扩容至 5GW 和 500 亿美元投资，为目前最大单体数据中心项目。</p>
+                    <p><strong>原理：</strong> 通过超大规模集群与 JV 合作，支撑其 Llama 系列模型及广告推荐系统的庞大算力需求。</p>
+                    <p><strong>价值：</strong> 获得 20 年州销售税豁免，大幅降低了长期的运营成本。</p>
+                    <p><strong>影响：</strong> 引发了州级政府对 AI 基础设施的招商引资竞赛，验证了 AI 仍是目前科技行业最确定的投资方向。</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: var(--muted); margin-top: 40px; font-size: 12px;">
+            Generated by Hermes Agent · Verified Real-time Data
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.6 多模态对话（文本 + 图片 + 语音） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .compare-box { display: flex; gap: 16px; margin: 16px 0; }
+        .compare-box > div { flex: 1; padding: 16px; border-radius: 8px; }
+        .compare-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .compare-good { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .compare-box h4 { margin-bottom: 8px; font-size: 0.95em; }
+        .compare-bad h4 { color: var(--red); }
+        .compare-good h4 { color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>4.6 多模态对话（文本 + 图片 + 语音）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块四：对话系统设计</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解多模态对话的核心概念与架构模式</li>
+        <li>掌握<strong>文本、图片、语音</strong>三种模态的处理方法</li>
+        <li>学会设计模态检测器和多模态处理器</li>
+        <li>了解 ASR（语音识别）、TTS（语音合成）、Vision API 的集成方式</li>
+        <li>能够构建支持多模态输入输出的对话系统</li>
+    </ul>
+
+    <h2>一、为什么对话系统需要多模态？</h2>
+    <p>在前面的章节中，我们构建了一个完整的任务型对话系统——从意图识别、槽位填充、状态追踪到引导兜底。但这一切都建立在<strong>纯文本交互</strong>的假设上。现实世界中，用户的表达方式远不止打字。</p>
+
+    <p>想想这些场景：</p>
+    <ul>
+        <li>用户拍了一张酒店外观的照片，问："这家怎么样？"</li>
+        <li>用户发送语音消息："帮我订后天去北京的房"</li>
+        <li>用户希望系统把预订确认<strong>读出来</strong>而不是只显示文字</li>
+        <li>用户上传了一张行程单截图，系统自动提取日期和目的地</li>
+    </ul>
+
+    <p>多模态对话系统能够理解这些<strong>非文本输入</strong>，并生成<strong>多模态输出</strong>。它不是简单的功能叠加，而是交互方式的本质升级——让对话更接近人与人之间的自然交流。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="340" viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="mm_text" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+                <linearGradient id="mm_img" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+                <linearGradient id="mm_voice" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="mm_core" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1a1a2e"/><stop offset="100%" stop-color="#2d2d44"/></linearGradient>
+            </defs>
+            <text x="400" y="28" text-anchor="middle" fill="#1a1a2e" font-size="17" font-weight="bold">多模态对话架构</text>
+
+            <!-- 输入模态 -->
+            <text x="100" y="65" text-anchor="middle" fill="#6b7c93" font-size="12" font-weight="bold">输入模态</text>
+
+            <rect x="20" y="80" width="150" height="55" rx="10" fill="url(#mm_text)"/>
+            <text x="95" y="105" text-anchor="middle" fill="white" font-size="13" font-weight="bold">📝 文本</text>
+            <text x="95" y="123" text-anchor="middle" fill="white" font-size="10">键盘输入</text>
+
+            <rect x="185" y="80" width="150" height="55" rx="10" fill="url(#mm_img)"/>
+            <text x="260" y="105" text-anchor="middle" fill="white" font-size="13" font-weight="bold">🖼️ 图片</text>
+            <text x="260" y="123" text-anchor="middle" fill="white" font-size="10">拍照 / 截图</text>
+
+            <rect x="350" y="80" width="150" height="55" rx="10" fill="url(#mm_voice)"/>
+            <text x="425" y="105" text-anchor="middle" fill="white" font-size="13" font-weight="bold">🎙️ 语音</text>
+            <text x="425" y="123" text-anchor="middle" fill="white" font-size="10">录音消息</text>
+
+            <!-- 箭头到核心 -->
+            <line x1="95" y1="135" x2="400" y2="200" stroke="#4361ee" stroke-width="2"/>
+            <line x1="260" y1="135" x2="400" y2="200" stroke="#8b5cf6" stroke-width="2"/>
+            <line x1="425" y1="135" x2="400" y2="200" stroke="#f59e0b" stroke-width="2"/>
+
+            <!-- 核心处理器 -->
+            <rect x="310" y="200" width="180" height="60" rx="12" fill="url(#mm_core)"/>
+            <text x="400" y="225" text-anchor="middle" fill="white" font-size="14" font-weight="bold">多模态处理器</text>
+            <text x="400" y="245" text-anchor="middle" fill="#94a3b8" font-size="11">模态检测 → 融合 → 回复</text>
+
+            <!-- 处理技术 -->
+            <rect x="560" y="80" width="200" height="55" rx="10" fill="#f0f0f0" stroke="#ccc"/>
+            <text x="660" y="100" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">处理技术栈</text>
+            <text x="660" y="120" fill="#555" font-size="10">ASR / Vision API / LLM</text>
+
+            <line x1="510" y1="220" x2="560" y2="110" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+            <!-- 输出模态 -->
+            <text x="400" y="300" text-anchor="middle" fill="#6b7c93" font-size="12" font-weight="bold">输出模态</text>
+            <line x1="400" y1="260" x2="400" y2="280" stroke="#1a1a2e" stroke-width="2"/>
+
+            <rect x="50" y="280" width="150" height="40" rx="8" fill="url(#mm_text)"/>
+            <text x="125" y="306" text-anchor="middle" fill="white" font-size="12" font-weight="bold">📝 文本回复</text>
+
+            <rect x="220" y="280" width="150" height="40" rx="8" fill="url(#mm_img)"/>
+            <text x="295" y="306" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🖼️ 图片生成</text>
+
+            <rect x="390" y="280" width="150" height="40" rx="8" fill="url(#mm_voice)"/>
+            <text x="465" y="306" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🔊 语音播报</text>
+
+            <rect x="560" y="280" width="180" height="40" rx="8" fill="#10b981"/>
+            <text x="650" y="306" text-anchor="middle" fill="white" font-size="12" font-weight="bold">📋 混合多模态回复</text>
+        </svg>
+    </div>
+
+    <h2>二、三种核心模态</h2>
+
+    <h3>2.1 文本模态</h3>
+    <p>文本是对话系统最基础也最可靠的模态。在前面所有章节中，我们已经建立了完整的文本对话系统——从意图识别到状态追踪。多模态系统中文本模态的角色发生了变化：它不再是唯一的输入输出方式，而是<strong>多模态的"通用语言"</strong>。</p>
+
+    <p>在多模态架构中，所有其他模态最终都会被<strong>转换为文本</strong>进行处理：图片通过 Vision API 转为描述文本，语音通过 ASR 转为转录文本。然后由对话核心（状态机、意图引擎等）在统一的文本层进行逻辑处理。</p>
+
+    <h3>2.2 图片模态</h3>
+    <p>图片输入在对话系统中有多种应用场景：</p>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>输入</th><th>处理技术</th><th>输出</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>视觉问答</td><td>照片 + "这是什么？"</td><td>Vision API / VLM</td><td>文字描述</td></tr>
+            <tr><td>文档识别</td><td>行程单截图</td><td>OCR + NLP 提取</td><td>结构化数据</td></tr>
+            <tr><td>商品识别</td><td>商品照片</td><td>图像分类 + 搜索</td><td>商品信息</td></tr>
+            <tr><td>问题诊断</td><td>故障截图</td><td>视觉分析 + 知识库</td><td>解决方案</td></tr>
+        </tbody>
+    </table>
+
+    <h3>2.3 语音模态</h3>
+    <p>语音是交互最自然的方式，尤其是在移动场景中。语音模态涉及两个关键技术：<strong>ASR（Automatic Speech Recognition，语音识别）</strong>和<strong>TTS（Text-to-Speech，语音合成）</strong>。</p>
+
+    <table>
+        <thead>
+            <tr><th>技术</th><th>方向</th><th>作用</th><th>主流方案</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>ASR</strong></td><td>语音 → 文本</td><td>理解用户语音输入</td><td>Whisper、讯飞、百度</td></tr>
+            <tr><td><strong>TTS</strong></td><td>文本 → 语音</td><td>向用户播报回复</td><td>Edge TTS、讯飞、OpenAI</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ ASR 的挑战</div>
+        <p>语音识别的准确率远不如文本输入。方言、噪音、语速、口音都会影响识别结果。因此在设计中必须考虑：<strong>识别结果的可信度</strong>（置信度分数）和<strong>纠错机制</strong>（让用户确认或修改识别结果）。</p>
+    </div>
+
+    <h2>三、模态检测器</h2>
+    <p>多模态对话的第一步是<strong>识别用户输入的模态类型</strong>。在最简单的情况下，系统可以通过 MIME 类型判断（<code>image/jpeg</code> 是图片，<code>audio/mpeg</code> 是语音）。但更常见的情况是系统只收到文本，需要从文本内容中推断用户是否期望多模态交互。</p>
+
+<div class="code-file">04_dialogue_system/06_multimodal_dialogue/multimodal_dialogue.py</div>
+<pre><code class="language-python">"""
+multimodal_dialogue.py — 多模态对话处理器
+支持文本、图片、语音三种模态的对话输入和输出。
+"""
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+from datetime import datetime
+
+
+class Modality(Enum):
+    """输入模态类型"""
+    TEXT = "text"
+    IMAGE = "image"
+    VOICE = "voice"
+
+
+@dataclass
+class MultimodalInput:
+    """多模态输入"""
+    modality: Modality
+    text: str = ""
+    image_url: Optional[str] = None
+    audio_url: Optional[str] = None
+    transcribed_text: Optional[str] = None  # 语音转文字结果
+
+    @property
+    def primary_content(self) -> str:
+        """获取主要文本内容"""
+        if self.text:
+            return self.text
+        if self.transcribed_text:
+            return self.transcribed_text
+        return ""
+
+
+@dataclass
+class ModalityDetector:
+    """
+    模态检测器：识别用户输入的模态类型。
+    支持从 MIME 类型或文本关键词推断。
+    """
+
+    def detect_from_text(self, text: str) -> Modality:
+        """从文本内容推断意图模态"""
+        image_keywords = ["图片", "照片", "截图", "看一下", "看看"]
+        voice_keywords = ["语音", "说一下", "读给我听"]
+
+        for kw in image_keywords:
+            if kw in text:
+                return Modality.IMAGE
+        for kw in voice_keywords:
+            if kw in text:
+                return Modality.VOICE
+
+        return Modality.TEXT
+
+    def detect_from_content_type(self, content_type: str) -> Modality:
+        """从 MIME 类型推断模态"""
+        if "image" in content_type:
+            return Modality.IMAGE
+        if "audio" in content_type:
+            return Modality.VOICE
+        return Modality.TEXT</code></pre>
+
+    <h2>四、多模态处理器</h2>
+    <p>模态检测之后，系统需要根据输入模态选择合适的处理策略。多模态处理器的核心职责是：<strong>接收多模态输入 → 转换为统一表示 → 调用合适的处理链 → 生成多模态输出</strong>。</p>
+
+<pre><code class="language-python">    def process(
+        self,
+        user_input: MultimodalInput,
+        context: Optional[dict] = None,
+    ) -> MultimodalResponse:
+        """处理多模态输入，生成回复"""
+        context = context or {}
+
+        # 根据输入模态选择处理策略
+        if user_input.modality == Modality.IMAGE:
+            return self._handle_image(user_input, context)
+        elif user_input.modality == Modality.VOICE:
+            return self._handle_voice(user_input, context)
+        else:
+            return self._handle_text(user_input, context)
+
+    def _handle_image(
+        self, input: MultimodalInput, context: dict
+    ) -> MultimodalResponse:
+        """处理图片输入"""
+        if self.enable_vision and input.image_url:
+            # 调用视觉模型分析图片
+            analysis = f"[图片分析] 已收到图片: {input.image_url}"
+            return MultimodalResponse(
+                text=f"我看到了您发送的图片。\n{input.text}\n{analysis}",
+            )
+        return MultimodalResponse(
+            text="抱歉，当前不支持图片分析功能。",
+        )
+
+    def _handle_voice(
+        self, input: MultimodalInput, context: dict
+    ) -> MultimodalResponse:
+        """处理语音输入"""
+        if self.enable_asr and input.audio_url:
+            transcribed = input.transcribed_text or "[语音识别结果]"
+            return MultimodalResponse(
+                text=f"您说的是：{transcribed}\n我正在为您处理...",
+            )
+        return MultimodalResponse(
+            text="抱歉，当前不支持语音输入功能。",
+        )</code></pre>
+
+    <p>处理器的关键在于<strong>优雅降级</strong>。当某个模态的功能未启用或不可用时，系统不应该崩溃，而应该返回友好的提示信息。这也是为什么我们在构造函数中用 <code>enable_vision</code>、<code>enable_voice</code>、<code>enable_asr</code> 三个开关来控制功能可用性。</p>
+
+    <h2>五、与对话核心的集成</h2>
+    <p>多模态处理器不是替代对话核心（状态机、意图引擎），而是<strong>包裹在核心之外</strong>，负责输入输出的模态转换。</p>
+
+    <div class="diagram-container">
+        <svg width="760" height="380" viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="int_text" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+                <linearGradient id="int_img" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+                <linearGradient id="int_voice" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="int_core" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1a1a2e"/><stop offset="100%" stop-color="#2d2d44"/></linearGradient>
+                <linearGradient id="int_out" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+            </defs>
+            <text x="380" y="28" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">多模态与对话核心的集成流程</text>
+
+            <!-- 输入 -->
+            <rect x="30" y="55" width="130" height="45" rx="8" fill="url(#int_text)"/>
+            <text x="95" y="82" text-anchor="middle" fill="white" font-size="12" font-weight="bold">📝 文本输入</text>
+            <rect x="30" y="110" width="130" height="45" rx="8" fill="url(#int_img)"/>
+            <text x="95" y="137" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🖼️ 图片输入</text>
+            <rect x="30" y="165" width="130" height="45" rx="8" fill="url(#int_voice)"/>
+            <text x="95" y="192" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🎙️ 语音输入</text>
+
+            <!-- 统一转换 -->
+            <rect x="230" y="100" width="140" height="70" rx="10" fill="#f0f0f0" stroke="#ccc"/>
+            <text x="300" y="128" text-anchor="middle" fill="#333" font-size="12" font-weight="bold">统一文本层</text>
+            <text x="300" y="148" fill="#666" font-size="10">ASR / Vision API</text>
+            <text x="300" y="162" fill="#666" font-size="10">→ 纯文本表示</text>
+
+            <line x1="160" y1="77" x2="230" y2="120" stroke="#4361ee" stroke-width="1.5"/>
+            <line x1="160" y1="132" x2="230" y2="132" stroke="#8b5cf6" stroke-width="1.5"/>
+            <line x1="160" y1="187" x2="230" y2="145" stroke="#f59e0b" stroke-width="1.5"/>
+
+            <!-- 对话核心 -->
+            <rect x="430" y="100" width="140" height="70" rx="10" fill="url(#int_core)"/>
+            <text x="500" y="128" text-anchor="middle" fill="white" font-size="12" font-weight="bold">对话核心</text>
+            <text x="500" y="148" fill="#94a3b8" font-size="10">状态机 / 意图 / 槽位</text>
+
+            <line x1="370" y1="135" x2="430" y2="135" stroke="#1a1a2e" stroke-width="2"/>
+
+            <!-- 输出 -->
+            <rect x="620" y="55" width="110" height="40" rx="8" fill="url(#int_out)"/>
+            <text x="675" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">📝 文本回复</text>
+            <rect x="620" y="105" width="110" height="40" rx="8" fill="#06b6d4"/>
+            <text x="675" y="130" text-anchor="middle" fill="white" font-size="11" font-weight="bold">🔊 语音播报</text>
+            <rect x="620" y="155" width="110" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="675" y="180" text-anchor="middle" fill="white" font-size="11" font-weight="bold">🖼️ 图片回复</text>
+
+            <line x1="570" y1="135" x2="620" y2="80" stroke="#22c55e" stroke-width="1.5"/>
+            <line x1="570" y1="135" x2="620" y2="130" stroke="#06b6d4" stroke-width="1.5"/>
+            <line x1="570" y1="135" x2="620" y2="180" stroke="#8b5cf6" stroke-width="1.5"/>
+
+            <!-- 状态机反馈 -->
+            <rect x="430" y="220" width="140" height="50" rx="10" fill="#f59e0b"/>
+            <text x="500" y="242" text-anchor="middle" fill="white" font-size="12" font-weight="bold">状态机</text>
+            <text x="500" y="260" text-anchor="middle" fill="white" font-size="10">追踪对话流程</text>
+            <line x1="500" y1="170" x2="500" y2="220" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+            <!-- 示例流程 -->
+            <rect x="30" y="290" width="700" height="80" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="400" y="315" text-anchor="middle" fill="#1a1a2e" font-size="13" font-weight="bold">示例流程</text>
+            <text x="60" y="340" fill="#333" font-size="11">
+                <tspan x="60" dy="0">1. 用户发送语音 "我想订后天去北京的房" → ASR 转文本</tspan>
+                <tspan x="60" dy="18">2. 对话核心识别意图 book_hotel，状态进入 slot_filling</tspan>
+                <tspan x="60" dy="18">3. 追问 "入住日期是？" → TTS 转为语音回复给用户</tspan>
+            </text>
+        </svg>
+    </div>
+
+    <h2>六、集成演示</h2>
+    <p>下面展示了完整的模态检测 + 多模态处理流程：</p>
+
+<div class="code-file">04_dialogue_system/06_multimodal_dialogue/example_usage.py</div>
+<pre><code class="language-python">"""
+多模态对话 — 完整使用示例
+"""
+from multimodal_dialogue import (
+    MultimodalInput, Modality, ModalityDetector,
+    MultimodalDialogueProcessor,
+)
+
+
+def demo_multimodal_processing():
+    # 启用所有功能
+    processor = MultimodalDialogueProcessor(
+        enable_vision=True,
+        enable_voice=True,
+        enable_asr=True,
+    )
+
+    # 场景 1：纯文本
+    inp1 = MultimodalInput(
+        modality=Modality.TEXT,
+        text="今天天气怎么样？"
+    )
+    resp1 = processor.process(inp1)
+    print(f"输入: {inp1.text}")
+    print(f"回复: {resp1.text}")
+
+    # 场景 2：图片 + 文本
+    inp2 = MultimodalInput(
+        modality=Modality.IMAGE,
+        text="这张图片里有什么？",
+        image_url="https://example.com/photo.jpg",
+    )
+    resp2 = processor.process(inp2)
+    print(f"输入: [图片] {inp2.text}")
+    print(f"回复: {resp2.text}")
+
+    # 场景 3：语音输入
+    inp3 = MultimodalInput(
+        modality=Modality.VOICE,
+        audio_url="https://example.com/voice.mp3",
+        transcribed_text="我想预订后天去北京的酒店",
+    )
+    resp3 = processor.process(inp3)
+    print(f"输入: [语音] → \"{inp3.transcribed_text}\"")
+    print(f"回复: {resp3.text}")</code></pre>
+
+    <h2>七、生产环境集成指南</h2>
+
+    <h3>7.1 Vision API 集成</h3>
+    <p>在生产环境中，图片理解需要接入 Vision API。OpenAI 的 GPT-4o、Claude 的 Vision 能力、以及开源的 Qwen-VL 都是常见选择。</p>
+
+<pre><code class="language-python">import httpx
+import base64
+from pathlib import Path
+from typing import Optional
+
+
+class VisionClient:
+    """
+    Vision API 客户端：将图片发送给多模态 LLM，
+    获取图片描述或分析结果。
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str = "https://api.openai.com/v1",
+        model: str = "gpt-4o",
+    ):
+        self.api_key = api_key
+        self.base_url = base_url
+        self.model = model
+
+    def analyze_image(
+        self,
+        image_path: str,
+        prompt: str = "请详细描述这张图片的内容",
+    ) -> str:
+        """分析图片并返回文本描述"""
+        # 读取图片并编码为 base64
+        image_data = Path(image_path).read_bytes()
+        b64 = base64.b64encode(image_data).decode()
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "user", "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{b64}",
+                        },
+                    },
+                ]},
+            ],
+            "max_tokens": 500,
+        }
+
+        with httpx.Client(timeout=30) as client:
+            resp = client.post(
+                f"{self.base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json=payload,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]</code></pre>
+
+    <h3>7.2 ASR 集成</h3>
+    <p>语音识别推荐使用 Whisper API 或本地部署的 Whisper 模型。OpenAI 的 Whisper API 支持多种语言和音频格式，集成简单。</p>
+
+<pre><code class="language-python">import httpx
+from pathlib import Path
+
+
+class ASRClient:
+    """
+    Whisper ASR 客户端：将音频文件转为文本。
+    支持多种音频格式：mp3、wav、ogg、flac 等。
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        base_url: str = "https://api.openai.com/v1",
+        model: str = "whisper-1",
+        language: str = "zh",
+    ):
+        self.api_key = api_key
+        self.base_url = base_url
+        self.model = model
+        self.language = language
+
+    def transcribe(self, audio_path: str) -> dict:
+        """
+        将音频文件转为文本。
+
+        Returns:
+            {"text": "...", "language": "...", "duration": float}
+        """
+        path = Path(audio_path)
+        if not path.exists():
+            raise FileNotFoundError(f"音频文件不存在: {audio_path}")
+
+        with open(path, "rb") as f:
+            files = {
+                "file": (path.name, f, "audio/mpeg"),
+            }
+            data = {
+                "model": self.model,
+                "language": self.language,
+                "response_format": "verbose_json",
+            }
+
+            with httpx.Client(timeout=60) as client:
+                resp = client.post(
+                    f"{self.base_url}/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    data=data,
+                    files=files,
+                )
+                resp.raise_for_status()
+                return resp.json()</code></pre>
+
+    <h3>7.3 TTS 集成</h3>
+    <p>语音合成可以使用 Edge TTS（免费）或 OpenAI TTS API。Edge TTS 支持多种语言和声音，无需 API Key。</p>
+
+<pre><code class="language-python">class TTSClient:
+    """
+    语音合成客户端：将文本转为语音。
+    支持 Edge TTS 和 OpenAI TTS 两种方式。
+    """
+
+    def __init__(self, provider: str = "edge"):
+        """
+        provider: "edge" (免费) 或 "openai" (付费)
+        """
+        self.provider = provider
+
+    async def synthesize_edge(
+        self,
+        text: str,
+        voice: str = "zh-CN-XiaoxiaoNeural",
+        output_path: str = "output.mp3",
+    ) -> str:
+        """使用 Edge TTS 生成语音"""
+        import edge_tts
+        comm = edge_tts.Communicate(text, voice)
+        await comm.save(output_path)
+        return output_path</code></pre>
+
+    <h2>八、对比：纯文本 vs 多模态对话</h2>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>纯文本系统</th><th>多模态系统</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>用户输入方式</strong></td><td>只能打字</td><td>打字、拍照、语音</td></tr>
+            <tr><td><strong>交互自然度</strong></td><td>中等（需要用户组织文字）</td><td>高（说话或拍照即可）</td></tr>
+            <tr><td><strong>实现复杂度</strong></td><td>低（纯 API 调用）</td><td>高（需要集成多种服务）</td></tr>
+            <tr><td><strong>成本</strong></td><td>低（仅 LLM Token）</td><td>高（ASR + Vision + TTS）</td></tr>
+            <tr><td><strong>延迟</strong></td><td>1-3 秒</td><td>2-8 秒（取决于模态）</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>标准客服、后台管理</td><td>移动端、老年用户、现场服务</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 渐进式多模态策略</div>
+        <p>不必一步到位。建议分阶段实施：<strong>阶段一</strong>（纯文本）→ <strong>阶段二</strong>（+ 语音输入 ASR）→ <strong>阶段三</strong>（+ 语音输出 TTS）→ <strong>阶段四</strong>（+ 图片理解 Vision）。每增加一种模态，都需要评估 ROI（用户活跃度提升 vs 成本增加）。</p>
+    </div>
+
+    <h2>九、常见误区</h2>
+
+    <h3>误区一：多模态等于必须全部支持</h3>
+    <p>很多团队觉得"多模态"就意味着必须同时支持文字、图片、语音。其实应该根据<strong>用户群体和场景</strong>选择性地启用。比如后台管理系统只需要文本，老年用户应用重点做语音，旅游应用重点做图片。</p>
+
+    <h3>误区二：忽略模态转换的损耗</h3>
+    <p>ASR 的识别准确率不是 100%，Vision API 的描述也不是完美的。每次模态转换都会引入信息损失。因此系统需要<strong>在关键节点让用户确认或修改</strong>转换结果，而不是直接使用可能错误的识别结果。</p>
+
+    <h3>误区三：不考虑离线场景</h3>
+    <p>ASR 和 Vision API 都需要网络连接。在弱网或离线环境下，系统需要有<strong>降级方案</strong>——比如允许用户手动输入文本替代语音识别，或者提示"请在网络良好的环境下使用图片功能"。</p>
+
+    <h2>十、小结</h2>
+    <p>多模态对话是对话系统从"能用"到"好用"的关键一步。通过理解图片、语音等非文本输入，系统能够覆盖更广泛的用户群体和使用场景。多模态处理器的核心设计原则是：<strong>模态检测 → 统一文本层处理 → 多模态输出</strong>，这样既保持了对话核心的一致性，又提供了丰富的交互体验。</p>
+
+    <p>本章我们完成了对话系统设计的全部核心内容：从上下文管理（4.1）、状态机（4.2）、意图识别与槽位填充（4.3）、引导澄清与兜底（4.4）、质量评估（4.5）到多模态对话（4.6）。在下一节 4.7 中，我们将把这些组件整合起来，<strong>构建一个完整的多轮对话智能客服系统</strong>。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

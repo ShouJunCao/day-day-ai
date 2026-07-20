@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.5 对话质量评估指标 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .compare-box { display: flex; gap: 16px; margin: 16px 0; }
+        .compare-box > div { flex: 1; padding: 16px; border-radius: 8px; }
+        .compare-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .compare-good { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .compare-box h4 { margin-bottom: 8px; font-size: 0.95em; }
+        .compare-bad h4 { color: var(--red); }
+        .compare-good h4 { color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>4.5 对话质量评估指标</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块四：对话系统设计</span>
+        <span class="tag tag-time">预计学习：45 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解对话质量评估的核心指标体系</li>
+        <li>掌握<strong>任务完成率、兜底率、转人工率</strong>等关键指标的计算方法</li>
+        <li>学会设计告警阈值和诊断分析流程</li>
+        <li>实现可聚合、可追踪的指标收集系统</li>
+        <li>能够根据指标数据生成诊断报告和改进建议</li>
+    </ul>
+
+    <h2>一、为什么对话质量需要量化评估？</h2>
+    <p>在前面的章节中，我们学习了对话状态机、意图识别、槽位填充、引导澄清和兜底策略。但有一个关键问题还没有回答：<strong>我们怎么知道系统做得好不好</strong>？</p>
+
+    <p>没有量化指标的对话系统，就像没有仪表盘的汽车——你无法判断是快是慢、是省油还是费油、引擎是否在正常运转。对话质量评估指标就是对系统运行状态的"仪表盘"，它让我们从<strong>主观感觉</strong>转向<strong>数据驱动</strong>。</p>
+
+    <p>量化评估的价值在于三个维度：<strong>发现问题</strong>（兜底率突然飙升说明什么）、<strong>验证改进</strong>（优化意图识别后完成率有没有提升）、<strong>指导优先级</strong>（是优化响应速度还是增加意图覆盖）。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="m1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+                <linearGradient id="m2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+                <linearGradient id="m3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="m4" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+                <linearGradient id="m5" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+            </defs>
+            <text x="400" y="28" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">对话质量评估指标体系</text>
+
+            <!-- 指标卡片 -->
+            <rect x="15" y="50" width="145" height="75" rx="10" fill="url(#m1)"/>
+            <text x="87" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">任务完成率</text>
+            <text x="87" y="100" text-anchor="middle" fill="white" font-size="11">成功完成任务</text>
+            <text x="87" y="116" text-anchor="middle" fill="white" font-size="10">的会话占比</text>
+
+            <rect x="175" y="50" width="145" height="75" rx="10" fill="url(#m2)"/>
+            <text x="247" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">平均轮次</text>
+            <text x="247" y="100" text-anchor="middle" fill="white" font-size="11">每个会话的</text>
+            <text x="247" y="116" text-anchor="middle" fill="white" font-size="10">平均消息数</text>
+
+            <rect x="335" y="50" width="145" height="75" rx="10" fill="url(#m3)"/>
+            <text x="407" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">兜底率</text>
+            <text x="407" y="100" text-anchor="middle" fill="white" font-size="11">触发兜底策略</text>
+            <text x="407" y="116" text-anchor="middle" fill="white" font-size="10">的会话占比</text>
+
+            <rect x="495" y="50" width="145" height="75" rx="10" fill="url(#m4)"/>
+            <text x="567" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">转人工率</text>
+            <text x="567" y="100" text-anchor="middle" fill="white" font-size="11">需要人工介入</text>
+            <text x="567" y="116" text-anchor="middle" fill="white" font-size="10">的会话占比</text>
+
+            <rect x="655" y="50" width="130" height="75" rx="10" fill="url(#m5)"/>
+            <text x="720" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">用户满意度</text>
+            <text x="720" y="100" text-anchor="middle" fill="white" font-size="11">用户评分</text>
+            <text x="720" y="116" text-anchor="middle" fill="white" font-size="10">（1-5 星）</text>
+
+            <!-- 汇聚箭头 -->
+            <line x1="87" y1="125" x2="400" y2="185" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="247" y1="125" x2="400" y2="185" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="407" y1="125" x2="400" y2="185" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="567" y1="125" x2="400" y2="185" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <line x1="720" y1="125" x2="400" y2="185" stroke="#ccc" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+            <!-- 综合 -->
+            <rect x="280" y="185" width="240" height="55" rx="12" fill="#1a1a2e"/>
+            <text x="400" y="210" text-anchor="middle" fill="white" font-size="14" font-weight="bold">📊 综合健康度评分</text>
+            <text x="400" y="230" text-anchor="middle" fill="#94a3b8" font-size="11">加权计算 · 0-100 分</text>
+
+            <!-- 输出 -->
+            <rect x="280" y="255" width="240" height="35" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/>
+            <text x="400" y="278" text-anchor="middle" fill="#059669" font-size="12" font-weight="bold">诊断报告 + 改进建议</text>
+        </svg>
+    </div>
+
+    <h2>二、核心指标详解</h2>
+
+    <h3>2.1 任务完成率（Task Completion Rate）</h3>
+    <p>这是<strong>最重要</strong>的单一指标。它回答了一个根本问题：用户来对话，最后到底完成目标了吗？如果一个酒店预订系统的完成率只有 30%，说明 70% 的用户带着需求进来、却空手离开。</p>
+
+    <table>
+        <thead>
+            <tr><th>属性</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>计算公式</strong></td><td>完成的会话数 / 总会话数</td></tr>
+            <tr><td><strong>健康阈值</strong></td><td>≥ 70%（任务型对话）</td></tr>
+            <tr><td><strong>低于阈值说明</strong></td><td>意图识别不准 / 槽位收集困难 / 流程设计有问题</td></tr>
+            <tr><td><strong>优化方向</strong></td><td>扩展意图覆盖、优化追问策略、增加快捷选项</td></tr>
+        </tbody>
+    </table>
+
+    <h3>2.2 平均对话轮次（Average Turns）</h3>
+    <p>对话轮次反映了交互的<strong>效率</strong>。轮次过低（&lt;2 轮）可能说明用户容易放弃；轮次过高（&gt;10 轮）说明流程冗长，用户需要反复提供信息。理想的任务型对话通常在 4-8 轮之间完成。</p>
+
+    <h3>2.3 兜底率（Fallback Rate）</h3>
+    <p>兜底率衡量的是系统<strong>"无能为力"的频率</strong>。如果兜底率超过 20%，说明系统的意图覆盖范围或槽位提取能力有严重不足。这是最应该优先优化的指标之一。</p>
+
+    <h3>2.4 转人工率（Escalation Rate）</h3>
+    <p>转人工率是系统能力的<strong>终极检验</strong>——当所有兜底策略都用完了，用户仍然得不到帮助。高转人工率不仅意味着用户体验差，还意味着人力成本的直接增加。</p>
+
+    <h3>2.5 用户满意度（Satisfaction Score）</h3>
+    <p>满意度是最直接的<strong>主观指标</strong>。通常通过对话结束后的评分（1-5 星）或 NPS（净推荐值）来收集。满意度和其他指标结合起来分析最有价值——比如完成率高但满意度低，可能说明虽然完成了任务但过程太痛苦。</p>
+
+    <h2>三、指标收集系统设计</h2>
+    <p>要计算这些指标，首先需要在每次对话中收集足够的数据。我们设计了 <code>DialogueSession</code> 来记录单次对话的所有关键信息，再用 <code>DialogueMetricsCollector</code> 来聚合多个会话的数据。</p>
+
+<div class="code-file">04_dialogue_system/05_dialogue_metrics/dialogue_metrics.py</div>
+<pre><code class="language-python">"""
+dialogue_metrics.py — 对话质量评估指标
+实现对话系统的核心评估指标：任务完成率、用户满意度、
+平均轮次、首次响应时间、兜底率等。
+"""
+from dataclasses import dataclass, field
+from typing import Optional
+from datetime import datetime
+from enum import Enum
+
+
+class SatisfactionScore(Enum):
+    """用户满意度评分（1-5 星）"""
+    VERY_BAD = 1
+    BAD = 2
+    NEUTRAL = 3
+    GOOD = 4
+    EXCELLENT = 5
+
+
+@dataclass
+class DialogueSession:
+    """单次对话会话的完整记录"""
+    session_id: str
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    total_turns: int = 0
+    intent: Optional[str] = None
+    completed: bool = False
+    satisfaction: Optional[SatisfactionScore] = None
+    fallback_count: int = 0
+    escalation_count: int = 0
+    first_response_ms: float = 0.0
+    _response_times: list[float] = field(default_factory=list)
+
+    def record_response(self, response_ms: float):
+        """记录一次响应时间"""
+        self._response_times.append(response_ms)
+        if self.first_response_ms == 0.0:
+            self.first_response_ms = response_ms
+
+    @property
+    def avg_response(self) -> float:
+        """平均响应时间"""
+        if not self._response_times:
+            return 0.0
+        return sum(self._response_times) / len(self._response_times)</code></pre>
+
+    <p>指标收集器的核心是聚合计算。每个指标都是通过遍历所有会话、统计符合条件的数量来计算的。这种设计的好处是<strong>简单、透明、易扩展</strong>——新指标只需要加一个属性方法即可。</p>
+
+<pre><code class="language-python">    @property
+    def task_completion_rate(self) -> float:
+        """任务完成率：成功完成任务的会话占比"""
+        if not self.sessions:
+            return 0.0
+        completed = sum(1 for s in self.sessions if s.completed)
+        return completed / len(self.sessions)
+
+    @property
+    def fallback_rate(self) -> float:
+        """兜底率：触发了兜底策略的会话占比"""
+        if not self.sessions:
+            return 0.0
+        with_fallback = sum(
+            1 for s in self.sessions if s.fallback_count > 0
+        )
+        return with_fallback / len(self.sessions)
+
+    @property
+    def avg_first_response_ms(self) -> float:
+        """平均首次响应时间（毫秒）"""
+        times = [
+            s.first_response_ms
+            for s in self.sessions if s.first_response_ms > 0
+        ]
+        if not times:
+            return 0.0
+        return sum(times) / len(times)
+
+    def get_summary_report(self) -> dict:
+        """生成完整的评估报告"""
+        return {
+            "total_sessions": self.total_sessions,
+            "task_completion_rate": round(self.task_completion_rate, 3),
+            "avg_turns": round(self.avg_turns, 2),
+            "fallback_rate": round(self.fallback_rate, 3),
+            "escalation_rate": round(self.escalation_rate, 3),
+            "avg_first_response_ms": round(self.avg_first_response_ms, 1),
+            "avg_satisfaction": round(self.avg_satisfaction, 2),
+        }</code></pre>
+
+    <h2>四、质量分析与诊断</h2>
+    <p>收集指标只是第一步，更重要的是<strong>解读指标并采取行动</strong>。我们设计了 <code>QualityAnalyzer</code> 来自动检测异常指标、生成诊断报告和改进建议。</p>
+
+    <h3>4.1 告警阈值设计</h3>
+    <p>每个指标都需要设置合理的阈值。阈值太低，问题被掩盖；阈值太高，频繁误报。以下是经验阈值建议：</p>
+
+    <table>
+        <thead>
+            <tr><th>指标</th><th>优秀</th><th>良好</th><th>需要改进</th><th>严重问题</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>任务完成率</td><td>≥ 85%</td><td>70-85%</td><td>50-70%</td><td>&lt; 50%</td></tr>
+            <tr><td>平均轮次</td><td>4-6 轮</td><td>6-8 轮</td><td>8-10 轮</td><td>&gt; 10 轮</td></tr>
+            <tr><td>兜底率</td><td>&lt; 10%</td><td>10-20%</td><td>20-30%</td><td>&gt; 30%</td></tr>
+            <tr><td>转人工率</td><td>&lt; 5%</td><td>5-10%</td><td>10-15%</td><td>&gt; 15%</td></tr>
+            <tr><td>首次响应</td><td>&lt; 1 秒</td><td>1-2 秒</td><td>2-3 秒</td><td>&gt; 3 秒</td></tr>
+            <tr><td>用户满意度</td><td>≥ 4.5</td><td>3.5-4.5</td><td>3.0-3.5</td><td>&lt; 3.0</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 健康度综合评分</h3>
+    <p>单一指标只能反映一个侧面，我们需要一个<strong>综合评分</strong>来快速判断系统整体健康状况。健康度评分通过对多个指标加权计算得到：</p>
+
+<pre><code class="language-python">    def get_health_score(self) -> float:
+        """
+        计算系统健康度评分（0-100）。
+        基于多个指标的加权综合评分。
+        """
+        weights = {
+            "task_completion_rate": 0.30,  # 最重要
+            "avg_turns": 0.15,
+            "fallback_rate": 0.20,
+            "escalation_rate": 0.15,
+            "avg_satisfaction": 0.20,
+        }
+
+        score = 0.0
+
+        # 任务完成率：越高越好
+        score += weights["task_completion_rate"] * \
+            self.collector.task_completion_rate * 100
+
+        # 平均轮次：越低越好（上限 15 轮为满分）
+        turns_score = max(0, 1 - self.collector.avg_turns / 15)
+        score += weights["avg_turns"] * turns_score * 100
+
+        # 兜底率：越低越好
+        fallback_score = max(0, 1 - self.collector.fallback_rate)
+        score += weights["fallback_rate"] * fallback_score * 100
+
+        # 转人工率：越低越好
+        escalation_score = max(0, 1 - self.collector.escalation_rate)
+        score += weights["escalation_rate"] * escalation_score * 100
+
+        # 满意度：越高越好（满分 5 分）
+        if self.collector.avg_satisfaction > 0:
+            sat_score = self.collector.avg_satisfaction / 5
+            score += weights["avg_satisfaction"] * sat_score * 100
+
+        return round(score, 1)</code></pre>
+
+    <p>健康度评分的权重设计可以根据业务阶段调整：<strong>早期阶段</strong>（功能验证期）应提高兜底率权重，<strong>成熟阶段</strong>（规模运营期）应提高满意度权重。</p>
+
+    <h2>五、对比：有无指标系统的差异</h2>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>❌ 无指标系统</th><th>✅ 有指标系统</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>发现问题</strong></td>
+                <td>用户投诉才知道出问题</td>
+                <td>兜底率从 10% 涨到 25%，立即告警</td>
+            </tr>
+            <tr>
+                <td><strong>验证改进</strong></td>
+                <td>"感觉好点了吧"（主观）</td>
+                <td>完成率从 62% 提升到 78%（客观）</td>
+            </tr>
+            <tr>
+                <td><strong>优化优先级</strong></td>
+                <td>拍脑袋决定先做什么</td>
+                <td>数据显示转人工率最高，优先优化</td>
+            </tr>
+            <tr>
+                <td><strong>向团队汇报</strong></td>
+                <td>"对话系统运行得还行"</td>
+                <td>健康度 78 分，完成率 72%，较上月提升 5%</td>
+            </tr>
+            <tr>
+                <td><strong>A/B 测试</strong></td>
+                <td>无法判断哪个方案更好</td>
+                <td>方案 A 完成率 68%，方案 B 75%，选 B</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>六、工程化建议</h2>
+
+    <h3>6.1 指标存储与查询</h3>
+    <p>在生产环境中，指标数据应该存储到<strong>时序数据库</strong>（如 InfluxDB、Prometheus）中，而不是仅仅保存在内存里。这样可以支持历史趋势查询、实时监控面板和长期分析。</p>
+
+<pre><code class="language-python">import json
+from pathlib import Path
+from datetime import datetime
+
+
+class MetricsStore:
+    """
+    指标持久化存储：将每次对话的指标数据
+    写入 JSON 文件，支持后续分析。
+    生产环境应改用时序数据库。
+    """
+
+    def __init__(self, storage_dir: str = "./metrics"):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+
+    def save_session(self, session: dict):
+        """保存单条会话指标"""
+        date = session.get("date", datetime.now().strftime("%Y-%m-%d"))
+        path = self.storage_dir / f"sessions_{date}.jsonl"
+
+        # JSON Lines 格式：每行一条 JSON 记录
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(session, ensure_ascii=False) + "\n")
+
+    def load_day(self, date: str) -> list[dict]:
+        """加载某天的所有会话数据"""
+        path = self.storage_dir / f"sessions_{date}.jsonl"
+        if not path.exists():
+            return []
+        records = []
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                records.append(json.loads(line.strip()))
+        return records
+
+    def compute_daily_summary(self, date: str) -> dict:
+        """计算某天的汇总指标"""
+        sessions = self.load_day(date)
+        if not sessions:
+            return {}
+
+        total = len(sessions)
+        completed = sum(1 for s in sessions if s.get("completed"))
+        fallbacks = sum(1 for s in sessions if s.get("fallback_count", 0) > 0)
+
+        return {
+            "date": date,
+            "total_sessions": total,
+            "completion_rate": round(completed / total, 3) if total else 0,
+            "fallback_rate": round(fallbacks / total, 3) if total else 0,
+        }</code></pre>
+
+    <h3>6.2 实时监控面板</h3>
+    <p>将指标接入 Grafana、Datadog 等监控平台，配置告警规则。当关键指标偏离正常范围时，自动发送通知到 Slack/企业微信/钉钉。</p>
+
+<pre><code class="language-python">class AlertRouter:
+    """
+    指标告警路由器：当指标超阈值时，
+    发送告警通知到指定渠道。
+    """
+
+    def __init__(self, webhooks: Optional[dict] = None):
+        self.webhooks = webhooks or {
+            "slack": "https://hooks.slack.com/...",
+            "wechat": "https://qyapi.weixin.qq.com/...",
+        }
+
+    def check_and_alert(self, metrics: dict, thresholds: dict):
+        """检查指标并发送告警"""
+        alerts = []
+        for metric_name, value in metrics.items():
+            threshold = thresholds.get(metric_name)
+            if threshold and self._is_breach(value, threshold):
+                alerts.append(
+                    f"⚠️ {metric_name}: {value} "
+                    f"(阈值: {threshold})"
+                )
+
+        if alerts:
+            message = "对话系统指标告警:\n" + "\n".join(alerts)
+            self._send(message)
+
+    def _is_breach(self, value: float, threshold: dict) -> bool:
+        """判断是否超过阈值"""
+        direction = threshold.get("direction", "below")
+        limit = threshold["value"]
+        if direction == "below":
+            return value < limit
+        return value > limit</code></pre>
+
+    <h3>6.3 指标可视化</h3>
+    <p>通过 SVG 图表展示指标趋势，帮助团队快速理解系统状态。下面是健康度评分的可视化示例：</p>
+
+    <div class="diagram-container">
+        <svg width="500" height="120" viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="h_good" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+                <linearGradient id="h_ok" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="h_bad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+            </defs>
+            <!-- 背景条 -->
+            <rect x="20" y="30" width="460" height="20" rx="10" fill="#e5e7eb"/>
+            <!-- 优秀区域 (0-70) -->
+            <rect x="20" y="30" width="322" height="20" rx="10" fill="url(#h_bad)" opacity="0.3"/>
+            <text x="100" y="24" fill="#ef4444" font-size="10">需改进</text>
+            <!-- 良好区域 (70-85) -->
+            <rect x="342" y="30" width="69" height="20" fill="url(#h_ok)" opacity="0.3"/>
+            <text x="376" y="24" fill="#f59e0b" font-size="10">良好</text>
+            <!-- 优秀区域 (85-100) -->
+            <rect x="411" y="30" width="69" height="20" rx="10" fill="url(#h_good)" opacity="0.3"/>
+            <text x="455" y="24" fill="#22c55e" font-size="10">优秀</text>
+            <!-- 当前值标记 -->
+            <circle cx="350" cy="40" r="8" fill="#1a1a2e"/>
+            <text x="350" y="44" text-anchor="middle" fill="white" font-size="9" font-weight="bold">72</text>
+            <text x="350" y="70" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">健康度: 72/100 (良好)</text>
+            <!-- 刻度 -->
+            <text x="20" y="65" fill="#6b7c93" font-size="9">0</text>
+            <text x="245" y="65" fill="#6b7c93" font-size="9">50</text>
+            <text x="470" y="65" fill="#6b7c93" font-size="9">100</text>
+        </svg>
+    </div>
+
+    <h2>七、常见误区</h2>
+
+    <h3>误区一：只看总量不看细分</h3>
+    <p>总体完成率 70% 看起来不错，但如果按意图细分发现"取消预订"的完成率只有 20%，那就是一个严重问题。**指标需要按维度拆解**——按意图、按时间段、按用户群体。</p>
+
+    <h3>误区二：指标太多没有重点</h3>
+    <p>一次性追踪 20 个指标会让团队迷失方向。建议只关注 <strong>3-5 个核心指标</strong>（完成率、兜底率、满意度），其余作为辅助指标。</p>
+
+    <h3>误区三：没有基线对比</h3>
+    <p>孤立的数字没有意义。"兜底率 15%"是好是坏？需要和上周比、和同类系统比、和目标值比。<strong>所有指标都应该有对比基准</strong>。</p>
+
+    <h2>八、小结</h2>
+    <p>对话质量评估指标是从主观经验走向数据驱动的关键一步。通过<strong>任务完成率、平均轮次、兜底率、转人工率、用户满意度</strong>这五大核心指标，我们可以全面把握系统的运行状态。结合告警阈值、健康度评分和诊断报告，指标系统不仅能告诉我们"出了什么问题"，还能指导我们"应该怎么修"。</p>
+
+    <p>在下一节 4.6 中，我们将探索<strong>多模态对话</strong>——让对话系统不仅能处理文本，还能理解图片和语音，提供更丰富自然的交互体验。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

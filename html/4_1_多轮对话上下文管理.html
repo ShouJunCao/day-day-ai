@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.1 多轮对话上下文管理 - 大模型应用开发指南</title>
+    <!-- Prism.js 核心 + Python 语言 (在 body 底部加载) -->
+    <style>
+        :root {
+            --bg: #f8fafc; --text: #1e293b; --accent: #2563eb;
+            --card-bg: #ffffff; --border: #e2e8f0; --code-bg: #282c34;
+        }
+        body {
+            font-family: -apple-system, "PingFang SC", sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.8; margin: 0; padding: 40px 20px;
+            max-width: 900px; margin: 0 auto;
+        }
+        h1 { color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 10px; }
+        h2 { color: #1e40af; margin-top: 40px; }
+        h3 { color: #334155; margin-top: 30px; }
+        p { margin: 16px 0; text-align: justify; }
+        .hero {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;
+        }
+        .summary-box {
+            background: #f0f9ff; border-left: 4px solid var(--accent);
+            padding: 15px; margin-bottom: 30px; border-radius: 4px;
+        }
+        /* 代码块容器 */
+        pre {
+            border-radius: 8px; margin: 20px 0 !important;
+            background: var(--code-bg) !important;
+            border: 1px solid #3e4451;
+            padding: 16px;
+            overflow-x: auto;
+        }
+        pre code {
+            font-family: "SF Mono", "Fira Code", "Monaco", monospace !important;
+            font-size: 13px !important;
+            line-height: 1.7 !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            background: none !important;
+            color: #abb2bf !important;
+            padding: 0 !important;
+        }
+        /* Prism.js 自定义主题 - 深色 Atom One Dark */
+        .token.keyword { color: #c678dd !important; }
+        .token.string, .token.docstring { color: #98c379 !important; }
+        .token.comment, .token.prolog, .token.doctype, .token.cdata { color: #5c6370 !important; font-style: italic !important; }
+        .token.decorator, .token.annotation { color: #e5c07b !important; }
+        .token.class-name, .token.function { color: #61afef !important; }
+        .token.number, .token.boolean { color: #d19a66 !important; }
+        .token.operator, .token.punctuation { color: #56b6c2 !important; }
+        .token.builtin { color: #e5c07b !important; }
+        .token.self { color: #e06c75 !important; }
+        /* 行内代码 */
+        code:not(pre code) {
+            background: #e2e8f0; padding: 2px 6px; border-radius: 4px;
+            font-size: 0.9em; font-family: "SF Mono", monospace;
+        }
+        table {
+            width: 100%; border-collapse: collapse; margin: 20px 0;
+            background: var(--card-bg); border-radius: 8px; overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        th { background-color: #f1f5f9; font-weight: 600; }
+        svg { max-width: 100%; height: auto; margin: 20px 0; }
+        .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .tip { background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        ol { padding-left: 20px; }
+        ol li { margin: 8px 0; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>4.1 多轮对话上下文管理</h1>
+        <p>滑动窗口 (Sliding Window) · 摘要压缩 (Summarization) · Token 预算控制</p>
+    </div>
+
+    <div class="summary-box">
+        <strong>📌 核心要点</strong>：大模型虽然支持 128K 甚至 200K 的长上下文，但<strong>"能用"不代表"好用"</strong>。随着上下文增长，API 成本指数上升，且模型易出现"中间丢失"现象。本章介绍三种工程化策略：<br>
+        1. <strong>滑动窗口</strong>：丢弃旧消息，只保留最新对话。<br>
+        2. <strong>摘要压缩</strong>：用 LLM 总结历史对话，替换为一条 Summary 消息。<br>
+        3. <strong>Token 预算</strong>：严格控制输入给模型的 Token 总量，防止超出上下文限制。
+    </div>
+
+    <h2>为什么需要上下文管理？</h2>
+    <p>在生产环境中，用户的对话可能持续数小时甚至数天。如果将历史记录全部塞入 Prompt，不仅会产生高昂的 <strong>Token 费用</strong>，还会导致模型注意力分散，响应延迟增加。更严重的是，当对话超过模型的上下文窗口限制时，API 会直接返回 <code>Context Length Exceeded</code> 错误，导致服务崩溃。</p>
+
+    <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0.9" />
+                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.3" />
+            </linearGradient>
+        </defs>
+        <text x="400" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#1e293b">⚠️ 上下文增长的四个风险</text>
+        <rect x="50" y="60" width="200" height="40" fill="url(#g1)" rx="4"/>
+        <text x="150" y="85" text-anchor="middle" fill="white" font-size="14">💰 输入 Token 费用上升</text>
+        <rect x="50" y="120" width="350" height="40" fill="url(#g1)" rx="4"/>
+        <text x="225" y="145" text-anchor="middle" fill="white" font-size="14">⏱️ 上下文越长，API 响应延迟越高</text>
+        <rect x="50" y="180" width="500" height="40" fill="url(#g1)" rx="4"/>
+        <text x="300" y="205" text-anchor="middle" fill="white" font-size="14">🚨 超出上下文限制 → Context Length Exceeded</text>
+        <rect x="50" y="240" width="700" height="40" fill="#ef4444" rx="4"/>
+        <text x="400" y="265" text-anchor="middle" fill="white" font-size="14">🔥 注意力衰减：模型可能忽略中间的关键信息（Lost in the Middle）</text>
+        <text x="400" y="305" text-anchor="middle" font-size="12" fill="#64748b">图 4-1：上下文长度与风险的正相关关系</text>
+    </svg>
+
+    <h2>策略一：滑动窗口 (Sliding Window)</h2>
+    <p>最简单高效的策略。设定一个最大窗口大小（如保留最近 10 条消息），当新消息加入导致超过限制时，自动丢弃最旧的历史记录。</p>
+
+    <div class="note">
+        <strong>⚠️ 注意</strong>：滑动窗口的缺点是会<strong>永久丢失</strong>被裁剪掉的历史信息。如果用户在第 1 条消息中提到了重要背景（如"我在开发一个电商系统"），窗口滑动后这个信息就丢失了。
+    </div>
+
+    <h3>实战代码：滑动窗口管理器</h3>
+    <p>以下实现了一个生产级的滑动上下文管理器，支持 <code>System Prompt</code> 保护和自动 Token 截断。</p>
+
+    <pre><code class="language-python"># context_window.py
+from dataclasses import dataclass, field
+
+class TokenEstimator:
+    """Token 估算器 - 生产环境推荐替换为 tiktoken"""
+
+    @staticmethod
+    def estimate(text: str) -> int:
+        """粗略估算 Token 数量"""
+        if not text:
+            return 0
+        cn_count = sum(1 for c in text if ord(c) > 127)
+        en_count = len(text) - cn_count
+        return max(1, int(cn_count / 1.5) + int(en_count / 4))
+
+@dataclass(frozen=True)
+class Message:
+    """不可变消息对象"""
+    role: str
+    content: str
+    token_count: int = 0
+
+    def __post_init__(self):
+        if self.token_count == 0:
+            object.__setattr__(self, "token_count",
+                TokenEstimator.estimate(self.content))
+
+@dataclass
+class SlidingWindowContext:
+    """滑动窗口管理器"""
+    max_turns: int = 10
+    max_tokens: int = 4000
+    messages: list[Message] = field(default_factory=list)
+
+    def add(self, role: str, content: str) -> None:
+        """添加新消息并触发自动裁剪"""
+        msg = Message(role=role, content=content)
+        self.messages.append(msg)
+        self._trim()
+
+    def _trim(self) -> None:
+        # 优先级 1: Token 预算检查
+        while self._current_tokens > self.max_tokens and len(self.messages) > 2:
+            self._pop_oldest()
+        # 优先级 2: Turn 数量检查
+        while len(self.messages) > self.max_turns:
+            self._pop_oldest()
+
+    def _pop_oldest(self) -> None:
+        """删除最旧的非 System 消息"""
+        if not self.messages:
+            return
+        if self.messages[0].role == "system" and len(self.messages) > 1:
+            self.messages.pop(1)
+        elif self.messages[0].role != "system":
+            self.messages.pop(0)
+
+    @property
+    def _current_tokens(self) -> int:
+        return sum(m.token_count for m in self.messages)
+
+    def get_context(self) -> list[dict[str, str]]:
+        return [{"role": m.role, "content": m.content} for m in self.messages]</code></pre>
+
+    <h2>策略二：摘要压缩 (Summarization)</h2>
+    <p>当窗口滑到一定极限时，简单丢弃会导致上下文断裂。更好的做法是调用一个廉价的小模型（如 <code>gpt-4o-mini</code>），将旧对话压缩成一段摘要（Summary），替换回 System Prompt 或放在历史开头。</p>
+
+    <h3>架构图</h3>
+    <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="60" width="180" height="80" fill="#dbeafe" rx="8" stroke="#2563eb" stroke-width="2"/>
+        <text x="110" y="95" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">📄 旧对话历史</text>
+        <text x="110" y="115" text-anchor="middle" font-size="12" fill="#64748b">(10 条消息)</text>
+        <line x1="210" y1="100" x2="280" y2="100" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow)"/>
+        <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker></defs>
+        <rect x="290" y="40" width="200" height="120" fill="#fef3c7" rx="8" stroke="#f59e0b" stroke-width="2"/>
+        <text x="390" y="70" text-anchor="middle" font-size="14" font-weight="bold" fill="#92400e">🤖 LLM 压缩</text>
+        <text x="390" y="90" text-anchor="middle" font-size="12" fill="#92400b">(gpt-4o-mini)</text>
+        <text x="390" y="115" text-anchor="middle" font-size="11" fill="#a16207">"将以上对话压缩为</text>
+        <text x="390" y="132" text-anchor="middle" font-size="11" fill="#a16207">150 字以内的摘要"</text>
+        <line x1="500" y1="100" x2="570" y2="100" stroke="#10b981" stroke-width="2" marker-end="url(#arrow2)"/>
+        <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#10b981"/></marker></defs>
+        <rect x="580" y="60" width="180" height="80" fill="#ecfdf5" rx="8" stroke="#10b981" stroke-width="2"/>
+        <text x="670" y="90" text-anchor="middle" font-size="14" font-weight="bold" fill="#065f46">📝 摘要</text>
+        <text x="670" y="110" text-anchor="middle" font-size="11" fill="#047857">"用户询问 Python</text>
+        <text x="670" y="125" text-anchor="middle" font-size="11" fill="#047857">单例模式的实现..."</text>
+    </svg>
+
+    <h3>实战代码：摘要压缩器</h3>
+    <pre><code class="language-python"># summary_compressor.py
+import os
+import httpx
+from dataclasses import dataclass
+
+@dataclass
+class CompressorConfig:
+    api_key: str = os.getenv("API_KEY", "")
+    base_url: str = "https://api.openai.com/v1"
+    model: str = "gpt-4o-mini"
+    max_summary_tokens: int = 150
+
+class SummaryCompressor:
+    def __init__(self, config: CompressorConfig = None):
+        self.config = config or CompressorConfig()
+
+    async def compress(self, old_messages: list[dict]) -> str:
+        """将旧对话压缩为摘要"""
+        history_text = "\n".join(
+            f"[{m.get('role')}] {m.get('content')}" for m in old_messages
+        )
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{self.config.base_url}/chat/completions",
+                json={
+                    "model": self.config.model,
+                    "messages": [
+                        {"role": "system", "content":
+                         "请将以下对话压缩为150字以内的中文摘要。"},
+                        {"role": "user", "content": history_text},
+                    ],
+                    "max_tokens": self.config.max_summary_tokens,
+                },
+                headers={
+                    "Authorization": f"Bearer {self.config.api_key}",
+                    "Content-Type": "application/json",
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+
+    def build_context_with_summary(
+        self, summary: str, recent: list[dict]
+    ) -> list[dict]:
+        """摘要 + 最近消息 = 完整上下文"""
+        return [
+            {"role": "system", "content": f"之前对话的摘要:\n{summary}"},
+            *recent,
+        ]</code></pre>
+
+    <h2>策略三：Token 预算控制 (Token Budget)</h2>
+    <p>在发送请求前，必须精确计算即将消耗的 Token。如果超过模型上限（如 8K、32K），需立即触发截断或拒绝服务，避免 API 报错。</p>
+
+    <div class="tip">
+        <strong>💡 生产建议</strong>：实际项目中建议使用 <code>tiktoken</code> 库进行精确 Token 计数。此处演示的是粗略估算方法。
+    </div>
+
+    <h3>实战代码：Token 预算控制器</h3>
+    <pre><code class="language-python"># token_budget.py
+class TokenBudgetController:
+    """Token 预算控制器"""
+
+    def __init__(self, limit: int = 8192, model: str = "gpt-4o"):
+        self.limit = limit
+        self.model = model
+
+    def count_tokens(self, messages: list[dict]) -> int:
+        """计算消息列表的 Token 总量"""
+        total = 0
+        for msg in messages:
+            content = msg.get("content", "")
+            total += self._estimate(content)
+            total += 4  # 角色 overhead
+        return total + 3  # 系统 overhead
+
+    def _estimate(self, text: str) -> int:
+        """粗略估算 Token 数"""
+        if not text:
+            return 0
+        cn_count = sum(1 for c in text if ord(c) > 127)
+        en_count = len(text) - cn_count
+        return int(cn_count / 1.5) + int(en_count / 4)
+
+    def check(self, messages: list[dict]) -> dict:
+        """检查 Token 预算"""
+        used = self.count_tokens(messages)
+        return {
+            "ok": used <= self.limit,
+            "used": used,
+            "remaining": max(0, self.limit - used),
+            "over_by": max(0, used - self.limit),
+        }
+
+    def trim_to_fit(self, messages: list[dict]) -> list[dict]:
+        """自动裁剪消息直到符合预算"""
+        result = list(messages)
+        while self.count_tokens(result) > self.limit and len(result) > 1:
+            idx = 1 if result[0].get("role") == "system" else 0
+            result.pop(idx)
+        return result</code></pre>
+
+    <h2>策略对比总结</h2>
+    <table>
+        <thead>
+            <tr><th>策略</th><th>实现复杂度</th><th>成本</th><th>上下文丢失风险</th><th>适用场景</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>滑动窗口</strong></td><td>⭐ 低</td><td>💰 低</td>
+                <td>🔴 高（直接丢弃）</td><td>简单问答、短期任务</td>
+            </tr>
+            <tr>
+                <td><strong>摘要压缩</strong></td><td>⭐⭐ 中</td><td>💰💰 中</td>
+                <td>🟢 低（保留语义）</td><td>长期陪伴、复杂任务</td>
+            </tr>
+            <tr>
+                <td><strong>Token 预算</strong></td><td>⭐ 低</td><td>💰 无</td>
+                <td>🟢 可控</td><td><strong>所有生产级系统必备</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>最佳实践：组合使用</h2>
+    <p>在实际生产系统中，推荐<strong>组合使用</strong>这三种策略：</p>
+    <ol>
+        <li>用 <strong>Token 预算</strong> 设定硬性上限，防止 API 报错</li>
+        <li>用 <strong>滑动窗口</strong> 处理日常对话，保持上下文精简</li>
+        <li>当窗口即将满载时，触发 <strong>摘要压缩</strong>，保留关键语义</li>
+    </ol>
+
+    <div class="tip">
+        <strong>🎯 下一章预告</strong>：4.2 对话状态机设计与状态追踪 —— 如何让 AI 记住对话的当前阶段（如"正在收集需求"、"等待用户确认"），并据此调整回复策略。
+    </div>
+
+
+    <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;">
+        <a href="index.html" style="color:var(--accent);text-decoration:none;font-size:14px;">📚 返回目录</a>
+        <a href="4_2_对话状态机设计与状态追踪.html" style="color:var(--accent);text-decoration:none;font-size:14px;">下一章 → 4.2 对话状态机设计</a>
+    </div>
+
+    <!-- Prism.js 核心 + Python 语言支持 (在 DOM 加载后执行) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>

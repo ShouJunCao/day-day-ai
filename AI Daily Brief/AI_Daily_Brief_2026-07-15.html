@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年7月15日</title>
+<style>
+  :root {
+    --bg-primary: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-card-hover: #222633;
+    --border: #2a2e3a;
+    --text-primary: #e8eaed;
+    --text-secondary: #9aa0ab;
+    --accent-blue: #5b8cff;
+    --accent-green: #34d399;
+    --accent-orange: #ff9f43;
+    --accent-red: #ff6b6b;
+    --accent-purple: #a78bfa;
+    --accent-cyan: #22d3ee;
+    --domestic-tag: #ef4444;
+    --intl-tag: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "SF Pro Text", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    padding: 2rem 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+  .header .date {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+  .header .subtitle {
+    color: var(--accent-cyan);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+  }
+  .summary-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid var(--accent-blue);
+  }
+  .summary-card h3 {
+    color: var(--accent-blue);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+  .summary-card p {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-title .icon { font-size: 1.4rem; }
+  .news-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: background 0.2s;
+  }
+  .news-card:hover { background: var(--bg-card-hover); }
+  .news-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .news-num {
+    background: var(--accent-blue);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tag-domestic {
+    background: rgba(239,68,68,0.15);
+    color: var(--domestic-tag);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .tag-intl {
+    background: rgba(59,130,246,0.15);
+    color: var(--intl-tag);
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .news-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .news-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .keyword {
+    background: rgba(91,140,255,0.1);
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(91,140,255,0.2);
+  }
+  .news-body {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .news-body strong {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .news-body .label {
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+  .news-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--accent-blue);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    word-break: break-all;
+  }
+  .news-link:hover { text-decoration: underline; }
+  .footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+  .balance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(52,211,153,0.1);
+    border: 1px solid rgba(52,211,153,0.3);
+    color: var(--accent-green);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>AI 行业资讯简报</h1>
+    <div class="subtitle">AI行业每日资讯</div>
+    <div class="date">2026年7月15日 · 星期二</div>
+  </div>
+
+  <div class="summary-card">
+    <h3>📌 今日速览</h3>
+    <p>DeepSeek火速启动新一轮融资，估值达4800亿元人民币，目标2027年IPO。腾讯牵头组建中方资本财团，拟以约135亿元从Meta手中回购Manus全部股权。OpenAI首款硬件设备ChatGPT智能音箱曝光，预计2027年发布。xAI旗下Grok Build被曝上传用户完整代码库引发隐私争议。Apple正洽购PrismML，可将AI模型压缩15倍在iPhone运行。</p>
+  </div>
+
+  <!-- Section 1: 大模型 & 技术 -->
+  <div class="section-title"><span class="icon">🧠</span> 一、大模型 & 技术</div>
+
+  <!-- 1. DeepSeek -->
+  <div class="news-card">
+    <div class="news-header">
+      <div class="news-num">1</div>
+      <span class="tag tag-domestic">国内</span>
+      <div class="news-title">DeepSeek启动新一轮融资，估值约4800亿元，最快明年IPO</div>
+    </div>
+    <div class="news-meta">
+      <span class="keyword">DeepSeek</span>
+      <span class="keyword">融资</span>
+      <span class="keyword">IPO</span>
+      <span class="keyword">梁文锋</span>
+    </div>
+    <div class="news-body">
+      <p><span class="label">核心</span>：据《金融时报》7月15日报道，DeepSeek距首轮融资结束仅六周即启动新一轮融资，融资前估值约700亿美元（约4800亿元人民币），较首轮520亿美元估值上涨37%。首轮融资超500亿元，梁文锋个人出资200亿元。DeepSeek已开始筹备IPO，目标2027年上市，最快今年底递交申请。梁文锋净资产从167亿美元增至360亿美元，超越OpenAI的Greg Brockman成为全球最富大模型创始人。</p>
+      <p style="margin-top:0.5rem;"><span class="label">影响</span>：DeepSeek以惊人速度推进资本化，显示国产大模型从"技术竞赛"进入"算力+资本"阶段，GW级自建数据中心与自研芯片计划同步推进，有望在2027年成为全球AI资本市场焦点。</p>
+      <a class="news-link" href="https://www.qbitai.com/2026/07/450101.html" target="_blank">🔗 量子位 →</a>
+    </div>
+  </div>
+
+  <!-- 2. Grok Build -->
+  <div class="news-card">
+    <div class="news-header">
+      <div class="news-num">2</div>
+      <span class="tag tag-intl">国外</span>
+      <div class="news-title">xAI/Grok Build被曝上传用户完整代码库，含被删除的机密文件</div>
+    </div>
+    <div class="news-meta">
+      <span class="keyword">xAI</span>
+      <span class="keyword">Grok Build</span>
+      <span class="keyword">隐私安全</span>
+      <span class="keyword">Elon Musk</span>
+    </div>
+    <div class="news-body">
+      <p><span class="label">核心</span>：Cereblab研究人员7月15日（周一）披露，Grok Build CLI工具会打包并上传用户整个代码仓库，包括被指示不要打开的文件和已从历史记录中删除的机密文件。安全研究员Dr. Lukasz Olejnik称该数据保留行为"过度"，警告其对专有源代码、凭证和个人数据构成风险。Elon Musk在X上回应称所有已上传数据将"完全彻底删除"，xAI已禁用代码库上传功能。</p>
+      <p style="margin-top:0.5rem;"><span class="label">影响</span>：AI编程工具的数据安全边界再次成为行业焦点，企业与开发者对代码隐私的信任度可能受到冲击，可能推动更严格的数据处理标准和第三方审计。</p>
+      <a class="news-link" href="https://www.theverge.com/ai-artificial-intelligence/965600/spacexai-grok-build-repository-upload" target="_blank">🔗 The Verge →</a>
+    </div>
+  </div>
+
+  <!-- 3. Apple PrismML -->
+  <div class="news-card">
+    <div class="news-header">
+      <div class="news-num">3</div>
+      <span class="tag tag-intl">国外</span>
+      <div class="news-title">Apple洽购PrismML，可将AI模型压缩15倍在iPhone本地运行</div>
+    </div>
+    <div class="news-meta">
+      <span class="keyword">Apple</span>
+      <span class="keyword">PrismML</span>
+      <span class="keyword">端侧AI</span>
+      <span class="keyword">模型压缩</span>
+    </div>
+    <div class="news-body">
+      <p><span class="label">核心</span>：据CNBC 7月14日报道，Apple正评估Khosla Ventures支持的CalTech初创公司PrismML的AI模型压缩技术。该技术可将阿里Qwen模型从约54GB压缩至不足4GB，使全部270亿参数在iPhone 15或更新机型上运行。压缩后模型响应速度提升6-8倍，能耗降低3-6倍。此举有望帮助Apple在设备端运行更强大的Siri，同时保持隐私优势。</p>
+      <p style="margin-top:0.5rem;"><span class="label">影响</span>：端侧AI压缩技术若成熟，将重塑手机AI竞争格局——Apple可在不依赖云端的情况下大幅提升Siri能力，同时降低运营成本和延迟。</p>
+      <a class="news-link" href="https://www.cnbc.com/2026/07/14/apple-prismml-ai-compression-iphone.html" target="_blank">🔗 CNBC →</a>
+    </div>
+  </div>
+
+  <!-- Section 2: 产品 & 商业 -->
+  <div class="section-title"><span class="icon">💼</span> 二、产品 & 商业</div>
+
+  <!-- 4. 腾讯 Manus -->
+  <div class="news-card">
+    <div class="news-header">
+      <div class="news-num">4</div>
+      <span class="tag tag-domestic">国内</span>
+      <div class="news-title">腾讯135亿元接盘Manus，牵头组建中方资本财团从Meta回购</div>
+    </div>
+    <div class="news-meta">
+      <span class="keyword">腾讯</span>
+      <span class="keyword">Manus</span>
+      <span class="keyword">AI Agent</span>
+      <span class="keyword">Meta</span>
+    </div>
+    <div class="news-body">
+      <p><span class="label">核心</span>：据36氪7月14日报道，腾讯正牵头组建中方资本财团，谈判以约20亿美元（约135亿元人民币）估值从Meta手中回购Manus全部股权。Manus是全球首个通用AI Agent现象级产品，上线8个月ARR突破1亿美元。Meta于2025年12月以20亿美元收购。腾讯将成为最大单一股东，Manus将继续独立运营，目标港股上市。</p>
+      <p style="margin-top:0.5rem;"><span class="label">影响</span>：腾讯以与Meta收购时相同估值接盘，显示中方资本对AI Agent赛道的强烈信心。Manus作为全球首个ARR破亿美元的通用Agent，有望成为中国AI出海的标杆案例。</p>
+      <a class="news-link" href="https://36kr.com/p/3895385119131273" target="_blank">🔗 36氪 →</a>
+    </div>
+  </div>
+
+  <!-- 5. MiniMax -->
+  <div class="news-card">
+    <div class="news-header">
+      <div class="news-num">5</div>
+      <span class="tag tag-domestic">国内</span>
+      <div class="news-title">MiniMax股价暴跌83%，市值缩水至约720亿港元，闫俊杰宣布零薪酬</div>
+    </div>
+    <div class="news-meta">
+      <span class="keyword">MiniMax</span>
+      <span class="keyword">港股</span>
+      <span class="keyword">智谱</span>
+      <span class="keyword">闫俊杰</span>
+    </div>
+    <div class="news-body">
+      <p><span class="label">核心</span>：据36氪7月15日报道，MiniMax（00100.HK）股价从峰值1330港元跌至230港元，市值从约4100亿港元缩水至约720亿港元，跌幅达83%。解禁后创始人闫俊杰宣布"零薪酬"直至AGI实现。同期智谱市值维持在约7456亿港元，两者市值差距从上市时MiniMax是智谱2倍逆转为智谱是MiniMax的10倍以上。MiniMax已完成160亿港元再融资，摩根大通两次下调目标价至240港元。</p>
+      <p style="margin-top:0.5rem;"><span class="label">影响</span>：港股AI板块估值分化加剧，MiniMax暴跌反映市场从"概念溢价"转向"商业兑现"的估值逻辑，创始人零薪酬承诺凸显AGI赛道的长期性与资本耐心考验。</p>
+      <a class="news-link" href="https://36kr.com/p/3895497119253632" target="_blank">🔗 36氪 →</a>
+    </div>
+  </div>
+
+  <!-- 6. OpenAI 智能音箱 -->
+  <div class="news-card">
+    <div class="news-header">
+      <div class="news-num">6</div>
+      <span class="tag tag-intl">国外</span>
+      <div class="news-title">OpenAI首款硬件设备曝光：无屏ChatGPT智能音箱，2027年发布</div>
+    </div>
+    <div class="news-meta">
+      <span class="keyword">OpenAI</span>
+      <span class="keyword">硬件</span>
+      <span class="keyword">GPT-Live</span>
+      <span class="keyword">Jony Ive</span>
+    </div>
+    <div class="news-body">
+      <p><span class="label">核心</span>：据彭博社与The Verge 7月15日报道，OpenAI首款硬件设备是一款无屏智能音箱，搭载摄像头和传感器以"理解"用户环境，配备可充电电池支持便携使用。设备将搭载上周发布的GPT-Live语音模型，具备"可自行移动的机械元素"以增强人机交互体验。该设备计划2027年发布，OpenAI目前约有5款硬件设备在开发中，正与Jony Ive合作（OpenAI以约65亿美元收购其公司io Products）。</p>
+      <p style="margin-top:0.5rem;"><span class="label">影响</span>：OpenAI从纯软件向硬件生态延伸，与Apple在AI终端设备市场的正面竞争即将展开。无屏设计+GPT-Live语音交互的差异化路线，可能重新定义AI助手的物理形态。</p>
+      <a class="news-link" href="https://www.theverge.com/ai-artificial-intelligence/965670/openai-chatgpt-ai-smart-speaker-hardware-device" target="_blank">🔗 The Verge →</a>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="balance-badge">✅ 内容均衡：3 国内 + 3 国外 = 1:1</div>
+    <p style="margin-top:1rem;">AI 行业资讯简报 · 2026年7月15日 · AI Daily Brief</p>
+  </div>
+</div>
+</body>
+</html>

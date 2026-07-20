@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4.3 意图识别与槽位填充 - 大模型应用开发指南</title>
+    <style>
+        :root {
+            --bg: #f8fafc; --text: #1e293b; --accent: #2563eb;
+            --card-bg: #ffffff; --border: #e2e8f0; --code-bg: #282c34;
+        }
+        body {
+            font-family: -apple-system, "PingFang SC", sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.8; margin: 0; padding: 40px 20px;
+            max-width: 900px; margin: 0 auto;
+        }
+        h1 { color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 10px; }
+        h2 { color: #1e40af; margin-top: 40px; }
+        h3 { color: #334155; margin-top: 30px; }
+        p { margin: 16px 0; text-align: justify; }
+        .hero {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;
+        }
+        .summary-box {
+            background: #f0f9ff; border-left: 4px solid var(--accent);
+            padding: 15px; margin-bottom: 30px; border-radius: 4px;
+        }
+        pre {
+            border-radius: 8px; margin: 20px 0 !important;
+            background: var(--code-bg) !important;
+            border: 1px solid #3e4451; padding: 16px; overflow-x: auto;
+        }
+        pre code {
+            font-family: "SF Mono", "Fira Code", "Monaco", monospace !important;
+            font-size: 13px !important; line-height: 1.7 !important;
+            white-space: pre-wrap !important; word-wrap: break-word !important;
+            background: none !important; color: #abb2bf !important; padding: 0 !important;
+        }
+        .token.keyword { color: #c678dd !important; }
+        .token.string, .token.docstring { color: #98c379 !important; }
+        .token.comment, .token.prolog, .token.doctype, .token.cdata { color: #5c6370 !important; font-style: italic !important; }
+        .token.decorator, .token.annotation { color: #e5c07b !important; }
+        .token.class-name, .token.function { color: #61afef !important; }
+        .token.number, .token.boolean { color: #d19a66 !important; }
+        .token.operator, .token.punctuation { color: #56b6c2 !important; }
+        .token.builtin { color: #e5c07b !important; }
+        .token.self { color: #e06c75 !important; }
+        code:not(pre code) {
+            background: #e2e8f0; padding: 2px 6px; border-radius: 4px;
+            font-size: 0.9em; font-family: "SF Mono", monospace;
+        }
+        table {
+            width: 100%; border-collapse: collapse; margin: 20px 0;
+            background: var(--card-bg); border-radius: 8px; overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        th { background-color: #f1f5f9; font-weight: 600; }
+        svg { max-width: 100%; height: auto; margin: 20px 0; }
+        .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .tip { background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        ol { padding-left: 20px; }
+        ol li { margin: 8px 0; }
+        .nav-links { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+        .nav-links a { color: var(--accent); text-decoration: none; font-size: 14px; }
+        .nav-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>4.3 意图识别与槽位填充</h1>
+        <p>意图分类 (Intent Classification) · 槽位提取 (Slot Filling) · 语义解析 (Semantic Parsing)</p>
+    </div>
+
+    <div class="summary-box">
+        <strong>📌 核心要点</strong>：意图识别与槽位填充是对话系统的<strong>核心理解层</strong>。意图识别回答"用户想做什么"，槽位填充回答"用户提供了哪些关键参数"。传统方法依赖分类模型+序列标注，现代方法可以直接用 LLM 一次完成。
+    </div>
+
+    <h2>什么是对话理解？</h2>
+    <p>当用户说"帮我订明天北京到上海的机票"时，对话系统需要解析出：</p>
+    <ul>
+        <li><strong>意图 (Intent)</strong>：订机票</li>
+        <li><strong>槽位 (Slots)</strong>：出发地=北京, 目的地=上海, 时间=明天</li>
+    </ul>
+
+    <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="80" width="220" height="100" fill="#e0e7ff" rx="8" stroke="#4f46e5" stroke-width="2"/>
+        <text x="130" y="115" text-anchor="middle" font-size="16" font-weight="bold" fill="#3730a3">用户输入</text>
+        <text x="130" y="145" text-anchor="middle" font-size="13" fill="#6366f1">"订明天北京到上海的机票"</text>
+        <text x="130" y="165" text-anchor="middle" font-size="11" fill="#818cf8">(自然语言)</text>
+
+        <line x1="250" y1="130" x2="310" y2="130" stroke="#4f46e5" stroke-width="2" marker-end="url(#arr)"/>
+        <defs><marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#4f46e5"/></marker></defs>
+
+        <rect x="320" y="60" width="160" height="140" fill="#fef3c7" rx="8" stroke="#d97706" stroke-width="2"/>
+        <text x="400" y="90" text-anchor="middle" font-size="15" font-weight="bold" fill="#92400e">对话理解引擎</text>
+        <text x="400" y="115" text-anchor="middle" font-size="12" fill="#a16207">1. 意图识别</text>
+        <text x="400" y="135" text-anchor="middle" font-size="12" fill="#a16207">2. 槽位填充</text>
+        <text x="400" y="155" text-anchor="middle" font-size="12" fill="#a16207">3. 实体链接</text>
+        <text x="400" y="175" text-anchor="middle" font-size="12" fill="#a16207">4. 指代消解</text>
+
+        <line x1="490" y1="130" x2="550" y2="130" stroke="#d97706" stroke-width="2" marker-end="url(#arr2)"/>
+        <defs><marker id="arr2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#d97706"/></marker></defs>
+
+        <rect x="560" y="40" width="220" height="180" fill="#ecfdf5" rx="8" stroke="#059669" stroke-width="2"/>
+        <text x="670" y="70" text-anchor="middle" font-size="15" font-weight="bold" fill="#065f46">结构化语义</text>
+        <text x="575" y="100" font-size="12" fill="#047857">intent: book_flight</text>
+        <text x="575" y="125" font-size="12" fill="#047857">slots:</text>
+        <text x="590" y="145" font-size="12" fill="#047857">  departure: 北京</text>
+        <text x="590" y="165" font-size="12" fill="#047857">  arrival: 上海</text>
+        <text x="590" y="185" font-size="12" fill="#047857">  date: 2026-07-20</text>
+        <text x="590" y="205" font-size="12" fill="#047857">  passenger: 1人</text>
+
+        <text x="400" y="240" text-anchor="middle" font-size="11" fill="#64748b">图 4-3：对话理解流程 — 从自然语言到结构化语义</text>
+    </svg>
+
+    <h2>传统方法 vs LLM 方法</h2>
+    <p>在 LLM 出现之前，意图识别和槽位填充通常由两个独立的模型串联完成：</p>
+    <ol>
+        <li><strong>意图分类器</strong>：将用户语句分类到预定义的意图类别（如 BERT + 全连接层）</li>
+        <li><strong>槽位标注器</strong>：使用 BIO/BILOU 标记法进行序列标注（如 BiLSTM-CRF）</li>
+    </ol>
+
+    <div class="note">
+        <strong>⚠️ 传统方法的问题</strong>：需要大量标注数据、无法处理未见过的意图、模型之间错误累积、维护成本高。LLM 的出现将这些问题一并解决。
+    </div>
+
+    <h3>实战代码 1：传统方法（BERT 意图分类）</h3>
+    <pre><code class="language-python"># intent_classifier.py — 基于 BERT 的意图分类
+import torch
+from transformers import BertTokenizer, BertForSequenceClassification
+
+class IntentClassifier:
+    """使用预训练 BERT 进行意图分类"""
+
+    INTENT_LABELS = [
+        "greet", "goodbye", "inform", "request",
+        "book_flight", "query_weather", "query_restaurant"
+    ]
+
+    def __init__(self, model_name: str = "bert-base-chinese"):
+        self.tokenizer = BertTokenizer.from_pretrained(model_name)
+        self.model = BertForSequenceClassification.from_pretrained(
+            model_name, num_labels=len(self.INTENT_LABELS)
+        )
+        self.model.eval()
+
+    def predict(self, text: str) -> dict:
+        """预测输入文本的意图"""
+        inputs = self.tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=128
+        )
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            probs = torch.softmax(outputs.logits, dim=-1)
+            top_idx = probs.argmax().item()
+
+        return {
+            "intent": self.INTENT_LABELS[top_idx],
+            "confidence": probs[0][top_idx].item(),
+            "all_scores": {
+                label: probs[0][i].item()
+                for i, label in enumerate(self.INTENT_LABELS)
+            }
+        }
+
+# 使用示例
+classifier = IntentClassifier()
+result = classifier.predict("帮我订明天北京到上海的机票")
+print(f"意图: {result['intent']} (置信度: {result['confidence']:.2%})")</code></pre>
+
+    <h3>实战代码 2：传统方法（CRF 槽位标注）</h3>
+    <pre><code class="language-python"># slot_filler.py — 基于 CRF 的槽位填充
+from sklearn_crfsuite import CRF
+from typing import List
+
+class SlotFiller:
+    """使用 CRF 进行序列标注（BIO 标记法）"""
+
+    def __init__(self):
+        self.crf = CRF(
+            algorithm='lbfgs',
+            c1=0.1,
+            c2=0.01,
+            max_iterations=100,
+            all_possible_transitions=True
+        )
+
+    def _word2features(self, sentence: List[str], i: int) -> dict:
+        """提取单个词的特征"""
+        word = sentence[i]
+        return {
+            'word': word,
+            'is_title': word.istitle(),
+            'is_digit': word.isdigit(),
+            'prefix2': word[:2],
+            'suffix2': word[-2:],
+            'pos': self._get_pos(word),
+            'bias': 1.0,
+        }
+
+    def _get_pos(self, word: str) -> str:
+        """简易词性标注（生产环境用 HanLP/jieba）"""
+        if any(c.isdigit() for c in word):
+            return "NUM"
+        time_words = {"明天", "今天", "后天", "早上", "晚上"}
+        place_words = {"北京", "上海", "广州", "深圳", "成都"}
+        if word in time_words:
+            return "TIME"
+        if word in place_words:
+            return "PLACE"
+        return "OTHER"
+
+    def _sent2features(self, sentence: List[str]) -> List[dict]:
+        """提取整句的特征序列"""
+        return [self._word2features(sentence, i) for i in range(len(sentence))]
+
+    def fit(self, X: List[List[str]], y: List[List[str]]) -> None:
+        """训练 CRF 模型"""
+        X_feats = [self._sent2features(s) for s in X]
+        self.crf.fit(X_feats, y)
+
+    def predict(self, sentence: List[str]) -> List[str]:
+        """预测槽位标签序列"""
+        X_feats = self._sent2features(sentence)
+        return self.crf.predict([X_feats])[0]
+
+# BIO 标记法示例：
+# B-departure I-departure B-destination I-destination
+# 北京      -           上海          -
+# B-date I-date
+# 明天      -</code></pre>
+
+    <h2>LLM 方法：一次完成意图 + 槽位</h2>
+    <p>使用 LLM 的优势是：<strong>不需要标注数据</strong>，只需要用自然语言描述意图和槽位定义，模型就能理解并输出结构化结果。</p>
+
+    <h3>架构图</h3>
+    <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="40" width="160" height="120" fill="#dbeafe" rx="8" stroke="#2563eb" stroke-width="2"/>
+        <text x="100" y="80" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">用户语句</text>
+        <text x="100" y="100" text-anchor="middle" font-size="11" fill="#64748b">+ Schema 定义</text>
+        <text x="100" y="120" text-anchor="middle" font-size="11" fill="#64748b">+ Few-shot 示例</text>
+
+        <line x1="190" y1="100" x2="290" y2="100" stroke="#2563eb" stroke-width="2" marker-end="url(#a1)"/>
+        <defs><marker id="a1" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker></defs>
+
+        <rect x="300" y="30" width="200" height="140" fill="#fef3c7" rx="8" stroke="#d97706" stroke-width="2"/>
+        <text x="400" y="60" text-anchor="middle" font-size="15" font-weight="bold" fill="#92400e">LLM 推理</text>
+        <text x="400" y="85" text-anchor="middle" font-size="12" fill="#a16207">System: 你是语义解析助手</text>
+        <text x="400" y="105" text-anchor="middle" font-size="12" fill="#a16207">User: 输入 + Schema</text>
+        <text x="400" y="125" text-anchor="middle" font-size="12" fill="#a16207">输出: JSON 格式</text>
+        <text x="400" y="150" text-anchor="middle" font-size="11" fill="#a16207">(Function Calling /</text>
+        <text x="400" y="165" text-anchor="middle" font-size="11" fill="#a16207">Structured Output)</text>
+
+        <line x1="510" y1="100" x2="610" y2="100" stroke="#d97706" stroke-width="2" marker-end="url(#a2)"/>
+        <defs><marker id="a2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#d97706"/></marker></defs>
+
+        <rect x="620" y="40" width="160" height="120" fill="#ecfdf5" rx="8" stroke="#059669" stroke-width="2"/>
+        <text x="700" y="70" text-anchor="middle" font-size="14" font-weight="bold" fill="#065f46">结构化输出</text>
+        <text x="635" y="95" font-size="11" fill="#047857">{</text>
+        <text x="635" y="112" font-size="11" fill="#047857">  "intent": "...",</text>
+        <text x="635" y="129" font-size="11" fill="#047857">  "slots": {...}</text>
+        <text x="635" y="146" font-size="11" fill="#047857">}</text>
+    </svg>
+
+    <h3>实战代码 3：LLM 方法（OpenAI Function Calling）</h3>
+    <pre><code class="language-python"># llm_nlu.py — 使用 LLM + Function Calling 进行对话理解
+import os
+import json
+from typing import Literal, Optional
+from pydantic import BaseModel, Field
+
+# --- Schema 定义 ---
+class FlightSlots(BaseModel):
+    """订机票的槽位"""
+    departure: str = Field(description="出发城市")
+    arrival: str = Field(description="到达城市")
+    date: str = Field(description="出发日期，格式 YYYY-MM-DD")
+    return_date: Optional[str] = Field(
+        default=None, description="返回日期（单程时省略）"
+    )
+    cabin_class: Optional[str] = Field(
+        default=None, description="舱位等级"
+    )
+
+class NLUResult(BaseModel):
+    """对话理解结果"""
+    intent: str = Field(description="意图名称")
+    confidence: float = Field(description="置信度 0-1")
+    slots: dict = Field(description="提取的槽位参数")
+    missing_slots: list[str] = Field(
+        description="缺失的必要槽位，用于后续追问"
+    )
+
+class DialogueUnderstandingClient:
+    """
+    基于 LLM 的对话理解客户端
+
+    使用 Function Calling + Pydantic 确保输出格式
+    """
+    def __init__(self):
+        from openai import OpenAI
+        self.client = OpenAI(
+            api_key=os.getenv("API_KEY"),
+            base_url=os.getenv("BASE_URL", "https://api.openai.com/v1"),
+        )
+        self.model = os.getenv("MODEL", "gpt-4o")
+
+    def understand(self, user_input: str) -> NLUResult:
+        """解析用户输入的意图和槽位"""
+        # System Prompt 中定义理解规则
+        system_msg = {
+            "role": "system",
+            "content": (
+                "你是一个对话理解专家。请分析用户输入，提取意图和槽位。\n"
+                "支持的意图包括：book_flight, query_weather, "
+                "query_restaurant, chat, unknown\n"
+                "输出必须符合 NLUResult 格式。"
+            )
+        }
+
+        response = self.client.beta.chat.completions.parse(
+            model=self.model,
+            messages=[system_msg, {"role": "user", "content": user_input}],
+            response_format=NLUResult,
+        )
+        return response.choices[0].message.parsed
+
+# 使用示例
+client = DialogueUnderstandingClient()
+result = client.understand("帮我订后天上海飞北京的商务舱")
+print(f"意图: {result.intent}")
+print(f"槽位: {result.slots}")
+if result.missing_slots:
+    print(f"缺失槽位: {result.missing_slots}")</code></pre>
+
+    <h3>实战代码 4：LLM 方法（JSON Schema 强制输出）</h3>
+    <pre><code class="language-python"># llm_schema_nlu.py — 基于 JSON Schema 的槽位填充
+import os
+import json
+import httpx
+from typing import Optional
+
+# 定义槽位 Schema（不依赖 Pydantic/OpenAI SDK）
+FLIGHT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "intent": {"type": "string"},
+        "slots": {
+            "type": "object",
+            "properties": {
+                "departure": {"type": "string"},
+                "arrival": {"type": "string"},
+                "date": {"type": "string"},
+            },
+            "required": ["departure", "arrival", "date"],
+        },
+    },
+    "required": ["intent", "slots"],
+}
+
+class SchemaBasedNLU:
+    """
+    基于 JSON Schema 的对话理解
+    适用于任何支持 JSON mode 的 LLM
+    """
+
+    def __init__(self):
+        self.api_key = os.getenv("API_KEY", "")
+        self.base_url = os.getenv("BASE_URL", "https://api.openai.com/v1")
+        self.model = os.getenv("MODEL", "gpt-4o-mini")
+
+    async def extract(self, text: str) -> Optional[dict]:
+        """提取意图和槽位"""
+        prompt = (
+            f"请从以下文本中提取意图和槽位信息。\n\n"
+            f"用户输入：{text}\n\n"
+            f"请以以下 JSON 格式输出：\n"
+            f"{json.dumps(FLIGHT_SCHEMA, indent=2, ensure_ascii=False)}"
+        )
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{self.base_url}/chat/completions",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {"type": "json_object"},
+                },
+                headers={"Authorization": f"Bearer {self.api_key}"},
+            )
+            return resp.json()["choices"][0]["message"]["content"]
+
+    def validate(self, result: dict) -> tuple[bool, list[str]]:
+        """验证提取结果是否完整"""
+        errors = []
+        if not result.get("intent"):
+            errors.append("缺少 intent")
+        slots = result.get("slots", {})
+        for field in ["departure", "arrival", "date"]:
+            if field not in slots:
+                errors.append(f"缺少必要槽位: {field}")
+        return len(errors) == 0, errors</code></pre>
+
+    <h2>意图与槽位定义规范</h2>
+    <p>设计一个健壮的对话理解系统，关键在于<strong>预先定义好意图和槽位</strong>。以下是一个电商场景的参考模板：</p>
+
+    <table>
+        <thead>
+            <tr><th>意图</th><th>说明</th><th>必要槽位</th><th>可选槽位</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>search_product</td><td>搜索商品</td><td>query（搜索词）</td><td>category, brand, price_range</td></tr>
+            <tr><td>order_inquiry</td><td>查询订单</td><td>order_id</td><td>phone, email</td></tr>
+            <tr><td>return_request</td><td>退货申请</td><td>order_id, reason</td><td>quantity, photo_url</td></tr>
+            <tr><td>refund_request</td><td>退款申请</td><td>order_id</td><td>amount, reason</td></tr>
+            <tr><td>complaint</td><td>投诉</td><td>content</td><td>order_id, severity</td></tr>
+            <tr><td>greet</td><td>打招呼</td><td>无</td><td>无</td></tr>
+            <tr><td>chitchat</td><td>闲聊</td><td>无</td><td>无</td></tr>
+        </tbody>
+    </table>
+
+    <h2>混合方案：分类器 + LLM</h2>
+    <p>在生产环境中，为了平衡<strong>成本</strong>和<strong>效果</strong>，常采用混合方案：</p>
+    <ol>
+        <li>先用<strong>轻量分类器</strong>（如 FastText / ONNX 模型）做意图初筛，成本极低</li>
+        <li>对高置信度结果直接提取槽位（规则匹配或轻量 NER）</li>
+        <li>对低置信度或复杂场景，<strong>回退到 LLM</strong>进行深度理解</li>
+    </ol>
+
+    <div class="tip">
+        <strong>💡 实战技巧</strong>：始终检查 LLM 输出中的 <code>missing_slots</code>，将其用于生成追问话术："好的，您想订后天上海飞北京的商务舱。请问是单程还是往返？"
+    </div>
+
+    <h2>关键指标</h2>
+    <table>
+        <thead>
+            <tr><th>指标</th><th>说明</th><th>目标值</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Intent Accuracy</strong></td><td>意图分类准确率</td><td>≥ 95%</td></tr>
+            <tr><td><strong>Slot F1</strong></td><td>槽位填充的 F1 分数</td><td>≥ 90%</td></tr>
+            <tr><td><strong>Joint Accuracy</strong></td><td>意图+槽位同时正确的比例</td><td>≥ 85%</td></tr>
+            <tr><td><strong>Latency</strong></td><td>理解耗时（P95）</td><td>≤ 500ms</td></tr>
+        </tbody>
+    </table>
+
+    <div class="tip">
+        <strong>🎯 下一章预告</strong>：4.4 对话引导、澄清与兜底策略 —— 当用户意图不明确或超出系统能力时，如何优雅地引导和澄清。
+    </div>
+
+    <div class="nav-links">
+        <a href="4_2_对话状态机设计与状态追踪.html">← 4.2 对话状态机设计</a>
+        <a href="index.html">📚 目录</a>
+        <a href="4_1_多轮对话上下文管理.html">4.1 上下文管理</a>
+    </div>
+
+    <!-- Prism.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+</body>
+</html>
