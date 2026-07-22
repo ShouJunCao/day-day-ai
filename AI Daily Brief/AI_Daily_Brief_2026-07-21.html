@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI行业资讯简报 2026年7月21日</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-accent: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-link: #38bdf8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #22c55e;
+            --accent-orange: #f97316;
+            --border-color: #334155;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-accent));
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+        .header h1 {
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+        }
+        .header .date { font-size: 1.1em; color: var(--text-secondary); }
+        .overview {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--accent-blue);
+        }
+        .overview h2 { font-size: 1.2em; color: var(--accent-blue); margin-bottom: 10px; }
+        .overview p { color: var(--text-secondary); font-size: 0.95em; }
+        .section { margin-bottom: 30px; }
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .news-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .news-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .news-card h3 { font-size: 1.1em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .tag {
+            font-size: 0.75em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tag-domestic { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .tag-international { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .news-meta { display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+        .keyword { color: var(--text-secondary); font-size: 0.85em; }
+        .keyword strong { color: var(--text-primary); }
+        .news-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .news-body .detail { background: var(--bg-accent); border-radius: 8px; padding: 12px; }
+        .news-body .detail h4 { font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .news-body .detail p { font-size: 0.9em; color: var(--text-primary); }
+        .news-link { margin-top: 12px; }
+        .news-link a { color: var(--text-link); text-decoration: none; font-size: 0.9em; }
+        .news-link a:hover { text-decoration: underline; }
+        .balance-bar {
+            display: flex; gap: 8px; align-items: center; margin-bottom: 20px;
+            background: var(--bg-card); border-radius: 8px; padding: 10px 16px;
+        }
+        .balance-bar .label { font-size: 0.85em; color: var(--text-secondary); }
+        .balance-bar .bar { flex: 1; height: 8px; background: var(--bg-accent); border-radius: 4px; overflow: hidden; display: flex; }
+        .balance-bar .domestic { width: 50%; background: #22c55e; }
+        .balance-bar .international { width: 50%; background: #3b82f6; }
+        .balance-bar .legend { display: flex; gap: 12px; font-size: 0.8em; }
+        .footer {
+            text-align: center; padding: 20px; color: var(--text-secondary);
+            font-size: 0.85em; border-top: 1px solid var(--border-color); margin-top: 40px;
+        }
+        @media (max-width: 640px) { .news-body { grid-template-columns: 1fr; } .header h1 { font-size: 1.5em; } }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>📡 AI行业资讯简报</h1>
+        <div class="date">2026年7月21日 · 星期一</div>
+    </div>
+
+    <div class="overview">
+        <h2>📌 今日速览</h2>
+        <p>
+            <strong>月之暗面Kimi K3</strong>以2.8万亿参数震撼开源，登顶前端开发榜并引发服务器满载，OpenAI高管公开批评其为"减速主义"遭硅谷多方驳斥。<strong>阿里Qwen3.8</strong>预览版同步上线，2.4T参数紧随其后。海外方面，<strong>苹果提交41页文件指控OpenAI"偷师"</strong>，<strong>谷歌研发Frozen v2芯片</strong>提升Gemini效率，中美AI大模型竞争全面白热化。
+        </p>
+    </div>
+
+    <div class="balance-bar">
+        <span class="label">国内/国外 比例</span>
+        <div class="bar"><div class="domestic"></div><div class="international"></div></div>
+        <div class="legend"><span style="color:#22c55e">■ 国内 50%</span><span style="color:#3b82f6">■ 国外 50%</span></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">一、大模型 & 技术</div>
+
+        <!-- 1. 国内 -->
+        <div class="news-card">
+            <h3><span class="tag tag-domestic">国内</span>1. 月之暗面Kimi K3开源发布：2.8万亿参数登顶前端开发榜</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：月之暗面、Kimi K3、2.8万亿参数、开源</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>7月20日，月之暗面正式发布新一代开源旗舰模型Kimi K3，总参数规模达2.8万亿，成为首个进入近3万亿参数级别的开源模型。该模型在复杂推理、代码生成、长上下文处理及Agent任务执行等核心能力上实现明显跃升，已登顶AI大模型前端开发榜。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>Kimi K3标志着国产大模型由单纯参数扩张转向模型能力、推理效率和应用落地的全面突破，正加速缩小与海外前沿模型的差距。发布48小时内服务器满载，月之暗面随后宣布暂停C端新用户订阅。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/" target="_blank">🔗 IT之家 · Kimi K3相关报道</a></div>
+        </div>
+
+        <!-- 2. 国外 -->
+        <div class="news-card">
+            <h3><span class="tag tag-international">国外</span>2. OpenAI战略未来主管批Kimi K3开源："减速主义"争议</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：OpenAI、Kimi K3、开源争议、减速主义</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>OpenAI战略未来主管公开批评Kimi K3开源策略，认为其"是非常优秀的模型，但本质上是减速主义，阻碍进一步的AI资本支出"。该言论在硅谷引发广泛争议，多方公开驳斥这一观点。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>开源vs闭源的路线之争持续升级，反映出AI竞争格局下不同商业模式的深层分歧。月之暗面随后喊话马斯克："欢迎加入'2万亿+'俱乐部"，进一步放大事件影响力。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/" target="_blank">🔗 IT之家 · OpenAI评论Kimi K3开源报道</a></div>
+        </div>
+
+        <!-- 3. 国内 -->
+        <div class="news-card">
+            <h3><span class="tag tag-domestic">国内</span>3. 阿里千问Qwen3.8预览版上线：2.4T参数量</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：阿里、千问、Qwen3.8、2.4T参数</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>阿里通义千问Qwen3.8预览版模型正式上线，参数规模达2.4T，官方宣称"可能是除了Fable 5外最强大的模型"。阿里云百炼推理平台已服务全球500万用户、120万付费用户。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>2.4T参数的Qwen3.8进一步缩小与国际顶级闭源模型的差距，阿里在开源大模型领域的技术储备持续领先，与Kimi K3形成国产大模型双雄格局。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/" target="_blank">🔗 IT之家 · Qwen3.8预览版上线报道</a></div>
+        </div>
+
+        <!-- 4. 国外 -->
+        <div class="news-card">
+            <h3><span class="tag tag-international">国外</span>4. 消息称谷歌正研发全新Frozen v2芯片，大幅提升Gemini模型运行效率</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：谷歌、Frozen v2、Gemini、AI芯片</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>据IT之家7月20日报道，谷歌正研发全新Frozen v2芯片，旨在大幅提升Gemini模型的运行效率。此举是谷歌在AI算力领域的又一重要布局，继TPU系列之后持续强化自研芯片能力。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>自研AI芯片成为科技巨头的必争之地，Google通过Frozen v2进一步降低对Nvidia的依赖，同时为大模型推理提供更高效的硬件方案。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/" target="_blank">🔗 IT之家 · 谷歌Frozen v2芯片报道</a></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">二、产品 & 商业</div>
+
+        <!-- 5. 国内 -->
+        <div class="news-card">
+            <h3><span class="tag tag-domestic">国内</span>5. 消息称智谱建成大型AI数据中心：全部采用国产芯片</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：智谱AI、数据中心、国产芯片、算力</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>据IT之家7月21日09:00报道，智谱AI已建成大型AI数据中心，且全部采用国产芯片。这是国产大模型厂商在算力基础设施自主化方面的重要里程碑。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>在GPU受限背景下，国产AI算力芯片开始支撑大规模训练，为国产大模型提供算力保障。智谱此举表明国产芯片已从"可用"走向"好用"阶段。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/" target="_blank">🔗 IT之家 · 智谱AI数据中心报道</a></div>
+        </div>
+
+        <!-- 6. 国外 -->
+        <div class="news-card">
+            <h3><span class="tag tag-international">国外</span>6. 苹果41页指控OpenAI"偷师"：涉前设计师伊夫知识产权争议</h3>
+            <div class="news-meta">
+                <span class="keyword"><strong>关键词</strong>：苹果、OpenAI、知识产权、Jony Ive</span>
+            </div>
+            <div class="news-body">
+                <div class="detail">
+                    <h4>核心</h4>
+                    <p>苹果提交41页法律文件指控OpenAI"偷师"，涉及前Apple设计师Jony Ive相关的知识产权争议。彭博社记者古尔曼对此进行深入剖析，揭示了未点名前设计师伊夫加入OpenAI背后的深层原因。</p>
+                </div>
+                <div class="detail">
+                    <h4>影响</h4>
+                    <p>科技巨头间的知识产权博弈加剧，AI领域的创意与设计权属成为新的竞争焦点。随着顶尖人才在科技公司间流动，知识产权纠纷可能成为AI行业常态。</p>
+                </div>
+            </div>
+            <div class="news-link"><a href="https://www.ithome.com/" target="_blank">🔗 IT之家 · 苹果指控OpenAI报道</a></div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <p>📊 平衡性验证：国内 3 条 | 国外 3 条 = 50:50 ✓ &nbsp;&nbsp;|&nbsp;&nbsp; 全部时效 ≤24h ✓</p>
+        <p>AI Daily Brief · Generated on 2026-07-21</p>
+    </div>
+
+</div>
+</body>
+</html>

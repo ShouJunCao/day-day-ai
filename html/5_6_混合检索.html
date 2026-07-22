@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.6 混合检索策略 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>5.6 混合检索（向量 + BM25 + 全文 + 元数据过滤）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块五：向量数据库与 Embedding</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解纯向量检索的局限性和混合检索的必要性</li>
+        <li>掌握 BM25 全文检索的原理和实现</li>
+        <li>学会将向量检索、BM25、元数据过滤融合为混合检索</li>
+        <li>掌握 RRF（Reciprocal Rank Fusion）和加权融合两种排序策略</li>
+        <li>能够根据业务场景选择合适的混合检索权重</li>
+    </ul>
+
+    <h2>一、为什么需要混合检索？</h2>
+    <p>纯向量检索（语义检索）擅长理解用户的意图，即使查询词和文档中没有一个词完全相同，也能找到语义相关的内容。但它有两个明显的短板：一是对专有名词和精确关键词不敏感（比如搜索某个具体的人名或产品型号），二是无法利用结构化元数据（比如时间、分类、作者）进行精确过滤。</p>
+
+    <p>BM25 全文检索恰好能弥补这些短板。它基于词频和逆文档频率计算匹配分数，对关键词精确匹配非常敏感，但无法理解语义——查询"苹果"只能找到包含"苹果"这个词的文档，找不到包含"水果"或"iPhone"的语义相关文档。</p>
+
+    <p>混合检索的核心思想是：同时运行向量检索和 BM25 检索，将两者的结果融合排序。这样既能获得语义理解的召回能力，又能保留关键词匹配的精确度，再加上元数据过滤，形成完整的高精度检索链路。</p>
+
+    <p>以一个具体例子来说明混合检索的必要性。假设用户搜索"特斯拉 Model Y 续航里程"，这是一个既包含专有名词（特斯拉、Model Y）又包含语义概念（续航里程）的混合查询。纯向量检索可能召回关于比亚迪、小鹏等其他品牌电动车续航能力的文档（语义相关但品牌不匹配）；纯 BM25 可能召回提到"特斯拉"但讨论的是股价或自动驾驶的文档（关键词匹配但主题不匹配）。只有混合检索能同时满足品牌精确匹配和续航语义理解的双重需求。</p>
+
+    <div class="diagram-container">
+        <svg width="760" height="320" viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+            <text x="380" y="28" text-anchor="middle" fill="#1a1a2e" font-size="17" font-weight="bold">混合检索流程</text>
+
+            <!-- 查询 -->
+            <rect x="300" y="50" width="160" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="380" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">用户查询</text>
+
+            <!-- 分叉 -->
+            <line x1="380" y1="90" x2="200" y2="130" stroke="#4361ee" stroke-width="2"/>
+            <line x1="380" y1="90" x2="560" y2="130" stroke="#10b981" stroke-width="2"/>
+
+            <!-- 向量检索 -->
+            <rect x="100" y="130" width="200" height="50" rx="10" fill="url(#v1)"/>
+            <text x="200" y="160" text-anchor="middle" fill="white" font-size="14" font-weight="bold">向量检索（语义）</text>
+            <defs><linearGradient id="v1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient></defs>
+
+            <!-- BM25 -->
+            <rect x="460" y="130" width="200" height="50" rx="10" fill="url(#b1)"/>
+            <text x="560" y="160" text-anchor="middle" fill="white" font-size="14" font-weight="bold">BM25（关键词）</text>
+            <defs><linearGradient id="b1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs>
+
+            <!-- 汇聚 -->
+            <line x1="200" y1="180" x2="380" y2="220" stroke="#6b7c93" stroke-width="2"/>
+            <line x1="560" y1="180" x2="380" y2="220" stroke="#6b7c93" stroke-width="2"/>
+
+            <!-- 融合 -->
+            <rect x="260" y="220" width="240" height="50" rx="10" fill="url(#f1)"/>
+            <text x="380" y="250" text-anchor="middle" fill="white" font-size="14" font-weight="bold">分数归一化 + 加权融合</text>
+            <defs><linearGradient id="f1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
+
+            <!-- 过滤 -->
+            <line x1="380" y1="270" x2="380" y2="290" stroke="#6b7c93" stroke-width="2"/>
+            <rect x="300" y="290" width="160" height="30" rx="6" fill="#f59e0b"/>
+            <text x="380" y="310" text-anchor="middle" fill="white" font-size="12" font-weight="bold">元数据过滤 → Top-K 结果</text>
+        </svg>
+    </div>
+
+    <h2>二、BM25 全文检索</h2>
+    <p>BM25（Best Matching 25）是搜索引擎中最常用的全文检索算法。它的核心思想是：查询中的每个词对文档的相关性贡献不同——在文档中出现频率高且在语料库中稀有的词，贡献更大。</p>
+
+    <p>BM25 公式包含两个核心部分：<strong>词频（TF）</strong>和<strong>逆文档频率（IDF）</strong>。TF 衡量一个词在当前文档中出现的次数，但做了饱和处理——一个词出现 10 次的贡献不会线性地是出现 1 次的 10 倍。IDF 衡量一个词在整个语料库中的稀有程度——"的"这样的常见词 IDF 很低，"量子计算"这样的稀有词 IDF 很高。</p>
+
+    <p>此外，BM25 还有文档长度归一化：长文档中的词频天然更高，BM25 通过 b 参数对长文档做惩罚，避免长文档因为"词多"而天然排名靠前。</p>
+
+<div class="code-file">05_vector_embedding/06_hybrid_search/hybrid_search.py</div>
+<pre><code class="language-python">"""
+hybrid_search.py — 混合检索实现
+包含 BM25 全文检索、向量检索、元数据过滤和混合排序。
+"""
+import math
+from collections import Counter
+
+
+class BM25Search:
+    """
+    BM25 全文检索实现。
+
+    公式：
+    Score(D, Q) = Σ IDF(qᵢ) × (TF(qᵢ, D) × (k₁ + 1)) / (TF + k₁ × (1 - b + b × |D|/avgdl))
+
+    参数：
+    - k1: 控制词频饱和点（默认 1.5）
+    - b: 控制文档长度归一化（默认 0.75）
+    """
+
+    def __init__(self, k1: float = 1.5, b: float = 0.75):
+        self.k1 = k1
+        self.b = b
+        self.documents: dict[str, list[str]] = {}
+        self.idf: dict[str, float] = {}
+        self.avg_doc_length: float = 0.0
+
+    def add_document(self, doc_id: str, tokens: list[str]) -> None:
+        """添加文档到索引"""
+        self.documents[doc_id] = tokens
+        self._rebuild_index()
+
+    def _rebuild_index(self) -> None:
+        """重建 BM25 索引"""
+        n_docs = len(self.documents)
+        if n_docs == 0:
+            return
+
+        total_length = sum(len(t) for t in self.documents.values())
+        self.avg_doc_length = total_length / n_docs
+
+        doc_freq: dict[str, int] = Counter()
+        for tokens in self.documents.values():
+            for token in set(tokens):
+                doc_freq[token] += 1
+
+        for term, df in doc_freq.items():
+            self.idf[term] = math.log((n_docs - df + 0.5) / (df + 0.5) + 1)
+
+    def search(self, query_tokens: list[str], top_k: int = 10) -> list[tuple[str, float]]:
+        """搜索最相关的文档"""
+        results = []
+        for doc_id, tokens in self.documents.items():
+            score = self._score_document(doc_id, tokens, query_tokens)
+            if score > 0:
+                results.append((doc_id, score))
+
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+
+    def _score_document(self, doc_id, tokens, query_tokens) -> float:
+        """计算单个文档的 BM25 分数"""
+        doc_length = len(tokens)
+        term_freq = Counter(tokens)
+        score = 0.0
+
+        for query_term in query_tokens:
+            if query_term not in self.idf:
+                continue
+
+            tf = term_freq.get(query_term, 0)
+            idf = self.idf[query_term]
+            numerator = tf * (self.k1 + 1)
+            denominator = tf + self.k1 * (1 - self.b + self.b * (doc_length / self.avg_doc_length))
+            score += idf * (numerator / denominator)
+
+        return score</code></pre>
+
+    <h2>三、混合检索器</h2>
+    <p>混合检索器的核心任务是将向量检索和 BM25 检索的结果融合。具体流程分为四步：首先分别执行两种检索得到各自的结果列表；然后对两种分数做归一化处理，将它们映射到同一个区间；接着按权重加权融合；最后应用元数据过滤并排序返回。</p>
+
+    <p>权重参数 alpha 控制两种检索的平衡：alpha=1 表示纯向量检索，alpha=0 表示纯 BM25 检索。在实际应用中，alpha=0.7 是一个不错的起点——向量检索占 70%，BM25 占 30%。</p>
+
+<pre><code class="language-python">class HybridSearcher:
+    """
+    混合检索器：融合向量检索和 BM25 全文检索。
+
+    原理：
+    1. 分别执行向量检索和 BM25 检索
+    2. 对两种分数做归一化
+    3. 按权重加权融合：hybrid = α × vector + (1-α) × bm25
+    4. 可选：应用元数据过滤
+    """
+
+    def __init__(self, alpha: float = 0.7):
+        self.alpha = alpha
+        self.bm25 = BM25Search()
+        self.metadata: dict[str, dict] = {}
+
+    def add_document(self, doc_id, tokens, vector, metadata=None):
+        """添加文档（同时用于向量检索和 BM25 检索）"""
+        self.bm25.add_document(doc_id, tokens)
+        self.metadata[doc_id] = metadata or {}
+
+    def search(self, query_vector, query_tokens, top_k=10,
+               metadata_filter=None):
+        """执行混合检索"""
+        # 1. 向量检索 + 2. BM25 检索
+        vector_results = self._vector_search(query_vector, top_k)
+        bm25_results = self.bm25.search(query_tokens, top_k)
+
+        # 3. 合并候选文档
+        all_doc_ids = set()
+        for doc_id, _ in vector_results:
+            all_doc_ids.add(doc_id)
+        for doc_id, _ in bm25_results:
+            all_doc_ids.add(doc_id)
+
+        # 4. 归一化分数
+        vector_scores = dict(vector_results)
+        bm25_scores = dict(bm25_results)
+        max_v = max(vector_scores.values()) if vector_scores else 1.0
+        max_b = max(bm25_scores.values()) if bm25_scores else 1.0
+
+        results = []
+        for doc_id in all_doc_ids:
+            if metadata_filter:
+                meta = self.metadata.get(doc_id, {})
+                if not self._matches_filter(meta, metadata_filter):
+                    continue
+
+            v_score = vector_scores.get(doc_id, 0.0) / max_v
+            b_score = bm25_scores.get(doc_id, 0.0) / max_b
+            hybrid = self.alpha * v_score + (1 - self.alpha) * b_score
+
+            results.append((doc_id, hybrid))
+
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+
+    def _matches_filter(self, metadata, filter_dict):
+        """检查文档元数据是否满足过滤条件"""
+        for key, value in filter_dict.items():
+            if metadata.get(key) != value:
+                return False
+        return True</code></pre>
+
+    <h2>四、RRF 排序融合</h2>
+    <p>除了加权融合，还有一种常用的融合策略叫 RRF（Reciprocal Rank Fusion，倒数排名融合）。它的核心思想不是融合分数，而是融合排名——对每个文档，取它在向量检索结果中的排名倒数和 BM25 结果中的排名倒数之和，作为最终排序依据。</p>
+
+    <p>RRF 公式：RRF(d) = Σ 1 / (k + rankᵢ(d))，其中 k 是平滑参数（通常取 60），rankᵢ(d) 是文档 d 在第 i 种检索方法中的排名。</p>
+
+    <p>RRF 的优势是不需要做分数归一化——向量检索和 BM25 的分数范围完全不同，归一化可能引入偏差。RRF 只关心排名，天然不受分数范围影响。</p>
+
+    <p>举个例子来说明 RRF 的工作原理。假设文档 A 在向量检索中排第 1 名（RRF 贡献 1/61 ≈ 0.016），在 BM25 中排第 5 名（贡献 1/65 ≈ 0.015），总 RRF 得分 0.031。文档 B 在向量检索中排第 3 名（1/63 ≈ 0.016），在 BM25 中排第 2 名（1/62 ≈ 0.016），总 RRF 得分 0.032。最终 B 排在 A 前面——因为它在两种检索方法中都稳定靠前，而 A 虽然在向量检索中第一，但 BM25 排名靠后。</p>
+
+    <h2>五、元数据过滤</h2>
+    <p>元数据过滤是在检索结果上应用结构化条件筛选的过程。常见的过滤条件包括：时间范围、文档分类、作者、标签、语言等。</p>
+
+    <p>在混合检索架构中，元数据过滤可以在融合前或融合后应用：<strong>融合前过滤</strong>先筛除不符合条件的文档，再做融合排序（更高效）；<strong>融合后过滤</strong>先融合排序，再从排好序的结果中筛除不符合条件的文档（更精确但可能返回不足 top_k 个结果）。</p>
+
+    <p>主流向量数据库（Milvus、Qdrant）都支持过滤条件下推——在向量检索阶段就应用过滤，而不是先检索再过滤。这能显著提升检索效率，特别是在数据量大的场景下。以 Milvus 为例，它使用标量索引（B-Tree、Bitmap）来加速元数据过滤，过滤后再对剩余数据执行向量检索。</p>
+
+    <p>过滤条件的选择策略也很重要。如果过滤条件非常严格，过滤后可能只剩几十个文档，此时直接用暴力搜索都比索引快。建议在执行向量检索前先估计过滤后的数据量，根据量级决定是否切换为暴力搜索。</p>
+
+    <h2>六、权重选择策略</h2>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>推荐 alpha</th><th>原因</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>语义问答 / RAG</strong></td><td>0.8-0.9</td><td>语义理解为主，关键词辅助</td></tr>
+            <tr><td><strong>产品搜索</strong></td><td>0.4-0.6</td><td>专有名词和型号需要精确匹配</td></tr>
+            <tr><td><strong>法律/医疗检索</strong></td><td>0.5-0.7</td><td>需要精确条款匹配 + 语义理解</td></tr>
+            <tr><td><strong>新闻推荐</strong></td><td>0.7-0.8</td><td>语义相关为主，时效性过滤</td></tr>
+            <tr><td><strong>代码搜索</strong></td><td>0.3-0.5</td><td>函数名和变量名需要精确匹配</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 权重调优建议</div>
+        <p>alpha 不是固定值，应该通过 A/B 测试或离线评估来确定。建议先用默认值 0.7 做基线，然后用一批标注好的查询-文档对做评估，逐步调整 alpha 直到 NDCG 或 MRR 指标最优。</p>
+    </div>
+
+    <p>除了 alpha 权重，还有其他可调参数：<strong>top_k 大小</strong>（向量检索和 BM25 各自的候选集大小，建议 50-200）、<strong>归一化方法</strong>（Min-Max 归一化或 Z-Score 标准化）、<strong>最小分数阈值</strong>（低于该阈值的文档不参与融合，避免噪声影响排序）。这些参数的调优应该基于具体的业务数据集，而不是凭经验猜测。</p>
+
+    <h2>七、小结</h2>
+    <p>混合检索是生产级 RAG 系统的标配。纯向量检索有语义理解能力但对专有名词不敏感；BM25 全文检索对关键词匹配精确但无法理解语义；两者结合可以取长补短。融合策略有两种主流方案：加权融合（简单直观但需要归一化）和 RRF（不受分数范围影响）。元数据过滤是最后一道防线，确保结果满足业务约束。权重参数 alpha 是调优的关键旋钮，应该根据具体业务场景通过实验确定。</p>
+
+    <p>值得一提的是，主流搜索引擎（Elasticsearch、Meilisearch）和向量数据库（Milvus、Weaviate）都已经内置了混合检索能力。在实际项目中，建议优先使用这些成熟方案的内置功能，而不是从零实现。本节的教学实现目的是帮助理解原理，生产环境应该使用经过大规模验证的成熟组件。</p>
+
+    <p>最后补充一点：BM25 的参数 k1 和 b 也需要根据语料特征调整。k1 控制词频饱和速度（默认 1.5），b 控制文档长度惩罚（默认 0.75）。如果文档长度差异很大，建议增大 b 的值（0.8-0.9）；如果关键词出现频率差异显著，可以适当调低 k1（1.2-1.5）。这些参数的微调可能对最终检索质量产生 5-10% 的影响。</p>
+
+    <p>在下一节 5.7 中，我们将学习向量数据库的分布式部署与性能优化策略。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

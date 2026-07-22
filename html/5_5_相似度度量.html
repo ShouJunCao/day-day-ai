@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.5 相似度度量与选择策略 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>5.5 相似度度量（余弦、欧氏、内积）与选择策略</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块五：向量数据库与 Embedding</span>
+        <span class="tag tag-time">预计学习：40 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>掌握余弦相似度、欧氏距离、点积三种核心度量方法的原理</li>
+        <li>理解不同度量方法对向量长度的敏感度差异</li>
+        <li>学会根据 Embedding 模型和业务场景选择合适的度量方法</li>
+        <li>了解向量归一化在相似度计算中的作用</li>
+    </ul>
+
+    <h2>一、为什么相似度度量很重要？</h2>
+    <p>在向量数据库中，我们存储了高维向量表示的文档。当用户发起查询时，系统需要将查询向量与库中所有向量进行比较，找出最相似的 K 个。这个"比较"的过程就是相似度度量。</p>
+
+    <p>不同的度量方法会给出不同的排序结果。选错了度量方法，即使 Embedding 模型再好、索引再快，检索结果也可能偏离用户的真实意图。因此，理解各度量方法的原理和适用场景，是构建高质量检索系统的关键一步。</p>
+
+    <p>以一个具体例子来说明：假设用户搜索"如何做红烧肉"，数据库中有两篇文档——一篇是 5000 字的详细红烧肉教程，另一篇是 20 字的简短回答。用余弦相似度，两篇文档都可能排在前面（语义方向一致）；但用欧氏距离，短文可能因为向量长度短而被排在后面。哪种排序更合理，取决于你的业务需求——如果你希望长文和短文都能被召回，余弦相似度更合适。</p>
+
+    <h2>二、余弦相似度（Cosine Similarity）</h2>
+    <p>余弦相似度衡量两个向量之间的夹角余弦值，范围 [-1, 1]。值越接近 1 表示方向越一致，越接近 -1 表示方向越相反，0 表示正交（无关）。</p>
+
+    <p><strong>公式：cos(a, b) = (a · b) / (|a| × |b|)</strong></p>
+
+    <p>余弦相似度的最大特点是不受向量长度影响——它只关注方向。两个方向相同但长度不同的向量，余弦相似度为 1.0。这使得它特别适合文本语义搜索：一篇长文档和一篇短文档如果语义相同，它们的 Embedding 向量方向应该接近，尽管长度可能不同。</p>
+
+    <p>在向量数据库中，余弦相似度是最常用的度量方法。FAISS、Milvus、Qdrant 等主流数据库都将其作为默认选项。它之所以成为事实标准，是因为大多数 Embedding 模型在训练时就是以余弦相似度为优化目标的——模型学习到的向量表示天然在余弦空间中具有良好的语义区分能力。</p>
+
+    <p>直观理解：想象两个向量是从原点出发的箭头。余弦相似度只看这两个箭头指向是否一致，而不管它们有多长。这在文本场景中非常合理——用户输入的短查询和一篇长文章，它们的向量长度差异巨大，但语义方向应该高度一致。如果用欧氏距离，长向量会因为离得远而被判为不相似，这显然是不合理的。</p>
+
+<div class="code-file">05_vector_embedding/05_similarity_metrics/similarity_metrics.py</div>
+<pre><code class="language-python">"""
+similarity_metrics.py — 相似度度量方法实现
+包含余弦相似度、欧氏距离、点积、曼哈顿距离等常用度量方法。
+"""
+import math
+from typing import Optional
+
+
+def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+    """
+    计算两个向量的余弦相似度。
+
+    公式：cos(a, b) = (a · b) / (|a| × |b|)
+
+    返回：
+    - float: 余弦相似度，范围 [-1, 1]
+        1.0 表示完全相同方向
+        0.0 表示正交（无关）
+        -1.0 表示完全相反方向
+    """
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    norm1 = math.sqrt(sum(a * a for a in vec1))
+    norm2 = math.sqrt(sum(b * b for b in vec2))
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    return dot_product / (norm1 * norm2)
+
+
+def euclidean_distance(vec1: list[float], vec2: list[float]) -> float:
+    """
+    计算两个向量的欧氏距离。
+
+    公式：d = √(Σ(aᵢ - bᵢ)²)
+    值越小表示越相似。
+    """
+    return math.sqrt(sum((a - b) ** 2 for a, b in zip(vec1, vec2)))
+
+
+def dot_product(vec1: list[float], vec2: list[float]) -> float:
+    """
+    计算两个向量的点积（内积）。
+
+    公式：dot = Σ(aᵢ × bᵢ)
+    值越大表示越相似。
+    """
+    return sum(a * b for a, b in zip(vec1, vec2))
+
+
+def manhattan_distance(vec1: list[float], vec2: list[float]) -> float:
+    """
+    计算两个向量的曼哈顿距离（L1 距离）。
+
+    公式：d = Σ|aᵢ - bᵢ|
+    值越小表示越相似。
+    """
+    return sum(abs(a - b) for a, b in zip(vec1, vec2))</code></pre>
+
+    <h2>三、欧氏距离（Euclidean Distance）</h2>
+    <p>欧氏距离衡量两个向量在空间中的直线距离，是最直观的"远近"概念。<strong>公式：d = √(Σ(aᵢ - bᵢ)²)</strong></p>
+
+    <p>与余弦相似度不同，欧氏距离同时关注向量的方向和长度。两个方向相同但长度不同的向量，欧氏距离不为 0。这使得它在某些场景下更合适——比如图像检索中，亮度不同的同一张图片，其向量长度不同但方向接近，用欧氏距离可以区分出亮度差异。</p>
+
+    <p>但在文本语义搜索中，文档长度差异很大（一篇博客文章 vs 一篇推文），欧氏距离可能因为长度差异而给出不合理的排序结果。因此，文本场景首选余弦相似度，欧氏距离更适合聚类分析。</p>
+
+    <h2>四、点积（Dot Product / Inner Product）</h2>
+    <p>点积是最简单的度量方法：两个向量对应位置相乘后求和。<strong>公式：dot = Σ(aᵢ × bᵢ)</strong></p>
+
+    <p>点积的特殊之处在于：当向量已归一化（模长为 1）时，点积等价于余弦相似度。这是因为归一化后 |a| = |b| = 1，余弦公式简化为 cos = a · b = dot。</p>
+
+    <p>这就是为什么很多向量数据库（如 FAISS 的 IndexFlatIP）支持点积作为度量——在存储时预先将向量归一化，搜索时用点积计算，既保证了精度，又省去了每次计算模长的开销。</p>
+
+    <h2>五、四种度量方法全面对比</h2>
+
+    <table>
+        <thead>
+            <tr><th>度量方法</th><th>公式</th><th>范围</th><th>受长度影响</th><th>最佳场景</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>余弦相似度</strong></td>
+                <td>(a · b) / (|a|×|b|)</td>
+                <td>[-1, 1]</td>
+                <td>❌ 不受影响</td>
+                <td>文本语义搜索、RAG</td>
+            </tr>
+            <tr>
+                <td><strong>欧氏距离</strong></td>
+                <td>√(Σ(aᵢ-bᵢ)²)</td>
+                <td>[0, ∞)</td>
+                <td>✅ 受影响</td>
+                <td>聚类分析、图像检索</td>
+            </tr>
+            <tr>
+                <td><strong>点积</strong></td>
+                <td>Σ(aᵢ×bᵢ)</td>
+                <td>(-∞, ∞)</td>
+                <td>✅ 受影响</td>
+                <td>已归一化向量</td>
+            </tr>
+            <tr>
+                <td><strong>曼哈顿距离</strong></td>
+                <td>Σ|aᵢ-bᵢ|</td>
+                <td>[0, ∞)</td>
+                <td>✅ 受影响</td>
+                <td>高维稀疏数据</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>六、向量归一化</h2>
+    <p>归一化是将向量缩放到单位长度（模长为 1）的操作。公式：normalized = vec / |vec|。归一化后的向量，点积等价于余弦相似度。</p>
+
+    <p>在实际应用中，很多 Embedding 模型（如 OpenAI 的 text-embedding 系列）在返回向量时已经做了 L2 归一化。这意味着你可以直接用点积来计算相似度，而不需要每次都计算模长——这在大规模检索中可以显著提升性能。</p>
+
+    <p>归一化还有一个重要作用：消除向量长度的影响。以 768 维的 BGE-M3 向量为例，不同长度的文本会产生不同长度的向量。归一化后，无论输入是一句话还是一篇文章，它们的向量都被投影到同一个单位超球面上，此时只需比较方向即可。这使得归一化后的向量具有更好的可比性。</p>
+
+    <p>如果你的向量尚未归一化，建议在入库时统一做 L2 归一化。这样在搜索时可以直接用点积（计算量最小），而不需要每次都计算两个模长和一次除法。</p>
+
+<pre><code class="language-python">def normalize_vector(vec: list[float]) -> list[float]:
+    """
+    将向量归一化为单位向量。
+
+    公式：normalized = vec / |vec|
+
+    归一化后，点积等价于余弦相似度。
+    """
+    norm = math.sqrt(sum(v * v for v in vec))
+    if norm == 0:
+        return vec[:]
+    return [v / norm for v in vec]</code></pre>
+
+    <h2>七、度量方法选择策略</h2>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>推荐度量</th><th>原因</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>RAG 语义检索</strong></td><td>余弦相似度</td><td>文档长度差异大，需忽略长度只看语义</td></tr>
+            <tr><td><strong>图片相似度</strong></td><td>欧氏距离</td><td>亮度、尺寸等长度信息有区分价值</td></tr>
+            <tr><td><strong>聚类分析</strong></td><td>欧氏距离</td><td>K-Means 等算法天然使用欧氏距离</td></tr>
+            <tr><td><strong>高性能检索</strong></td><td>点积</td><td>向量预归一化后，点积计算最快</td></tr>
+            <tr><td><strong>高维稀疏数据</strong></td><td>曼哈顿距离</td><td>对稀疏向量更鲁棒</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实用建议</div>
+        <p>如果你不确定选哪个度量方法：先用余弦相似度。它是文本语义搜索的事实标准，在绝大多数 RAG 场景下效果最好。只有在特定业务需求（如需要区分文档长度）时，才考虑切换到其他方法。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>相似度度量是向量检索的核心计算环节，决定了"相似"的具体定义。余弦相似度关注方向不受长度影响，是文本语义搜索的首选；欧氏距离同时关注方向和长度，适合聚类和图像检索；点积在向量已归一化时等价于余弦相似度且计算最快；曼哈顿距离对高维稀疏数据更鲁棒。</p>
+
+    <p>在实际项目中，建议先用余弦相似度验证效果，根据业务需求决定是否切换到其他方法。一个重要的实践是：检查你的 Embedding 模型是否已经返回了归一化向量——如果已归一化，可以直接用点积来替代余弦相似度，在大规模检索中获得显著的性能提升。</p>
+
+    <p>此外，度量方法的选择还应与索引类型匹配。例如，使用 PQ 索引时，由于向量已被量化为码字 ID，通常使用预计算距离表（ADC）来近似计算相似度，而不是直接使用原始度量方法。这种近似虽然引入了额外误差，但在超大规模场景下是必要的权衡。</p>
+
+    <p>在下一节 5.6 中，我们将学习混合检索策略——将向量检索与 BM25 全文检索、元数据过滤等方法结合，获得更高质量的检索结果。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

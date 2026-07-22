@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.8 实战：搭建 Milvus + BGE-M3 向量检索服务 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>5.8 实战：搭建 Milvus + BGE-M3 向量检索服务</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块五：向量数据库与 Embedding</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>完成从环境搭建到检索服务的全流程</li>
+        <li>掌握 Milvus 连接、集合创建、索引构建的完整操作</li>
+        <li>学会使用 BGE-M3 本地模型生成向量并写入 Milvus</li>
+        <li>实现完整的向量检索流程：查询文本 → Embedding → 搜索 → 返回结果</li>
+    </ul>
+
+    <h2>一、环境准备</h2>
+    <p>本节实战需要安装三个核心依赖：FlagEmbedding（BGE-M3 模型）、pymilvus（Milvus 客户端）和 torch（深度学习框架）。建议使用虚拟环境隔离依赖，避免版本冲突。</p>
+
+    <div class="note note-info">
+        <div class="note-title">📦 环境要求</div>
+        <ul>
+            <li>Python：3.9+</li>
+            <li>GPU：推荐（BGE-M3 需要 GPU 加速推理，CPU 也可以但慢）</li>
+            <li>显存：至少 4 GB（FP16 模式下）</li>
+            <li>磁盘：BGE-M3 模型约 2.2 GB</li>
+        </ul>
+    </div>
+
+    <p>如果你的机器没有 GPU，也可以使用 CPU 推理，只是速度会慢很多。BGE-M3 在 CPU 上处理一段 100 字的文本大约需要 0.5-2 秒，而在 GPU 上只需 20-50 毫秒。对于批量索引场景，CPU 推理可能成为性能瓶颈，建议至少使用支持 CUDA 的 GPU。</p>
+
+    <p>此外，建议在 Linux 或 macOS 环境下进行实验。Windows 环境下可能会遇到 CUDA 驱动兼容性问题，如果必须使用 Windows，建议通过 WSL2 运行。</p>
+
+<pre><code class="language-bash"># 创建虚拟环境
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 安装依赖
+pip install FlagEmbedding torch pymilvus
+
+# 如果使用 Milvus 服务器版（非 MilvusLite），还需要：
+pip install "pymilvus[model]"</code></pre>
+
+    <h2>二、启动 Milvus 服务</h2>
+    <p>Milvus 有两种启动方式：<strong>MilvusLite</strong>（单机嵌入式，无需外部服务）和<strong>Milvus 服务器版</strong>（Docker 部署，适合生产环境）。开发阶段推荐 MilvusLite，生产环境推荐 Docker。</p>
+
+<pre><code class="language-bash"># 方式一：MilvusLite（开发推荐，零配置）
+pip install milvus
+# 代码中直接用 uri="milvus_demo.db" 即可
+
+# 方式二：Docker 部署（生产推荐）
+docker run -d --name milvus \
+  -p 19530:19530 \
+  -p 9091:9091 \
+  -v $(pwd)/volumes:/var/lib/milvus \
+  milvusdb/milvus:v2.4.0 \
+  milvus run standalone</code></pre>
+
+    <h2>三、BGE-M3 Embedding 服务</h2>
+    <p>BGE-M3 是智源研究院（BAAI）开发的多语言 Embedding 模型。它支持 100+ 种语言，同时返回稠密向量、稀疏向量和多向量三种表示，最大序列长度 8192 Token。BGE-M3 的设计目标是"一个模型解决多种检索需求"——稠密向量用于语义匹配，稀疏向量用于关键词匹配，多向量用于细粒度匹配。</p>
+
+    <p>使用 FlagEmbedding 库可以非常方便地调用 BGE-M3。首次运行会自动从 HuggingFace 下载模型文件（约 2.2 GB），后续运行直接从本地加载。为了节省显存，我们启用 FP16 半精度模式——在大多数 GPU 上，半精度推理的精度损失不超过 1%，但显存占用减少一半。</p>
+
+    <p>在实际项目中，Embedding 服务通常需要做成独立的微服务。原因有三：一是模型加载耗时长（10-30 秒），服务化后只需加载一次；二是多业务可以共享同一个 Embedding 服务，避免重复加载模型浪费资源；三是 Embedding 服务可以独立扩缩容，不与向量数据库耦合。</p>
+
+<div class="code-file">05_vector_embedding/08_practical_service/milvus_bge_service.py</div>
+<pre><code class="language-python">"""
+milvus_bge_service.py — Milvus + BGE-M3 向量检索服务实战
+"""
+import os
+from typing import Optional
+
+
+class BGEEmbeddingService:
+    """
+    BGE-M3 Embedding 服务：使用本地模型生成文本向量。
+
+    依赖：pip install FlagEmbedding torch transformers
+    """
+
+    def __init__(self, model_name: str = "BAAI/bge-m3"):
+        self.model_name = model_name
+        self._model = None
+
+    def _load_model(self):
+        """延迟加载模型和分词器"""
+        from FlagEmbedding import BGEM3FlagModel
+        self._model = BGEM3FlagModel(
+            self.model_name,
+            use_fp16=True,  # 半精度推理，节省显存
+        )
+
+    def encode(self, texts: list[str]) -> dict:
+        """
+        将文本列表编码为向量。
+
+        返回：
+        - dict: 包含 dense_embeddings 和 sparse_embeddings
+        """
+        if self._model is None:
+            self._load_model()
+
+        result = self._model.encode(
+            texts,
+            batch_size=16,
+            max_length=8192,
+            return_dense=True,
+            return_sparse=True,
+            return_colbert_vecs=False,
+        )
+
+        return {
+            "dense_embeddings": result["dense_vecs"],
+            "sparse_embeddings": result["lexical_weights"],
+        }</code></pre>
+
+    <h2>四、Milvus 向量数据库操作</h2>
+    <p>Milvus 的 Python 客户端 pymilvus 提供了 MilvusClient 类，封装了集合创建、数据插入、向量检索等核心操作。相比旧版的 Connections + Collection API，MilvusClient 的使用更简洁，适合快速开发和原型验证。</p>
+
+    <p>Milvus 的核心概念是"集合"（Collection），相当于关系数据库中的"表"。每个集合包含多个字段，其中必须有一个主键字段和一个向量字段。还可以添加文本字段、JSON 元数据字段等。索引构建是在向量字段上创建检索结构，创建索引后才能高效搜索。</p>
+
+    <p>MilvusClient 的 create_schema 方法用于定义集合的数据结构，add_field 方法添加各个字段，prepare_index_params 方法配置索引参数。这种设计让集合定义和索引配置分离，更清晰也更灵活。</p>
+
+<pre><code class="language-python">class MilvusVectorService:
+    """Milvus 向量数据库服务"""
+
+    def __init__(self, uri: str = "milvus_demo.db"):
+        self.uri = uri
+        self._client = None
+
+    def _connect(self):
+        """连接到 Milvus"""
+        from pymilvus import MilvusClient
+        self._client = MilvusClient(uri=self.uri)
+
+    def create_collection(
+        self, collection_name: str, dimension: int = 1024,
+        auto_id: bool = True,
+    ) -> None:
+        """创建向量集合"""
+        if self._client is None:
+            self._connect()
+
+        schema = self._client.create_schema(
+            auto_id=auto_id,
+            enable_dynamic_field=True,
+        )
+        schema.add_field("id", "INT64", is_primary=True)
+        schema.add_field("vector", "FLOAT_VECTOR", dim=dimension)
+        schema.add_field("text", "VARCHAR", max_length=65535)
+        schema.add_field("metadata", "JSON")
+
+        index_params = self._client.prepare_index_params()
+        index_params.add_index(
+            field_name="vector",
+            index_type="HNSW",
+            metric_type="COSINE",
+            params={"M": 16, "efConstruction": 200},
+        )
+
+        self._client.create_collection(
+            collection_name=collection_name,
+            schema=schema,
+            index_params=index_params,
+        )
+
+    def insert(self, collection_name: str, data: list[dict]) -> dict:
+        """插入向量数据"""
+        if self._client is None:
+            self._connect()
+        return self._client.insert(collection_name, data)
+
+    def search(self, collection_name: str, query_vector: list[float],
+               top_k: int = 5, filter_expr: Optional[str] = None) -> list:
+        """向量检索"""
+        if self._client is None:
+            self._connect()
+        return self._client.search(
+            collection_name=collection_name,
+            data=[query_vector],
+            anns_field="vector",
+            limit=top_k,
+            filter=filter_expr,
+            search_params={"metric_type": "COSINE", "params": {"ef": 64}},
+            output_fields=["text", "metadata"],
+        )</code></pre>
+
+    <h2>五、完整检索流程</h2>
+    <p>将 Embedding 服务和 Milvus 服务组合起来，就形成了完整的检索服务。调用者只需要传入查询文本，服务自动完成 Embedding → 检索 → 返回结果的全流程。这种封装隐藏了底层的向量计算细节，让上层应用开发者专注于业务逻辑。</p>
+
+    <p>RetrievalService 的核心方法是 index_documents 和 search。前者接收文档列表，先通过 BGE-M3 生成向量，再批量写入 Milvus；后者接收查询文本，先 Embedding 生成查询向量，再到 Milvus 中搜索最相似的文档。整个过程对用户完全透明。</p>
+
+<pre><code class="language-python">class RetrievalService:
+    """
+    完整的检索服务：整合 BGE-M3 Embedding 和 Milvus 检索。
+    """
+
+    def __init__(
+        self,
+        embedding_model: str = "BAAI/bge-m3",
+        milvus_uri: str = "milvus_demo.db",
+    ):
+        self.embedder = BGEEmbeddingService(embedding_model)
+        self.milvus = MilvusVectorService(milvus_uri)
+
+    def index_documents(self, collection: str, documents: list[dict]) -> dict:
+        """
+        索引文档：先 Embedding，再写入 Milvus。
+        """
+        texts = [doc["text"] for doc in documents]
+        embeddings = self.embedder.encode(texts)
+
+        data = []
+        for i, doc in enumerate(documents):
+            data.append({
+                "vector": embeddings["dense_embeddings"][i].tolist(),
+                "text": doc["text"],
+                "metadata": doc.get("metadata", {}),
+            })
+
+        return self.milvus.insert(collection, data)
+
+    def search(self, collection: str, query: str, top_k: int = 5) -> list:
+        """
+        检索：先 Embedding，再搜索 Milvus。
+        """
+        embeddings = self.embedder.encode([query])
+        query_vector = embeddings["dense_embeddings"][0].tolist()
+        return self.milvus.search(collection, query_vector, top_k)
+
+
+# ============================================================
+# 使用示例
+# ============================================================
+if __name__ == "__main__":
+    # 1. 初始化服务
+    service = RetrievalService(
+        embedding_model="BAAI/bge-m3",
+        milvus_uri="milvus_demo.db",
+    )
+
+    # 2. 创建集合
+    service.milvus.create_collection("rag_docs", dimension=1024)
+
+    # 3. 准备文档
+    documents = [
+        {"text": "人工智能在医疗领域的应用越来越广泛",
+         "metadata": {"category": "科技"}},
+        {"text": "深度学习模型需要大量训练数据",
+         "metadata": {"category": "AI"}},
+        {"text": "自然语言处理是 AI 的重要分支",
+ 集合: rag_docs, 维度: 1024, 索引: HNSW
+
+2. 准备文档数据:
+   → 人工智能在医疗领域的应用... [科技]
+   → 深度学习模型需要大量训练... [AI]
+   → 自然语言处理是 AI 的重要... [NLP]
+
+3. 索引文档:
+   → BGE-M3 生成 1024 维向量
+   → 插入 Milvus 集合
+
+4. 检索:
+   → 返回最相关的文档</code></pre>
+    <h2>六、运行验证</h2>
+    <p>运行上述代码后，你应该能看到以下输出：</p>
+
+<pre><code class="language-bash">$ python milvus_bge_service.py
+============================================================
+  Milvus + BGE-M3 向量检索服务 — 使用示例
+============================================================
+
+1. 创建集合:
+   milvus.create_collection('rag_docs', dimension=1024)
+   → 集合: rag_docs, 维度: 1024, 索引: HNSW
+
+2. 准备文档数据:
+   → 人工智能在医疗领域的应用... [科技]
+   → 深度学习模型需要大量训练... [AI]
+   → 自然语言处理是 AI 的重要... [NLP]
+
+3. 索引文档:
+   → BGE-M3 生成 1024 维向量
+   → 插入 Milvus 集合
+
+4. 检索:
+   → 返回最相关的文档</code></pre>
+
+    <p>如果一切正常，你应该能看到检索结果按相似度排序返回。注意几个关键点：BGE-M3 首次加载模型需要 10-30 秒（取决于硬件），后续请求只需几十毫秒；MilvusLite 创建集合并写入数据的过程是本地文件操作，非常快速；检索延迟通常在 10 毫秒以内（数据量小时）。</p>
+
+    <p>如果遇到问题，请检查：<strong>模型下载</strong>——首次运行需要网络下载模型，确保能访问 HuggingFace；<strong>显存不足</strong>——如果 GPU 显存不足，可以尝试去掉 use_fp16=True 参数（但会变慢）；<strong>端口冲突</strong>——如果使用 Docker 部署的 Milvus，确保 19530 端口未被占用。</p>
+
+    <h2>七、进阶功能</h2>
+
+    <h3>7.1 元数据过滤</h3>
+    <p>Milvus 支持在检索时添加过滤表达式。比如只搜索"科技"分类的文档。过滤表达式使用类 SQL 语法，支持 ==、!=、>、<、in、like 等运算符。</p>
+
+<pre><code class="language-python"># 只搜索科技分类
+results = service.milvus.search(
+    "rag_docs", query_vector, top_k=3,
+    filter_expr="category == '科技'",
+)
+
+# 组合条件：科技分类 + 2024年
+results = service.milvus.search(
+    "rag_docs", query_vector, top_k=3,
+    filter_expr="category == '科技' and date >= '2024-01-01'",
+)</code></pre>
+
+    <h3>7.2 批量查询</h3>
+    <p>一次可以提交多个查询向量，Milvus 会并行处理。这在需要同时处理多个用户查询或进行批量评估时非常有用。</p>
+
+<pre><code class="language-python"># 批量查询
+queries = ["AI 医疗", "深度学习原理", "NLP 技术"]
+query_vectors = [service.embedder.encode([q])["dense_embeddings"][0].tolist()
+                 for q in queries]
+
+results = service.milvus.search("rag_docs", query_vectors, top_k=2)
+# results 包含每个查询的 Top-K 结果</code></pre>
+
+    <h3>7.3 混合检索</h3>
+    <p>BGE-M3 同时返回稠密向量和稀疏向量。可以将两者结合实现混合检索：稠密向量用于 Milvus 语义检索，稀疏向量用于 BM25 关键词匹配，两者结果融合后得到更精准的排序。</p>
+
+<pre><code class="language-python"># 获取稠密和稀疏两种表示
+result = service.embedder.encode(["查询文本"])
+dense_vec = result["dense_embeddings"][0]
+sparse_vec = result["sparse_embeddings"][0]
+
+# 稠密向量 → Milvus 语义检索
+# 稀疏向量 → BM25 关键词匹配
+# 两者结果融合 → 混合检索</code></pre>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 生产环境建议</div>
+        <ul>
+            <li>模型预热：服务启动时先调用一次 encode() 加载模型到显存，避免首次请求延迟过高</li>
+            <li>批量 Embedding：索引文档时尽量批量处理（batch_size=16-32），比逐条处理快 5-10 倍</li>
+            <li>连接池：高并发场景下复用 MilvusClient 实例，避免频繁建连</li>
+            <li>异常处理：Embedding 服务和 Milvus 都可能失败（模型加载失败、网络中断等），需要加 try-except 和重试逻辑</li>
+        </ul>
+    </div>
+
+    <p>在实际生产环境中，还需要考虑服务的监控和告警。建议接入 Prometheus + Grafana 监控体系，跟踪 Embedding 延迟、Milvus 查询延迟、内存使用率等核心指标。设置合理的告警阈值（如 P99 延迟超过 200ms 时告警），确保问题能被及时发现和处理。</p>
+
+    <h2>八、模块五总结</h2>
+    <p>模块五从文本向量化原理出发，系统学习了 Embedding 模型的选型、向量数据库的选择、索引算法的原理、相似度度量的策略，以及混合检索和分布式部署的完整知识体系。5.8 实战将这些知识整合为一个可运行的检索服务，完成了从理论到实践的闭环。</p>
+
+    <p>通过本模块的学习，你应该能够：理解文本如何转换为向量，包括从 One-Hot 到上下文感知的完整演进过程；根据业务需求（语言、成本、维度、开源性）选择合适的 Embedding 模型；根据数据规模和性能要求选择合适的向量数据库和索引类型；实现向量检索、BM25 全文检索和混合检索；在生产环境中部署和优化向量数据库服务。</p>
+
+    <p>回顾本模块的核心知识链路：<strong>文本 → 向量化（Embedding） → 索引构建（HNSW/IVF/PQ） → 相似度计算（余弦/欧氏/点积） → 混合检索（向量 + BM25） → 分布式部署</strong>。这是一条完整的向量检索技术栈，也是构建 RAG 系统的核心基础设施。</p>
+
+    <p>在下一个模块六中，我们将进入 RAG（检索增强生成）系统的设计与实现，将向量检索与大语言模型结合，构建完整的智能问答系统。届时，模块五学到的所有知识——Embedding 模型选择、向量数据库部署、索引参数调优、混合检索策略——都将成为 RAG 系统的核心组件。</p>
+
+    <p>RAG 系统的核心流程是：用户提问 → 向量检索找到相关文档 → 将文档作为上下文传给大语言模型 → 模型生成回答。这个流程中的每一个环节都依赖模块五的知识：向量检索需要合适的 Embedding 模型和数据库，上下文拼接需要理解向量相似度的含义，而整个系统的性能优化需要掌握索引调优和分布式部署的技巧。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

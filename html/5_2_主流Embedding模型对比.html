@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.2 主流 Embedding 模型对比 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee;
+            --code-bg: #282c34; --border: #e2e8f0;
+            --green: #10b981; --red: #ef4444; --orange: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+        .compare-box { display: flex; gap: 16px; margin: 16px 0; }
+        .compare-box > div { flex: 1; padding: 16px; border-radius: 8px; }
+        .compare-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .compare-good { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .compare-box h4 { margin-bottom: 8px; font-size: 0.95em; }
+        .compare-bad h4 { color: var(--red); }
+        .compare-good h4 { color: var(--green); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>5.2 主流 Embedding 模型对比（OpenAI、BGE-M3、GTE、M3E、Jina）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块五：向量数据库与 Embedding</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>了解当前主流 Embedding 模型的核心参数和适用场景</li>
+        <li>掌握<strong>MTEB 基准</strong>的含义和各模型的评分对比</li>
+        <li>学会根据<strong>语言、成本、维度、开源性</strong>选择合适模型</li>
+        <li>理解 API 模型与本地模型各自的优劣</li>
+        <li>能够使用统一接口调用不同 Embedding 模型</li>
+    </ul>
+
+    <h2>一、为什么需要对比 Embedding 模型？</h2>
+    <p>在上一节 5.1 中，我们学习了文本向量化的原理和演进。但原理归原理，实际开发中面临一个更现实的问题：<strong>到底该选哪个模型</strong>？</p>
+
+    <p>当前 Embedding 模型生态百花齐放——OpenAI 的 API 模型、智源 BAAI 的开源模型、阿里的 GTE、MokaAI 的 M3E、Jina AI 的多语言模型……每个模型都有各自的优劣和适用场景。选错了模型，可能导致<strong>效果差、成本高、延迟大、语言不支持</strong>等一系列问题。</p>
+
+    <p>本节将系统对比 6 款主流 Embedding 模型，从维度、成本、语言支持、MTEB 评分等多个维度进行横向比较，帮助你做出最佳选择。</p>
+
+    <h2>二、主流 Embedding 模型一览</h2>
+
+    <table>
+        <thead>
+            <tr><th>模型</th><th>提供方</th><th>维度</th><th>最大 Token</th><th>开源</th><th>价格</th><th>MTEB</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>text-embedding-3-small</strong></td>
+                <td>OpenAI</td>
+                <td>1536</td>
+                <td>8191</td>
+                <td>❌</td>
+                <td>$0.02/M</td>
+                <td>64.6</td>
+            </tr>
+            <tr>
+                <td><strong>text-embedding-3-large</strong></td>
+                <td>OpenAI</td>
+                <td>3072</td>
+                <td>8191</td>
+                <td>❌</td>
+                <td>$0.13/M</td>
+                <td>67.3</td>
+            </tr>
+            <tr>
+                <td><strong>BGE-M3</strong></td>
+                <td>BAAI（智源）</td>
+                <td>1024</td>
+                <td>8192</td>
+                <td>✅</td>
+                <td>免费</td>
+                <td>65.4</td>
+            </tr>
+            <tr>
+                <td><strong>GTE-large-en-v1.5</strong></td>
+                <td>阿里通义</td>
+                <td>1024</td>
+                <td>8192</td>
+                <td>✅</td>
+                <td>免费</td>
+                <td>66.8</td>
+            </tr>
+            <tr>
+                <td><strong>m3e-base</strong></td>
+                <td>MokaAI</td>
+                <td>768</td>
+                <td>512</td>
+                <td>✅</td>
+                <td>免费</td>
+                <td>63.2</td>
+            </tr>
+            <tr>
+                <td><strong>jina-embeddings-v3</strong></td>
+                <td>Jina AI</td>
+                <td>768</td>
+                <td>8192</td>
+                <td>✅</td>
+                <td>免费</td>
+                <td>62.1</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="note note-info">
+        <div class="note-title">📌 MTEB 是什么？</div>
+        <p>MTEB（Massive Text Embedding Benchmark）是目前最权威的 Embedding 模型评估基准，涵盖 8 大任务类型（分类、聚类、检索、STS 等）、58 个数据集。分数越高表示综合语义理解能力越强。注意：MTEB 评分主要用于横向对比，不代表你的具体业务场景的绝对效果。</p>
+    </div>
+
+    <h2>三、各模型详解</h2>
+
+    <h3>3.1 OpenAI Embedding</h3>
+    <p>OpenAI 的 Embedding 模型是<strong>API 调用最简单</strong>的选择。一行代码就能完成编码，无需下载模型、无需 GPU、无需任何基础设施。但代价是：闭源、付费、不支持中文优化。</p>
+
+    <p><strong>text-embedding-3-small</strong> 是性价比最高的选择，1536 维，MTEB 评分 64.6，每百万 Token 仅 0.02 美元。对于英文项目且预算有限的团队来说，这是最务实的选择。<strong>text-embedding-3-large</strong> 则以 3072 维和 67.3 的 MTEB 评分成为精度最高的商用模型，但价格是 small 版本的 6.5 倍，适合对精度要求极高的场景。</p>
+
+<div class="code-file">05_vector_embedding/02_embedding_models/embedding_models.py</div>
+<pre><code class="language-python">"""
+embedding_models.py — 主流 Embedding 模型统一客户端
+提供 OpenAI、BGE-M3、GTE、M3E、Jina 五种模型的统一调用接口。
+"""
+import os
+import math
+from typing import Optional
+from dataclasses import dataclass, field
+
+
+@dataclass
+class EmbeddingResult:
+    """
+    Embedding 结果：封装向量、模型名、维度等元数据。
+
+    属性：
+    - vector (list[float]): 嵌入向量
+    - model (str): 使用的模型名称
+    - dimension (int): 向量维度
+    - usage (dict): Token 使用量（API 模型）
+    """
+    vector: list[float]
+    model: str
+    dimension: int
+    usage: dict = field(default_factory=dict)
+
+    def cosine_similarity(self, other: "EmbeddingResult") -> float:
+        """
+        计算与另一个 EmbeddingResult 的余弦相似度。
+
+        公式：cos(a, b) = (a · b) / (|a| × |b|)
+
+        返回：
+        - float: 余弦相似度，范围 [-1, 1]
+        """
+        dot_product = sum(a * b for a, b in zip(self.vector, other.vector))
+        norm_a = math.sqrt(sum(a * a for a in self.vector))
+        norm_b = math.sqrt(sum(b * b for b in other.vector))
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        return dot_product / (norm_a * norm_b)
+
+
+class OpenAIEmbedding:
+    """
+    OpenAI Embedding 客户端：调用 OpenAI API 获取文本嵌入。
+
+    支持的模型：
+    - text-embedding-3-small：1536 维，成本低，适合大多数场景
+    - text-embedding-3-large：3072 维，精度高，适合需要细粒度区分的场景
+    """
+
+    AVAILABLE_MODELS = {
+        "text-embedding-3-small": 1536,
+        "text-embedding-3-large": 3072,
+        "text-embedding-ada-002": 1536,
+    }
+
+    def __init__(self, model: Optional[str] = None):
+        """从环境变量读取配置，模型名称可选"""
+        self.api_key = os.getenv("OPENAI_API_KEY", "")
+        self.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        self.model = model or os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small")
+        self.dimension = self.AVAILABLE_MODELS.get(self.model, 1536)
+
+    def embed(self, text: str) -> EmbeddingResult:
+        """
+        将单个文本转换为嵌入向量。
+
+        返回：
+        - EmbeddingResult: 包含向量、模型名、维度等信息
+        """
+        import httpx
+
+        with httpx.Client(timeout=30) as client:
+            resp = client.post(
+                f"{self.base_url}/embeddings",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={"model": self.model, "input": text},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            vector = data["data"][0]["embedding"]
+            usage = data.get("usage", {})
+
+            return EmbeddingResult(
+                vector=vector,
+                model=self.model,
+                dimension=self.dimension,
+                usage=usage,
+            )</code></pre>
+
+    <h3>3.2 BGE-M3（智源）</h3>
+    <p>BGE-M3 是目前<strong>综合能力最强的开源 Embedding 模型</strong>。由北京智源人工智能研究院（BAAI）发布，支持 100+ 种语言、8192 Token 长文本，同时返回稠密向量、稀疏向量和多向量三种表示。</p>
+
+    <table>
+        <thead>
+            <tr><th>特性</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>多语言</strong></td><td>支持 100+ 种语言，中文效果优秀</td></tr>
+            <tr><td><strong>多粒度</strong></td><td>词级、句级、段落级都能处理</td></tr>
+            <tr><td><strong>多任务</strong></td><td>稠密（Dense）、稀疏（Sparse）、多向量（Multi-vector）</td></tr>
+            <tr><td><strong>最大长度</strong></td><td>8192 Token，适合长文档</td></tr>
+            <tr><td><strong>部署方式</strong></td><td>HuggingFace Transformers 本地推理，需 GPU</td></tr>
+        </tbody>
+    </table>
+
+<pre><code class="language-python">class BGEM3Embedding:
+    """
+    BGE-M3 Embedding 客户端：使用 HuggingFace Transformers 本地推理。
+
+    特点：
+    - 支持 100+ 种语言
+    - 同时返回稠密、稀疏、多向量三种表示
+    - 最大序列长度 8192
+    """
+
+    DIMENSION = 1024
+
+    def __init__(self, model_name: Optional[str] = None):
+        """参数：model_name 模型路径，默认 BAAI/bge-m3"""
+        self.model_name = model_name or "BAAI/bge-m3"
+        self._tokenizer = None
+        self._model = None
+
+    def _load_model(self):
+        """延迟加载模型和分词器"""
+        from transformers import AutoTokenizer, AutoModel
+        self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self._model = AutoModel.from_pretrained(self.model_name)
+        self._model.eval()  # 评估模式（禁用 Dropout）
+
+    def embed(self, text: str) -> EmbeddingResult:
+        """将文本编码为 1024 维稠密向量"""
+        import torch
+
+        if self._model is None:
+            self._load_model()
+
+        inputs = self._tokenizer(
+            text, padding=True, truncation=True,
+            max_length=8192, return_tensors="pt",
+        )
+
+        with torch.no_grad():
+            outputs = self._model(**inputs)
+            # 使用 [CLS] token 的向量作为句子表示
+            sentence_embeddings = outputs.last_hidden_state[:, 0]
+            # L2 归一化
+            sentence_embeddings = torch.nn.functional.normalize(
+                sentence_embeddings, p=2, dim=1
+            )
+
+        vector = sentence_embeddings[0].tolist()
+
+        return EmbeddingResult(
+            vector=vector,
+            model=self.model_name,
+            dimension=self.DIMENSION,
+        )</code></pre>
+
+    <h3>3.3 GTE（阿里通义）</h3>
+    <p>GTE（General Text Embedding）是阿里巴巴通义实验室的通用文本嵌入模型。在 MTEB 英文基准上排名第二（66.8），仅次于 OpenAI 的 large 模型，且完全开源免费。GTE 系列包含 base（768 维）和 large（1024 维）两个版本，其中 large 版本在检索和聚类任务上表现尤为出色。</p>
+
+    <p>GTE 的优势在于英文效果极好，但中文支持相对 BGE-M3 和 m3e-base 稍弱。如果你的项目以英文为主，同时需要一定程度的中文能力，GTE 是一个性价比极高的选择。它基于 HuggingFace Transformers 部署，只需要一台带 GPU 的服务器即可运行。</p>
+
+    <h3>3.4 M3E（MokaAI）</h3>
+    <p>M3E 是国内社区 MokaAI 开源的多语言嵌入模型。虽然在 MTEB 上的绝对分数不是最高（63.2），但在<strong>中文语义理解</strong>任务上表现特别出色，且模型体积小（base 仅 ~400MB），适合资源受限的场景。</p>
+
+    <p>M3E 最大的优势是<strong>中文优化</strong>——它使用了大量中文语料进行训练，在中文文本的语义匹配、分类、检索等任务上，效果甚至超过了 MTEB 分数更高的英文模型。如果你的项目是纯中文场景，且没有 GPU 资源（只能用 CPU 推理），M3E 的 base 版本是最务实的选择。它在 CPU 上的推理速度也明显优于 BGE-M3 和 GTE。</p>
+
+    <h3>3.5 Jina Embeddings</h3>
+    <p>Jina AI 的 Embedding 模型特点是<strong>超长文本支持</strong>（8192 Token）和<strong>task-specific 模式</strong>——同一个模型可以根据任务类型（检索查询、检索文档、文本匹配、文本分类）返回不同的向量表示。</p>
+
+    <p>task-specific 模式是 Jina 的独特优势。以检索场景为例，查询文本（短、意图明确）和文档文本（长、内容丰富）的嵌入策略应该不同。Jina v3 允许你在调用时指定 task 参数，模型会内部调整注意力权重，使查询和文档在同一个向量空间中更容易匹配。这种设计避免了传统方案中需要为查询和文档分别训练不同模型的问题。</p>
+
+    <h2>四、模型选择决策树</h2>
+
+    <div class="diagram-container">
+        <svg width="700" height="560" viewBox="0 0 700 560" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="q1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#1a1a2e"/><stop offset="100%" stop-color="#2d2d44"/></linearGradient>
+                <linearGradient id="q2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#4361ee"/><stop offset="100%" stop-color="#3a56d4"/></linearGradient>
+                <linearGradient id="a1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+                <linearGradient id="a2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="a3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+            </defs>
+            <text x="350" y="28" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Embedding 模型选择决策树</text>
+
+            <!-- Q1: 语言 -->
+            <rect x="250" y="50" width="200" height="45" rx="10" fill="url(#q1)"/>
+            <text x="350" y="78" text-anchor="middle" fill="white" font-size="13" font-weight="bold">需要中文优化？</text>
+
+            <!-- 否 → 英文为主 -->
+            <line x1="250" y1="72" x2="150" y2="120" stroke="#6b7c93" stroke-width="1.5"/>
+            <text x="180" y="90" fill="#6b7c93" font-size="10">否</text>
+            <rect x="60" y="120" width="180" height="45" rx="10" fill="url(#q2)"/>
+            <text x="150" y="148" text-anchor="middle" fill="white" font-size="12" font-weight="bold">预算足够？</text>
+
+            <!-- 是 → OpenAI -->
+            <line x1="60" y1="142" x2="30" y2="190" stroke="#4361ee" stroke-width="1.5"/>
+            <text x="30" y="175" fill="#4361ee" font-size="10">是</text>
+            <rect x="10" y="190" width="180" height="40" rx="8" fill="url(#a1)"/>
+            <text x="100" y="215" text-anchor="middle" fill="white" font-size="11" font-weight="bold">OpenAI large (最高精度)</text>
+
+            <!-- 否 → 开源 -->
+            <line x1="240" y1="142" x2="300" y2="190" stroke="#4361ee" stroke-width="1.5"/>
+            <text x="275" y="175" fill="#4361ee" font-size="10">否</text>
+            <rect x="260" y="190" width="180" height="40" rx="8" fill="url(#a2)"/>
+            <text x="350" y="215" text-anchor="middle" fill="white" font-size="11" font-weight="bold">GTE-large (开源最佳)</text>
+
+            <!-- 是 → 中文 -->
+            <line x1="450" y1="72" x2="550" y2="120" stroke="#1a1a2e" stroke-width="1.5"/>
+            <text x="520" y="90" fill="#1a1a2e" font-size="10">是</text>
+            <rect x="460" y="120" width="180" height="45" rx="10" fill="url(#q1)"/>
+            <text x="550" y="148" text-anchor="middle" fill="white" font-size="12" font-weight="bold">需要长文本 (>512 Token)？</text>
+
+            <!-- 否 → M3E -->
+            <line x1="460" y1="142" x2="420" y2="190" stroke="#6b7c93" stroke-width="1.5"/>
+            <text x="420" y="175" fill="#6b7c93" font-size="10">否</text>
+            <rect x="340" y="190" width="160" height="40" rx="8" fill="url(#a1)"/>
+            <text x="420" y="215" text-anchor="middle" fill="white" font-size="11" font-weight="bold">m3e-base (轻量中文)</text>
+
+            <!-- 是 -->
+            <line x1="640" y1="142" x2="660" y2="190" stroke="#1a1a2e" stroke-width="1.5"/>
+            <text x="660" y="175" fill="#1a1a2e" font-size="10">是</text>
+            <rect x="570" y="120" width="120" height="45" rx="10" fill="url(#q1)"/>
+            <text x="630" y="140" text-anchor="middle" fill="white" font-size="12" font-weight="bold">需要多任务</text>
+            <text x="630" y="155" text-anchor="middle" fill="white" font-size="12" font-weight="bold">(稠密+稀疏+多向量)？</text>
+
+            <line x1="630" y1="165" x2="560" y2="210" stroke="#ef4444" stroke-width="1.5"/>
+            <text x="580" y="180" fill="#ef4444" font-size="10">否</text>
+            <rect x="510" y="210" width="160" height="40" rx="8" fill="url(#a2)"/>
+            <text x="590" y="235" text-anchor="middle" fill="white" font-size="11" font-weight="bold">BGE-M3 (全能)</text>
+
+            <line x1="690" y1="165" x2="660" y2="210" stroke="#10b981" stroke-width="1.5"/>
+            <text x="685" y="180" fill="#10b981" font-size="10">是</text>
+            <rect x="620" y="210" width="70" height="40" rx="8" fill="url(#a3)"/>
+            <text x="655" y="230" text-anchor="middle" fill="white" font-size="10" font-weight="bold">BGE-M3</text>
+            <text x="655" y="245" text-anchor="middle" fill="white" font-size="10" font-weight="bold">(多任务)</text>
+
+            <!-- 底部场景推荐 -->
+            <text x="350" y="285" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">场景推荐速查</text>
+
+            <!-- 场景卡片 -->
+            <rect x="20" y="310" width="200" height="70" rx="10" fill="#f0f9ff" stroke="#3b82f6"/>
+            <text x="120" y="335" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">🏢 企业生产环境</text>
+            <text x="120" y="355" text-anchor="middle" fill="#334155" font-size="11">预算充足 → OpenAI large</text>
+            <text x="120" y="372" text-anchor="middle" fill="#334155" font-size="11">追求性价比 → BGE-M3</text>
+
+            <rect x="250" y="310" width="200" height="70" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="350" y="335" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">🔍 中文语义搜索</text>
+            <text x="350" y="355" text-anchor="middle" fill="#334155" font-size="11">长文档 → BGE-M3 / Jina-v3</text>
+            <text x="350" y="372" text-anchor="middle" fill="#334155" font-size="11">短文本 → m3e-base</text>
+
+            <rect x="480" y="310" width="200" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="580" y="335" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">💻 本地部署 / 私有数据</text>
+            <text x="580" y="355" text-anchor="middle" fill="#334155" font-size="11">有 GPU → BGE-M3 / GTE</text>
+            <text x="580" y="372" text-anchor="middle" fill="#334155" font-size="11">无 GPU → 调用 API</text>
+
+            <!-- 底部 -->
+            <rect x="20" y="410" width="660" height="130" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="350" y="435" text-anchor="middle" fill="#1a1a2e" font-size="14" font-weight="bold">关键选型维度</text>
+            <text x="50" y="460" fill="#333" font-size="11">
+                <tspan x="50" dy="0">1. 语言支持：中文项目优先选 BGE-M3 / m3e-base</tspan>
+                <tspan x="50" dy="20">2. 向量维度：越高越精确但存储和计算成本越大</tspan>
+                <tspan x="50" dy="20">3. 最大 Token：长文档需要 ≥8192 的模型</tspan>
+                <tspan x="50" dy="20">4. 开源性：闭源模型有供应商锁定风险</tspan>
+                <tspan x="50" dy="20">5. 成本：API 模型按 Token 计费，开源模型只需 GPU 资源</tspan>
+                <tspan x="50" dy="20">6. MTEB 分数：综合能力的参考指标，但不等于业务效果</tspan>
+            </text>
+        </svg>
+    </div>
+
+    <h2>五、向量相似度计算</h2>
+    <p>Embedding 的核心价值是将语义相似度转化为向量距离。我们通常使用<strong>余弦相似度</strong>来衡量两个向量的语义接近程度。</p>
+
+    <table>
+        <thead>
+            <tr><th>度量方法</th><th>公式</th><th>范围</th><th>特点</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>余弦相似度</strong></td><td>cos = (a·b) / (|a|×|b|)</td><td>[-1, 1]</td><td>最常用，不受向量长度影响</td></tr>
+            <tr><td><strong>欧氏距离</strong></td><td>d = √(Σ(aᵢ-bᵢ)²)</td><td>[0, ∞)</td><td>值越小越相似，受向量长度影响</td></tr>
+            <tr><td><strong>点积</strong></td><td>dot = Σ(aᵢ×bᵢ)</td><td>(-∞, ∞)</td><td>快速但不归一化，适合已归一化的向量</td></tr>
+        </tbody>
+    </table>
+
+<div class="code-file">05_vector_embedding/02_embedding_models/model_comparison.py</div>
+<pre><code class="language-python">"""
+model_comparison.py — Embedding 模型对比工具
+不依赖实际 API 调用，使用模拟数据演示模型间的差异。
+"""
+import math
+from dataclasses import dataclass, field
+
+
+@dataclass
+class ModelSpec:
+    """
+    Embedding 模型规格：封装模型的关键参数。
+
+    属性：
+    - name (str): 模型名称
+    - provider (str): 提供方
+    - dimension (int): 向量维度
+    - max_tokens (int): 最大输入 Token 数
+    - languages (list[str]): 支持的语言
+    - pricing_per_1m (float): 每百万 Token 价格（美元）
+    - is_open_source (bool): 是否开源
+    - hf_model_id (str): HuggingFace 模型 ID
+    - mteb_score (float): MTEB 基准评分（0-100）
+    """
+    name: str
+    provider: str
+    dimension: int
+    max_tokens: int
+    languages: list[str] = field(default_factory=list)
+    pricing_per_1m: float = 0.0
+    is_open_source: bool = False
+    hf_model_id: str = ""
+    mteb_score: float = 0.0
+
+    def estimate_cost(self, num_texts: int, avg_tokens: float) -> float:
+        """
+        估算处理指定文本量的成本。
+
+        参数：
+        - num_texts (int): 文本数量
+        - avg_tokens (float): 平均每条文本的 Token 数
+
+        返回：
+        - float: 估算成本（美元）
+        """
+        total_tokens = num_texts * avg_tokens
+        return (total_tokens / 1_000_000) * self.pricing_per_1m
+
+
+class SimilarityCalculator:
+    """
+    向量相似度计算器：提供多种向量距离度量方法。
+    """
+
+    @staticmethod
+    def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+        """
+        计算余弦相似度。
+
+        公式：cos(a, b) = (a · b) / (|a| × |b|)
+
+        返回：
+        - float: 范围 [-1, 1]
+            1.0 完全相同，-1.0 完全相反，0 正交
+        """
+        dot = sum(a * b for a, b in zip(vec1, vec2))
+        norm1 = math.sqrt(sum(a * a for a in vec1))
+        norm2 = math.sqrt(sum(b * b for b in vec2))
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return dot / (norm1 * norm2)
+
+    @staticmethod
+    def euclidean_distance(vec1: list[float], vec2: list[float]) -> float:
+        """
+        计算欧氏距离。
+        公式：dist = √(Σ(aᵢ - bᵢ)²)
+        值越小表示越相似。
+        """
+        return math.sqrt(sum((a - b) ** 2 for a, b in zip(vec1, vec2)))
+
+    @staticmethod
+    def dot_product(vec1: list[float], vec2: list[float]) -> float:
+        """
+        计算点积（内积）。
+        公式：dot = Σ(aᵢ × bᵢ)
+        """
+        return sum(a * b for a, b in zip(vec1, vec2))</code></pre>
+
+    <h2>六、API 模型 vs 本地模型</h2>
+
+    <p>选择 Embedding 模型时，一个重要的决策点是：<strong>用 API 还是本地部署</strong>？这不仅是技术选择，更是成本、隐私、可控性的综合权衡。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>API 模型（OpenAI/Jina）</th><th>本地模型（BGE-M3/GTE/M3E）</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>部署难度</strong></td><td>极低（一行代码）</td><td>中高（需要 GPU 和 Transformers）</td></tr>
+            <tr><td><strong>成本</strong></td><td>按量计费，量大贵</td><td>前期 GPU 投入，量大便宜</td></tr>
+            <tr><td><strong>延迟</strong></td><td>网络延迟 + API 处理</td><td>仅推理延迟（GPU 上通常更快）</td></tr>
+            <tr><td><strong>数据隐私</strong></td><td>数据发送到第三方</td><td>完全本地，数据不出境</td></tr>
+            <tr><td><strong>可定制性</strong></td><td>无法微调</td><td>可以微调适配特定领域</td></tr>
+            <tr><td><strong>可扩展性</strong></td><td>API 有速率限制</td><td>完全可控</td></tr>
+        </tbody>
+    </table>
+
+    <p>经验法则：如果你的月调用量在 1000 万 Token 以下，API 模型的总成本通常低于自建（考虑 GPU 硬件、运维人力、电费等隐性成本）。超过这个阈值后，本地部署的经济优势开始显现。但经济成本不是唯一因素——数据隐私和合规要求在金融、医疗等行业中可能是决定性因素。</p>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 数据隐私警告</td>
+        <p>如果你的数据包含敏感信息（用户隐私、商业机密等），强烈建议使用<strong>本地开源模型</strong>。API 模型会将你的文本发送到第三方服务器，存在数据泄露和合规风险。对于金融、医疗、政务等敏感行业，本地模型是唯一合规的选择。</p>
+    </div>
+
+    <h2>七、常见误区</h2>
+
+    <h3>误区一：维度越高越好</h3>
+    <p>高维度确实能捕获更多语义信息，但也意味着更高的存储成本和更长的计算时间。实际上，<strong>768 维和 1024 维的效果差异在大多数业务场景中并不明显</strong>。建议先用低维模型验证效果，确认需要更高精度时再升级。</p>
+
+    <h3>误区二：MTEB 分数越高一定越好</h3>
+    <p>MTEB 是综合基准，但不等于你的具体业务场景的效果。如果你的业务是中文客服搜索，MTEB 分数较低的 m3e-base 可能比分数更高的 GTE 效果更好。<strong>始终用你自己的业务数据做评估</strong>。</p>
+
+    <h3>误区三：一个模型适用所有场景</h3>
+    <p>检索查询（短文本）和检索文档（长文本）往往需要不同的嵌入策略。Jina v3 的 task-specific 模式就是一个很好的尝试——同一个模型，不同任务返回不同向量。在生产环境中，<strong>为不同任务选择不同模型或不同模式</strong>往往能得到更好的效果。</p>
+
+    <h2>八、小结</h2>
+    <p>Embedding 模型的选择需要综合考虑<strong>语言支持、维度、成本、开源性、MTEB 分数</strong>五个维度。对于中文项目，BGE-M3 是综合能力最强的开源选择；对于英文项目且预算充足，OpenAI large 是精度最高的选择；对于资源受限的中文短文本场景，m3e-base 是性价比最高的选择。</p>
+
+    <p>在下一节 5.3 中，我们将学习如何将这些 Embedding 向量存储到<strong>向量数据库</strong>中——包括 Milvus、Qdrant、Chroma、Pinecone、FAISS、pgvector 等主流方案的选型与对比。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

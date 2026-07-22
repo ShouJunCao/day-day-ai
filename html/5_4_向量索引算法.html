@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5.4 向量索引算法 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>5.4 向量索引算法（HNSW、IVF、PQ、ScaNN）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块五：向量数据库与 Embedding</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解向量索引的核心作用：将 O(N) 暴力搜索优化为近似 O(log N)</li>
+        <li>掌握 HNSW、IVF、PQ 三种主流索引的原理和适用场景</li>
+        <li>了解索引选择对检索精度、速度和内存的影响</li>
+        <li>能够根据数据规模和性能要求选择合适的索引类型</li>
+    </ul>
+
+    <h2>一、为什么需要向量索引？</h2>
+    <p>假设有 100 万个 768 维向量，要找到与查询向量最相似的 10 个。暴力搜索（Flat 索引）的方法是：逐个计算查询向量与每个向量的距离，然后排序取前 10 个。这意味着 100 万次 768 维向量的距离计算——在普通 CPU 上需要几百毫秒甚至数秒。</p>
+
+    <p>对于需要实时响应的在线服务（如 RAG 系统的检索阶段），这个延迟是不可接受的。向量索引的核心价值就是用空间换时间——在写入阶段预建索引结构，使得搜索时的计算量从 O(N) 降到 O(log N) 甚至更低。</p>
+
+    <p>不同类型的索引在精度、速度和内存开销之间有不同的权衡。Flat 索引虽然精确但只适合小规模数据；HNSW 速度快精度高但内存占用大；IVF 通过聚类缩小搜索范围，内存效率好但需要训练；PQ 以量化压缩为代价换取极致的存储效率。没有一种索引在所有场景下都是最优的，理解各索引的原理和特点是做出正确选型的前提。</p>
+
+    <p>以一个具体的例子来说明索引的价值：假设你有一个包含 1000 万篇文档的向量库，每篇文档对应一个 768 维向量。如果用暴力搜索，每次查询需要计算 1000 万次距离，耗时可能在 1-3 秒之间。但如果使用 HNSW 索引，同样的查询只需检查几千个节点，耗时降到 10-50 毫秒——提速 20-100 倍。这就是为什么向量数据库必须依赖索引结构。</p>
+
+    <div class="diagram-container">
+        <svg width="760" height="280" viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="380" y="28" text-anchor="middle" fill="#1a1a2e" font-size="17" font-weight="bold">索引 vs 暴力搜索：搜索路径对比</text>
+            <rect x="30" y="55" width="300" height="200" rx="12" fill="#fef2f2" stroke="#fecaca"/>
+            <text x="180" y="85" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="bold">暴力搜索（Flat）</text>
+            <circle cx="80" cy="120" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="120" cy="110" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="160" cy="140" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="200" cy="125" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="240" cy="150" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="280" cy="130" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="100" cy="170" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="150" cy="180" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="210" cy="165" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="260" cy="185" r="3" fill="#ef4444" opacity="0.3"/>
+            <circle cx="180" cy="150" r="6" fill="#dc2626" stroke="white" stroke-width="2"/>
+            <text x="195" y="155" fill="#dc2626" font-size="10">查询</text>
+            <line x1="180" y1="150" x2="80" y2="120" stroke="#ef4444" stroke-width="0.5" opacity="0.2"/>
+            <line x1="180" y1="150" x2="120" y2="110" stroke="#ef4444" stroke-width="0.5" opacity="0.2"/>
+            <line x1="180" y1="150" x2="160" y2="140" stroke="#ef4444" stroke-width="0.5" opacity="0.2"/>
+            <line x1="180" y1="150" x2="200" y2="125" stroke="#ef4444" stroke-width="0.5" opacity="0.2"/>
+            <line x1="180" y1="150" x2="240" y2="150" stroke="#ef4444" stroke-width="0.5" opacity="0.2"/>
+            <line x1="180" y1="150" x2="280" y2="130" stroke="#ef4444" stroke-width="0.5" opacity="0.2"/>
+            <text x="180" y="245" text-anchor="middle" fill="#999" font-size="11">检查所有 N 个向量 O(N)</text>
+
+            <rect x="430" y="55" width="300" height="200" rx="12" fill="#ecfdf5" stroke="#a7f3d0"/>
+            <text x="580" y="85" text-anchor="middle" fill="#059669" font-size="14" font-weight="bold">HNSW 索引搜索</text>
+            <circle cx="480" cy="120" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="520" cy="110" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="560" cy="140" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="600" cy="125" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="640" cy="150" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="680" cy="130" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="500" cy="170" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="550" cy="180" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="610" cy="165" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="660" cy="185" r="3" fill="#10b981" opacity="0.3"/>
+            <circle cx="580" cy="150" r="6" fill="#059669" stroke="white" stroke-width="2"/>
+            <text x="595" y="155" fill="#059669" font-size="10">查询</text>
+            <line x1="580" y1="150" x2="560" y2="140" stroke="#059669" stroke-width="2"/>
+            <line x1="560" y1="140" x2="600" y2="125" stroke="#059669" stroke-width="2"/>
+            <line x1="600" y1="125" x2="610" y2="165" stroke="#059669" stroke-width="2"/>
+            <text x="580" y="245" text-anchor="middle" fill="#999" font-size="11">只检查 log N 个节点</text>
+        </svg>
+    </div>
+
+    <h2>二、HNSW 索引</h2>
+    <p>HNSW（Hierarchical Navigable Small World，分层可导航小世界图）是目前最流行的向量索引算法。它构建了一个多层图结构，顶层节点少、底层节点多。搜索时从顶层开始，找到最近节点后下沉到下一层，逐层逼近，最终在底层找到最相似的 K 个向量。</p>
+
+    <p>这种"从粗到细"的策略非常高效。想象你在一个陌生城市找人——先坐地铁到正确的区（顶层粗搜索），再步行到具体的街道（底层精搜索），而不是一开始就从第一条街走到最后一条街。HNSW 的多层图就是这个道理，它将搜索复杂度从 O(N) 降到了 O(log N)。</p>
+
+    <p>HNSW 的优势非常明显：速度极快（近似 O(log N) 复杂度），精度极高（接近 100% 召回率），且适合各种数据规模。它是 Milvus、Qdrant、Chroma 等主流向量数据库的默认索引类型。</p>
+
+    <p>但 HNSW 的代价是内存占用大。每个节点需要存储与多个邻居的连接信息，在大规模场景下，图结构的内存开销可能远超原始向量本身。100 万个 768 维向量，纯向量数据约 3 GB，但 HNSW 索引可能需要 5-10 GB。</p>
+
+    <p>HNSW 有两个关键参数：<strong>M</strong>（每个节点的最大连接数）和<strong>efConstruction</strong>（构建时的搜索宽度）。M 越大，图越密集，搜索越快但内存越大；efConstruction 越大，索引质量越高但构建越慢。实际应用中，M=16、efConstruction=200 是一个不错的起点。</p>
+
+<div class="code-file">05_vector_embedding/04_vector_indexes/vector_indexes.py</div>
+<pre><code class="language-python">"""
+vector_indexes.py — 向量索引算法实现
+包含 HNSW、IVF、PQ 三种主流索引的教学实现。
+"""
+import math
+import random
+from typing import Optional
+from dataclasses import dataclass, field
+
+
+class HNSWIndex:
+    """
+    HNSW 索引的简化实现。
+
+    原理：
+    - 构建多层图结构，顶层节点少、底层节点多
+    - 搜索时从顶层开始，找到最近节点后下沉到下一层
+    - 逐层逼近，最终在底层找到最相似的 K 个节点
+    """
+
+    def __init__(self, dimension: int, M: int = 16, max_layer: int = 4):
+        """
+        初始化 HNSW 索引。
+
+        参数：
+        - dimension (int): 向量维度
+        - M (int): 每层最大连接数
+        - max_layer (int): 最大层数
+        """
+        self.dimension = dimension
+        self.M = M
+        self.max_layer = max_layer
+        self.nodes: dict[str, HNSWNode] = {}
+        self.entry_point: Optional[str] = None
+
+    def insert(self, vector: list[float], node_id: str) -> None:
+        """插入向量节点"""
+        node_layer = self._random_layer()
+        node = HNSWNode(vector=vector, node_id=node_id, layer=node_layer)
+        self.nodes[node_id] = node
+
+        if self.entry_point is None:
+            self.entry_point = node_id
+            return
+
+        # 将新节点连接到每层距离最近的 M 个已有节点
+        for layer in range(node_layer + 1):
+            existing = [nid for nid, n in self.nodes.items()
+                       if n.layer >= layer and nid != node_id]
+            existing.sort(key=lambda nid: euclidean_distance(
+                self.nodes[nid].vector, vector))
+            nearest = existing[:self.M]
+            for nid in nearest:
+                if layer < len(self.nodes[nid].neighbors):
+                    if node_id not in self.nodes[nid].neighbors[layer]:
+                        self.nodes[nid].neighbors[layer].append(node_id)
+                if layer < len(node.neighbors):
+                    if nid not in node.neighbors[layer]:
+                        node.neighbors[layer].append(nid)
+
+    def search(self, query_vector: list[float], top_k: int = 5) -> list[tuple[str, float]]:
+        """搜索最相似的 K 个向量"""
+        if not self.nodes:
+            return []
+
+        current_id = self.entry_point
+
+        # 从顶层逐层下沉到底层
+        for layer in range(self.max_layer, -1, -1):
+            changed = True
+            while changed:
+                changed = False
+                current_node = self.nodes.get(current_id)
+                if not current_node or layer >= len(current_node.neighbors):
+                    break
+                for neighbor_id in current_node.neighbors[layer]:
+                    neighbor = self.nodes.get(neighbor_id)
+                    if not neighbor:
+                        continue
+                    curr_dist = euclidean_distance(
+                        self.nodes[current_id].vector, query_vector)
+                    nb_dist = euclidean_distance(
+                        neighbor.vector, query_vector)
+                    if nb_dist < curr_dist:
+                        current_id = neighbor_id
+                        changed = True
+
+        # 在底层找 top_k
+        candidates = {current_id}
+        bottom = self.nodes.get(current_id)
+        if bottom and bottom.neighbors:
+            candidates.update(bottom.neighbors[0])
+
+        results = []
+        for nid in candidates:
+            node = self.nodes.get(nid)
+            if node:
+                dist = euclidean_distance(node.vector, query_vector)
+                results.append((nid, dist))
+
+        results.sort(key=lambda x: x[1])
+        return results[:top_k]</code></pre>
+
+    <h2>三、IVF 索引</h2>
+    <p>IVF（Inverted File Index，倒排文件索引）的思路更直观：先用 K-Means 将所有向量聚类为 nlist 个簇（比如 100 个），每个向量归入最近的簇。搜索时，先找到查询向量最近的 nprobe 个簇（比如 5 个），只在这些簇中暴力搜索。</p>
+
+    <p>这种"先缩小范围再精确查找"的策略大幅减少了计算量。100 万个向量分成 100 个簇，每个簇平均 1 万个向量。如果只探查 5 个簇，搜索量就从 100 万降到了 5 万——减少 95% 的计算。</p>
+
+    <p>IVF 的优势是内存占用小——只需要存储聚类中心和倒排表，不需要像 HNSW 那样维护复杂的图结构。对于数据量在百万到亿级的场景，IVF 是性价比很高的选择。</p>
+
+    <p>但 IVF 有两个需要注意的问题：需要训练阶段（K-Means 聚类需要遍历全量数据），且精度略低于 HNSW（因为搜索范围被限制在少数簇中，如果查询向量的最近邻恰好不在探查的簇里，就会漏掉结果）。nprobe 参数就是精度和速度之间的权衡——nprobe 越大，精度越高但速度越慢。</p>
+
+<pre><code class="language-python">class IVFIndex:
+    """
+    IVF 索引的简化实现。
+
+    原理：
+    1. 训练：用 K-Means 将所有向量聚类为 nlist 个簇
+    2. 索引：每个向量归入最近的簇，建立倒排表
+    3. 搜索：找到查询最近的 nprobe 个簇，只在簇中搜索
+    """
+
+    def __init__(self, dimension: int, nlist: int = 100, nprobe: int = 10):
+        self.dimension = dimension
+        self.nlist = nlist
+        self.nprobe = nprobe
+        self.centroids: list[list[float]] = []
+        self.inverted_lists: dict[int, list[str]] = {}
+        self.nodes: dict[str, list[float]] = {}
+        self.is_trained = False
+
+    def train(self, vectors: list[list[float]]) -> None:
+        """训练：K-Means 聚类"""
+        random.seed(42)
+        self.centroids = random.sample(vectors, min(self.nlist, len(vectors)))
+        for vec in vectors:
+            dists = [euclidean_distance(vec, c) for c in self.centroids]
+            cluster_id = dists.index(min(dists))
+            self.inverted_lists.setdefault(cluster_id, [])
+        self.is_trained = True
+
+    def insert(self, vector: list[float], node_id: str) -> None:
+        """插入到倒排表"""
+        self.nodes[node_id] = vector
+        if not self.is_trained:
+            return
+        dists = [euclidean_distance(vector, c) for c in self.centroids]
+        cluster_id = dists.index(min(dists))
+        self.inverted_lists.setdefault(cluster_id, []).append(node_id)
+
+    def search(self, query_vector: list[float], top_k: int = 5) -> list[tuple[str, float]]:
+        """搜索：只在 nprobe 个最近簇中查找"""
+        centroid_dists = [euclidean_distance(query_vector, c) for c in self.centroids]
+        sorted_clusters = sorted(range(len(centroid_dists)), key=lambda i: centroid_dists[i])
+        probe_clusters = sorted_clusters[:self.nprobe]
+
+        candidates = set()
+        for cid in probe_clusters:
+            if cid in self.inverted_lists:
+                candidates.update(self.inverted_lists[cid])
+
+        results = [(nid, euclidean_distance(self.nodes[nid], query_vector))
+                   for nid in candidates if nid in self.nodes]
+        results.sort(key=lambda x: x[1])
+        return results[:top_k]</code></pre>
+
+    <h2>四、PQ 索引</h2>
+    <p>PQ（Product Quantization，乘积量化）的出发点完全不同——它不追求精度，而是追求极致的内存压缩。</p>
+
+    <p>PQ 的做法是将 D 维向量切分为 m 段，每段 D/m 维。对每段独立运行 K-Means，生成 k 个聚类中心（称为码本）。每个向量不再存储原始浮点数，而是存储 m 个码字 ID（每个 ID 占 1 字节）。以 768 维 float32 向量为例：原始大小 768 × 4 = 3072 字节，用 PQ（m=48, k=256）压缩后只需 48 字节，压缩比高达 64 倍——100 万个向量从 3 GB 压缩到 48 MB。</p>
+
+    <p>PQ 的代价是量化误差——用码本中心近似原始向量必然引入精度损失。在实际应用中，PQ 的召回率通常比 HNSW 低 5-15 个百分点，但在超大规模场景下，这是唯一可行的方案。</p>
+
+<pre><code class="language-python">class PQIndex:
+    """
+    PQ（乘积量化）索引的简化实现。
+
+    原理：
+    1. 将 D 维向量分成 m 段，每段 D/m 维
+    2. 对每段独立运行 K-Means，生成 k 个码本中心
+    3. 每个向量用 m 个码字 ID 表示（压缩存储）
+    4. 搜索时用预计算距离表加速（ADC 方法）
+    """
+
+    def __init__(self, dimension: int, m: int = 4, k: int = 256):
+        self.dimension = dimension
+        self.m = m
+        self.k = k
+        self.sub_dim = dimension // m
+        self.codebooks: list[list[list[float]]] = []
+        self.encoded: dict[str, list[int]] = {}
+        self.nodes: dict[str, list[float]] = {}
+        self.is_trained = False
+
+    def train(self, vectors: list[list[float]]) -> None:
+        """训练：对每段运行 K-Means"""
+        random.seed(42)
+        self.codebooks = []
+        for seg_idx in range(self.m):
+            sub_vectors = [v[seg_idx * self.sub_dim: (seg_idx + 1) * self.sub_dim] for v in vectors]
+            centers = random.sample(sub_vectors, min(self.k, len(sub_vectors)))
+            self.codebooks.append(centers)
+        self.is_trained = True
+
+    def encode(self, vector: list[float]) -> list[int]:
+        """将向量编码为码字 ID 列表"""
+        sub_vectors = [vector[i * self.sub_dim: (i + 1) * self.sub_dim] for i in range(self.m)]
+        codes = []
+        for seg_idx, sub_vec in enumerate(sub_vectors):
+            dists = [euclidean_distance(sub_vec, c) for c in self.codebooks[seg_idx]]
+            codes.append(dists.index(min(dists)))
+        return codes
+
+    def search(self, query_vector: list[float], top_k: int = 5) -> list[tuple[str, float]]:
+        """用预计算距离表加速搜索（ADC）"""
+        query_subs = [query_vector[i * self.sub_dim: (i + 1) * self.sub_dim] for i in range(self.m)]
+        distance_table = []
+        for seg_idx, qsub in enumerate(query_subs):
+            table = [euclidean_distance(qsub, c) for c in self.codebooks[seg_idx]]
+            distance_table.append(table)
+
+        results = []
+        for node_id, codes in self.encoded.items():
+            approx_dist = sum(distance_table[i][codes[i]] for i in range(self.m))
+            results.append((node_id, approx_dist))
+        results.sort(key=lambda x: x[1])
+        return results[:top_k]</code></pre>
+
+    <h2>五、四种索引全面对比</h2>
+
+    <table>
+        <thead>
+            <tr><th>索引</th><th>原理</th><th>复杂度</th><th>精度</th><th>内存</th><th>训练</th><th>适用规模</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Flat</strong></td><td>暴力搜索</td><td>O(N)</td><td>100%</td><td>低</td><td>不需要</td><td>&lt; 100 万</td></tr>
+            <tr><td><strong>HNSW</strong></td><td>多层图</td><td>O(log N)</td><td>98-99.9%</td><td>高</td><td>不需要</td><td>各种规模</td></tr>
+            <tr><td><strong>IVF</strong></td><td>聚类倒排</td><td>O(N/nlist)</td><td>95-99%</td><td>中</td><td>需要</td><td>百万到亿级</td></tr>
+            <tr><td><strong>PQ</strong></td><td>量化压缩</td><td>O(N)</td><td>90-95%</td><td>极低</td><td>需要</td><td>亿级以上</td></tr>
+        </tbody>
+    </table>
+
+    <h2>六、ScaNN 简介</h2>
+    <p>ScaNN（Scalable Nearest Neighbors）是 Google 提出的向量搜索算法，在 Yandex 的 ANN-benchmarks 上多次获得速度和精度的双料第一。它结合了 ANH（Anisotropic Vector Quantization）和 SQ（Squared Q-Index）两种技术，核心思想是将搜索分为"粗筛 + 精排"两阶段。</p>
+
+    <p>第一阶段用 PQ 快速筛选候选集（内存小、速度快但有量化误差），第二阶段用更精确的方法（如基于树或暴力搜索）在候选集中精排。这种两阶段策略在超大规模场景下比单纯的 HNSW 或 IVF 更高效，因为大多数向量在第一阶段就被排除了，不需要参与第二阶段的精确计算。</p>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 索引选择建议</div>
+        <p>如果你不确定选哪个索引：先用 HNSW。它在精度和速度之间取得了最好的平衡，是大多数场景下的默认选择。只有当内存成为瓶颈时（向量规模超过一亿），才考虑 PQ 量化来压缩存储，或 IVF 来平衡精度和内存。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>向量索引是向量数据库的核心引擎，决定了检索的速度、精度和资源开销。Flat 索引简单精确但只适合小规模数据；HNSW 速度快、精度高但内存开销大，是最通用的选择；IVF 通过聚类减少搜索范围，内存效率好但需要训练阶段；PQ 以量化压缩为代价换取极致的存储效率，适合超大规模场景。在实际项目中，建议先用 HNSW 验证方案，根据实际数据量和性能表现决定是否切换到其他索引。</p>
+
+    <p>混合索引也是一个值得关注的方向。例如 Milvus 支持 IVF+PQ 组合索引——先用 IVF 将搜索范围缩小到少数簇，再用 PQ 在每个簇中快速计算近似距离。这种组合策略可以同时获得 IVF 的范围缩减优势和 PQ 的内存压缩优势，在精度和效率之间取得更好的平衡。</p>
+
+    <p>此外，ScaNN 等新型算法通过两阶段策略（粗筛 + 精排）在超大规模场景下表现优异，是值得关注的新趋势。</p>
+
+    <p>在下一节 5.5 中，我们将深入学习相似度度量的具体计算方法和选择策略。</p>
+
+    <p>最后提醒一点：索引参数调优是持续的过程。随着数据量增长和查询模式变化，需要定期评估索引的召回率和延迟，必要时重新训练或重建索引。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>
