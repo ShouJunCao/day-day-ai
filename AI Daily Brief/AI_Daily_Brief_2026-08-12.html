@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 行业资讯简报 2026年8月12日</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f1117;
+    color: #e4e6eb;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0f1117 100%);
+    border-bottom: 2px solid #3b82f6;
+    padding: 24px 0 20px;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 28px;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .header h1 span { color: #3b82f6; }
+  .header .subtitle {
+    font-size: 14px;
+    color: #9ca3af;
+    margin-top: 6px;
+  }
+  .header .date {
+    display: inline-block;
+    background: #3b82f6;
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .today-brief {
+    background: #1a1f2e;
+    border-left: 4px solid #3b82f6;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    color: #d1d5db;
+  }
+  .today-brief strong { color: #60a5fa; }
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin: 32px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2d3148;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: #3b82f6;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    font-size: 13px;
+  }
+  .news-card {
+    background: #1a1f2e;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid #2d3148;
+    transition: border-color 0.2s;
+  }
+  .news-card:hover { border-color: #3b82f6; }
+  .news-card h3 {
+    font-size: 16px;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .news-card h3 .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .tag-domestic { background: #dc2626; color: #fff; }
+  .tag-foreign { background: #2563eb; color: #fff; }
+  .news-card .meta {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 8px;
+  }
+  .news-card .meta a {
+    color: #60a5fa;
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .news-card .meta a:hover { text-decoration: underline; }
+  .news-card .keywords {
+    font-size: 13px;
+    color: #a5b4fc;
+    margin-bottom: 8px;
+  }
+  .news-card .keywords span {
+    display: inline-block;
+    background: #1e293b;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+  .news-card .core {
+    font-size: 14px;
+    color: #d1d5db;
+    margin-bottom: 6px;
+  }
+  .news-card .impact {
+    font-size: 13px;
+    color: #9ca3af;
+    font-style: italic;
+  }
+  .news-card .core strong, .news-card .impact strong {
+    color: #60a5fa;
+    font-style: normal;
+  }
+  .ai-app-section {
+    background: linear-gradient(135deg, #1a1f2e 0%, #162032 100%);
+    border: 1px solid #3b82f6;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+  .ai-app-section .badge {
+    display: inline-block;
+    background: #10b981;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .app-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .app-tag-domestic { background: #065f46; color: #6ee7b7; }
+  .app-tag-foreign { background: #1e3a5f; color: #93c5fd; }
+  .footer {
+    text-align: center;
+    padding: 24px 0 16px;
+    border-top: 1px solid #2d3148;
+    margin-top: 32px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .footer a { color: #60a5fa; text-decoration: none; }
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    .header h1 { font-size: 22px; }
+    .news-card { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🤖 AI <span>行业资讯简报</span></h1>
+  <div class="subtitle">AI Industry Daily Brief</div>
+  <div class="date">2026年8月12日 · 星期三</div>
+</div>
+
+<div class="today-brief">
+  <strong>今日速览：</strong>ChatGPT 与 Gemini 双双突破 10 亿月活用户，AI 聊天赛道进入"双超级"时代；面壁智能正式向证监会提交 IPO 辅导备案，国内 AI 公司资本化加速；SpaceXAI 推出多智能体协同平台 Grok Bot，AI Agent 从单体走向协作；Anthropic 宣布 Claude 将为 AI 生成内容添加不可见水印；ChatGPT Actions 可直接代订餐厅并接入 Yelp 评论，AI 从问答工具升级为生活服务入口。
+</div>
+
+<!-- =============== 一、大模型 & 技术 =============== -->
+<div class="section-title"><span class="icon">⚙</span> 一、大模型 & 技术</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-foreign">国外</span> ChatGPT 与 Gemini 双双突破 10 亿月活用户</h3>
+  <div class="keywords"><span>ChatGPT</span> <span>Gemini</span> <span>10亿用户</span> <span>AI聊天</span></div>
+  <div class="core"><strong>核心：</strong>2026年8月12日，OpenAI 的 ChatGPT 与 Google 的 Gemini 应用均宣布月活跃用户突破 10 亿，标志着 AI 聊天工具正式进入"双超级"时代。</div>
+  <div class="impact"><strong>影响：</strong>AI 助手从早期采用者阶段迈入大众主流，两家公司在通用 AI 入口的竞争将进一步加剧。</div>
+  <div class="meta"><a href="https://www.theverge.com/ai-artificial-intelligence/978113/chatgpt-gemini-1-billion-users" target="_blank">来源：The Verge</a></div>
+</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-foreign">国外</span> Nvidia 发布"轻量级"开源 AI 模型 Nemotron 3.5 Lightning</h3>
+  <div class="keywords"><span>Nvidia</span> <span>Nemotron</span> <span>开源模型</span> <span>AI Agent</span></div>
+  <div class="core"><strong>核心：</strong>8月11日，Nvidia 发布 Nemotron 3.5 Lightning，专为 AI Agent 中的特定任务（代码审查、账单问答、安全告警监控）设计，是 Nvidia 开源 AI 模型家族的最新成员。</div>
+  <div class="impact"><strong>影响：</strong>在竞争对手纷纷自研芯片之际，Nvidia 以开源模型策略巩固 AI 生态话语权，降低企业 Agent 部署门槛。</div>
+  <div class="meta"><a href="https://www.theverge.com/ai-artificial-intelligence/977806/nvidia-releases-new-lightweight-open-ai-model" target="_blank">来源：The Verge</a></div>
+</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-foreign">国外</span> Anthropic 宣布 Claude 将为 AI 生成内容添加不可见水印</h3>
+  <div class="keywords"><span>Anthropic</span> <span>Claude</span> <span>AI水印</span> <span>C2PA</span></div>
+  <div class="core"><strong>核心：</strong>8月11日，Anthropic 宣布 Claude 将对 AI 生成的文本和图片应用不可见水印（基于 C2PA 标准），帮助用户识别 AI 生成内容。</div>
+  <div class="impact"><strong>影响：</strong>在深度伪造泛滥背景下，AI 内容可追溯性成为行业共识，预计更多厂商将跟进水印标准。</div>
+  <div class="meta"><a href="https://www.theverge.com/ai-artificial-intelligence/977823/anthropic-claude-ai-watermarks-c2pa-text-images" target="_blank">来源：The Verge</a></div>
+</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-domestic">国内</span> 微软 Win11 26H1 推送更新：32GB+ 内存 PC 可运行更大规模本地 AI</h3>
+  <div class="keywords"><span>微软</span> <span>Win11</span> <span>本地AI</span> <span>26H1</span></div>
+  <div class="core"><strong>核心：</strong>2026年8月12日，微软推送 Win11 26H1 更新 28000.2704，支持 32GB 以上内存 PC 运行更大规模的本地 AI 模型。</div>
+  <div class="impact"><strong>影响：</strong>本地 AI 推理能力提升，降低云端依赖，推动端侧 AI 应用普及。</div>
+  <div class="meta"><a href="https://www.ithome.com/0/988/567.htm" target="_blank">来源：IT之家</a></div>
+</div>
+
+<!-- =============== 二、产品 & 商业 =============== -->
+<div class="section-title"><span class="icon">📦</span> 二、产品 & 商业</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-domestic">国内</span> AI 公司面壁智能启动 IPO，已向北京证监局办理辅导备案</h3>
+  <div class="keywords"><span>面壁智能</span> <span>IPO</span> <span>AI公司上市</span> <span>MiniCPM</span></div>
+  <div class="core"><strong>核心：</strong>2026年8月12日，证监会网站披露，面壁智能（ModelBest）于 8 月 11 日在北京证监局办理辅导备案登记，拟首次公开发行股票并上市，辅导券商为中信证券。该公司孵化自清华大学 NLP 实验室，标志性产品为 MiniCPM 端侧系列大模型，无控股股东，第一大股东持股 16.45%。</div>
+  <div class="impact"><strong>影响：</strong>国内 AI 初创公司进入上市密集期，行业资本化进程加速；面壁智能若成功上市将成为端侧大模型第一股。</div>
+  <div class="meta"><a href="https://www.ithome.com/0/988/581.htm" target="_blank">来源：IT之家</a></div>
+</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-foreign">国外</span> OpenAI 高管 Brad Lightcap 宣布离职创业</h3>
+  <div class="keywords"><span>OpenAI</span> <span>高管离职</span> <span>Brad Lightcap</span></div>
+  <div class="core"><strong>核心：</strong>2026年8月12日，OpenAI 高管 Brad Lightcap 宣布离职创业，CEO 奥尔特曼公开感谢其贡献。Lightcap 此前担任 OpenAI 首席运营官。</div>
+  <div class="impact"><strong>影响：</strong>OpenAI 连续高管流失引发关注，公司从非营利向商业化转型过程中的人才稳定性存疑。</div>
+  <div class="meta"><a href="https://www.theverge.com/ai-artificial-intelligence/978048/brad-lightcap-openai-executive-departure" target="_blank">来源：The Verge</a></div>
+</div>
+
+<div class="news-card">
+  <h3><span class="tag tag-domestic">国内</span> 从阿里离职五个月后，林俊旸官宣创办 AI 公司语用科技 Pragmatik Labs</h3>
+  <div class="keywords"><span>语用科技</span> <span>Pragmatik Labs</span> <span>创业</span> <span>AI</span></div>
+  <div class="core"><strong>核心：</strong>2026年8月12日，从阿里离职五个月后，林俊旸官宣创办 AI 公司语用科技 Pragmatik Labs，加入国内 AI 创业浪潮。</div>
+  <div class="impact"><strong>影响：</strong>大厂 AI 人才持续外溢创业，国内 AI 生态进一步多元化，但新团队面临巨头与大模型的激烈竞争。</div>
+  <div class="meta"><a href="https://www.ithome.com/0/988/577.htm" target="_blank">来源：IT之家</a></div>
+</div>
+
+<!-- =============== 三、AI 应用案例（新增板块） =============== -->
+<div class="section-title"><span class="icon">🚀</span> 三、AI 应用案例 <span class="badge">NEW</span></div>
+
+<div class="ai-app-section">
+  <div class="news-card" style="background:transparent; border:none; padding:0; margin-bottom:16px;">
+    <h3><span class="app-tag app-tag-foreign">国外</span> ChatGPT 打通本地生活：可代订餐厅，接入 Yelp 评论</h3>
+    <div class="keywords"><span>OpenAI</span> <span>ChatGPT Actions</span> <span>本地生活</span> <span>Yelp</span></div>
+    <div class="core"><strong>核心：</strong>2026年8月11日，OpenAI 宣布 ChatGPT 可通过 Actions 功能直接帮用户预订餐厅座位，并接入 Yelp 评论数据，将 AI 助手从问答工具升级为生活服务入口。</div>
+    <div class="impact"><strong>影响：</strong>AI 产品从信息聚合走向服务闭环，ChatGPT 成为连接用户与本地商家的新型渠道，对 Yelp、美团等平台构成潜在竞争。</div>
+    <div class="meta"><a href="https://www.theverge.com/ai-artificial-intelligence/977229/chatgpt-can-now-make-you-a-dinner-reservation" target="_blank">来源：The Verge</a></div>
+  </div>
+</div>
+
+<div class="ai-app-section">
+  <div class="news-card" style="background:transparent; border:none; padding:0; margin-bottom:16px;">
+    <h3><span class="app-tag app-tag-foreign">国外</span> SpaceXAI 推出 Grok Bot：多 AI 智能体协同干活</h3>
+    <div class="keywords"><span>SpaceXAI</span> <span>Grok Bot</span> <span>AI智能体</span> <span>Agentic AI</span></div>
+    <div class="core"><strong>核心：</strong>2026年8月12日，马斯克旗下 SpaceXAI 推出 Grok Bot，支持多个 AI 智能体协同工作、跨应用执行任务、共享上下文。已在内部工程、增长和营销团队中使用，可帮助销售团队自动寻找客户并起草邮件、从邮件中提取收据协助财务处理。</div>
+    <div class="impact"><strong>影响：</strong>AI Agent 从单智能体向多智能体协作演进，企业级 AI 工作流自动化竞争进入新阶段；SpaceXAI 在 AI 智能体市场落后于 Anthropic 和 OpenAI 后，以 Grok Bot 追赶。</div>
+    <div class="meta"><a href="https://www.ithome.com/0/988/570.htm" target="_blank">来源：IT之家</a></div>
+  </div>
+</div>
+
+<div class="ai-app-section">
+  <div class="news-card" style="background:transparent; border:none; padding:0; margin-bottom:16px;">
+    <h3><span class="app-tag app-tag-domestic">国内</span> 消息称小红书打造全新"AI 导购"功能</h3>
+    <div class="keywords"><span>小红书</span> <span>AI导购</span> <span>电商</span> <span>推荐系统</span></div>
+    <div class="core"><strong>核心：</strong>2026年8月12日，据 IT之家报道，小红书正在打造全新"AI 导购"功能，通过 AI 为用户提供个性化商品推荐和购物引导，升级平台电商体验。</div>
+    <div class="impact"><strong>影响：</strong>内容平台借 AI 深化商业化，AI 导购有望提升转化率和用户黏性，推动社区电商从被动发现走向主动推荐。</div>
+    <div class="meta"><a href="https://www.ithome.com/0/988/575.htm" target="_blank">来源：IT之家</a></div>
+  </div>
+</div>
+
+<div class="ai-app-section">
+  <div class="news-card" style="background:transparent; border:none; padding:0; margin-bottom:0;">
+    <h3><span class="app-tag app-tag-foreign">国外</span> AI 云服务巨头 CoreWeave 季度营收同比增长 112%</h3>
+    <div class="keywords"><span>CoreWeave</span> <span>AI云</span> <span>GPU算力</span> <span>企业部署</span></div>
+    <div class="core"><strong>核心：</strong>2026年8月12日，AI 云服务巨头 CoreWeave 发布 2026 财年第二财季财报，营收 25.75 亿美元，同比增长 112.46%，反映企业 AI 算力需求的爆发式增长。</div>
+    <div class="impact"><strong>影响：</strong>AI 基础设施市场需求持续井喷，GPU 云服务成为企业部署 AI 的关键瓶颈与增长引擎。</div>
+    <div class="meta"><a href="https://www.ithome.com/0/988/569.htm" target="_blank">来源：IT之家</a></div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>📰 AI 行业资讯简报 · 2026年8月12日</p>
+  <p style="margin-top:4px;">数据来源：The Verge、IT之家 | 链接均已验证（HTTP 200/301/302）</p>
+  <p style="margin-top:4px;">本简报由 AI 自动搜集生成，内容仅供参考</p>
+</div>
+
+</body>
+</html>

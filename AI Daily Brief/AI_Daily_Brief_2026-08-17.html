@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年8月17日</title>
+<style>
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-card: #1c2128;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-purple: #bc8cff;
+    --accent-orange: #f0883e;
+    --accent-red: #f85149;
+    --tag-domestic: #3fb950;
+    --tag-foreign: #58a6ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    padding: 20px;
+  }
+  .container { max-width: 800px; margin: 0 auto; }
+  
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 16px;
+    padding: 40px 32px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #58a6ff, #bc8cff, #f0883e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .header .date {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+  .header .tagline {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .today-summary {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 12px 12px 0;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .today-summary h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: var(--accent);
+  }
+  .today-summary p {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .icon { font-size: 24px; }
+
+  .news-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .news-card:hover { border-color: var(--accent); }
+
+  .news-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .news-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 28px;
+  }
+  .news-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .news-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+  .news-title a:hover { color: var(--accent); }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag-domestic { background: rgba(63,185,80,0.15); color: var(--tag-domestic); }
+  .tag-foreign { background: rgba(88,166,255,0.15); color: var(--tag-foreign); }
+
+  .news-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  .news-meta span { display: flex; align-items: center; gap: 4px; }
+  .keywords { color: var(--accent-purple) !important; }
+
+  .news-detail {
+    font-size: 13px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .news-detail .label {
+    color: var(--accent-orange);
+    font-weight: 600;
+  }
+
+  .app-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 14px;
+    border-left: 4px solid var(--accent-green);
+  }
+  .app-card .app-type {
+    font-size: 12px;
+    color: var(--accent-green);
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .app-card h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  .app-card h3 a {
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+  .app-card h3 a:hover { color: var(--accent-green); }
+
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>AI行业资讯简报</h1>
+    <div class="date">2026年8月17日 · 星期日</div>
+    <div class="tagline">DAILY BRIEFING — 快、准、少</div>
+  </div>
+
+  <div class="today-summary">
+    <h2>📌 今日速览</h2>
+    <p>OpenAI筹备IPO之际解散风险防范团队，Stripe以超70亿美元收购AI路由平台OpenRouter；阿里通义千问模型全球下载量突破30亿次，领跑全球；Google发布Gemini 3.7 Flash并集成至AI搜索模式。美团AI变革内部复盘曝光，DeepSeek API峰谷定价方案正式生效。国内多家银行创新推出"算力贷"金融产品，以Token消耗数据作为企业授信依据。</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🧠</span> 一、大模型 & 技术</div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">1</span>
+        <div class="news-title">
+          <a href="https://www.theverge.com/ai-artificial-intelligence/980817/openai-disbands-preparedness-team" target="_blank">OpenAI 筹备IPO之际解散旗下风险防范团队</a>
+          <span class="tag tag-foreign">国外</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：OpenAI、安全团队、IPO、风险防范</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>据《金融时报》报道，OpenAI于上月末解散了风险防范（preparedness）团队，该团队原负责评估模型是否存在严重风险并制定缓解方案。责任被拆分至生物、网络安全等专门领域并并入现有团队。这是本周OpenAI第二位高管离职后的又一次安全团队调整。<br>
+        <span class="label">影响：</span>引发业界对AI安全治理与商业化节奏之间平衡的担忧，Jan Leike等前安全负责人公开批评公司"为追求闪亮产品而忽视安全"。
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">2</span>
+        <div class="news-title">
+          <a href="https://www.ithome.com/0/990/429.htm" target="_blank">阿里通义千问 AI 模型全球下载量破 30 亿，碾压 Meta 和谷歌</a>
+          <span class="tag tag-domestic">国内</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：通义千问、开源、下载量、大模型</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>阿里通义千问（Qwen）AI模型全球累计下载量突破30亿次，超越Meta（Llama系列）和谷歌，成为全球下载量最高的开源大模型。<br>
+        <span class="label">影响：</span>中国开源大模型在全球生态中占据领先地位，推动AI民主化进程。
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">3</span>
+        <div class="news-title">
+          <a href="https://www.theverge.com/tech/980416/google-gemini-ai-watermarks-removal" target="_blank">Google Gemini 3.7 Flash 上线 AI Mode for Search，同时允许关闭AI水印</a>
+          <span class="tag tag-foreign">国外</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：Gemini、Google、AI搜索、3.7 Flash</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月15日，Google新发布的Gemini 3.7 Flash模型正式向AI Pro和AI Ultra订阅用户开放，在指令遵循和意图理解方面显著提升，并已集成至Google搜索AI模式。同时Google允许用户关闭Gemini生成内容的可见水印。<br>
+        <span class="label">影响：</span>Google加速将最新AI能力嵌入核心搜索产品，对抗竞品压力；关闭水印功能引发透明度争议。
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">4</span>
+        <div class="news-title">
+          <a href="https://www.ithome.com/0/990/345.htm" target="_blank">Anthropic Claude 出现大规模服务故障，多项服务无法登录</a>
+          <span class="tag tag-foreign">国外</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：Anthropic、Claude、宕机、服务故障</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月17日，Anthropic旗下Claude AI出现大规模服务中断，用户反映无法登录和加载多项功能。<br>
+        <span class="label">影响：</span>凸显AI服务商在高并发场景下的基础设施挑战。
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">5</span>
+        <div class="news-title">
+          <a href="https://www.ithome.com/0/990/307.htm" target="_blank">我国科学家发布大豆垂直大模型"丰菽"2.0，推动辅助育种</a>
+          <span class="tag tag-domestic">国内</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：垂直大模型、农业AI、大豆、辅助育种</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月17日，中国科学家发布大豆垂直领域大模型"丰菽"2.0版本，利用AI技术推动大豆辅助育种和农业科研。<br>
+        <span class="label">影响：</span>AI在农业垂直领域的落地加速，助力粮食安全和育种效率。
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">💼</span> 二、产品 & 商业</div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">6</span>
+        <div class="news-title">
+          <a href="https://www.ithome.com/0/990/358.htm" target="_blank">彭博社：Stripe 敲定收购 AI 初创公司 OpenRouter，金额超 70 亿美元</a>
+          <span class="tag tag-foreign">国外</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：Stripe、OpenRouter、收购、AI基础设施</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>彭博社报道支付巨头Stripe敲定对AI模型路由平台OpenRouter的收购，交易金额超70亿美元。<br>
+        <span class="label">影响：</span>支付巨头大举进军AI基础设施领域，AI模型路由平台商业价值获市场认可。
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">7</span>
+        <div class="news-title">
+          <a href="https://www.ithome.com/0/990/347.htm" target="_blank">DeepSeek API 峰谷定价方案正式生效，高峰时段价格翻倍</a>
+          <span class="tag tag-domestic">国内</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：DeepSeek、API定价、峰谷定价、AI成本</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月17日，DeepSeek API峰谷定价方案正式生效，高峰时段API调用价格翻倍，引导用户错峰使用以优化算力调度。<br>
+        <span class="label">影响：</span>开创国内大模型平台峰谷定价先河，推动AI算力资源更精细化的成本管理。
+      </div>
+    </div>
+
+    <div class="news-card">
+      <div class="news-header">
+        <span class="news-num">8</span>
+        <div class="news-title">
+          <a href="https://www.theverge.com/ai-artificial-intelligence/980742/chatgpts-computer-history-tracks-your-clicks-and-keystrokes" target="_blank">ChatGPT 桌面应用推出 Computer History 功能，追踪用户点击和按键记录</a>
+          <span class="tag tag-foreign">国外</span>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span class="keywords">关键词：ChatGPT、Computer History、隐私、macOS</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月16日，OpenAI为macOS版ChatGPT桌面应用推出Computer History功能，将用户操作行为转化为训练数据，学习用户工作习惯、建议自动化任务，ChatGPT和Codex可引用时间线完成任务。功能为opt-in设计。<br>
+        <span class="label">影响：</span>AI从被动响应转向主动学习用户行为，类似Windows Recall但更聚焦工作场景。
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="icon">🚀</span> 三、AI 应用案例</div>
+
+    <div class="app-card">
+      <div class="app-type">企业 AI 部署 · 国内</div>
+      <span class="tag tag-domestic" style="margin-bottom: 8px;">国内</span>
+      <h3><a href="https://www.ithome.com/0/990/331.htm" target="_blank">美团 AI 变革内部复盘：全员"养虾运动"曾日耗千万，后回归真实经营导向</a></h3>
+      <div class="news-meta">
+        <span class="keywords">关键词：美团、AI变革、降本增效、本地生活</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月17日，美团高管王莆中公开复盘公司AI变革历程，内部全员"养虾运动"曾日耗上千万资源，后调整策略聚焦干扰真实经营的核心场景，在客服自动化、推荐系统升级等环节实现降本增效。<br>
+        <span class="label">影响：</span>头部互联网企业从"全员AI"转向"精准AI"，为行业提供AI落地的实用路径参考。
+      </div>
+    </div>
+
+    <div class="app-card">
+      <div class="app-type">政府/行业应用 · 国内</div>
+      <span class="tag tag-domestic" style="margin-bottom: 8px;">国内</span>
+      <h3><a href="https://www.ithome.com/0/990/325.htm" target="_blank">多家银行竞推"算力贷"金融产品：以企业 Token 产出消耗数据作为授信依据</a></h3>
+      <div class="news-meta">
+        <span class="keywords">关键词：算力贷、金融科技、AI授信、银行业务</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>2026年8月17日，国内多家银行推出"算力贷"创新金融产品，首次以企业AI算力消耗数据（Token产出/消耗）作为业务能力授信依据，为AI企业提供专项融资渠道。<br>
+        <span class="label">影响：</span>金融体系开始围绕AI算力建立新的信用评估体系，标志AI产业进入金融基础设施阶段。
+      </div>
+    </div>
+
+    <div class="app-card">
+      <div class="app-type">AI 产品商业化 · 国外</div>
+      <span class="tag tag-foreign" style="margin-bottom: 8px;">国外</span>
+      <h3><a href="https://www.theverge.com/ai-artificial-intelligence/979345/suno-studio-2-0-midi-chatbot-custom-effects" target="_blank">Suno Studio 2.0 升级为专业音乐制作工具，新增 MIDI 支持</a></h3>
+      <div class="news-meta">
+        <span class="keywords">关键词：Suno、AI音乐、MIDI、DAW</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>Suno发布Studio 2.0重大更新，新增MIDI支持（用户最请求功能）、自定义效果器和聊天式交互，从简单的AI音频编辑器向真正的数字音频工作站（DAW）转型。<br>
+        <span class="label">影响：</span>AI音乐生成工具向专业化、可编辑化演进，降低音乐创作门槛的同时提升专业用户控制力。
+      </div>
+    </div>
+
+    <div class="app-card">
+      <div class="app-type">行业典型应用 · 国内</div>
+      <span class="tag tag-domestic" style="margin-bottom: 8px;">国内</span>
+      <h3><a href="https://www.ithome.com/0/990/313.htm" target="_blank">驾校行业引入"VR+AI"培训模式，应对供给过剩推动数字化转型</a></h3>
+      <div class="news-meta">
+        <span class="keywords">关键词：VR+AI、驾培、行业数字化、AI替代</span>
+      </div>
+      <div class="news-detail">
+        <span class="label">核心：</span>面对驾培行业供给过剩态势，行业龙头开始引入"VR+AI"特色培训模式，通过AI辅助教学降低人工教练依赖，提升培训效率和标准化水平。<br>
+        <span class="label">影响：</span>传统培训行业开始系统性引入AI技术替代/增强人力，AI渗透加速向服务业延伸。
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <p>AI行业资讯简报 · AI Daily Brief</p>
+    <p>2026年8月17日 · 数据来源：The Verge、IT之家、彭博社、金融时报等</p>
+    <p style="margin-top: 8px; color: #484f58;">本简报由 AI 自动生成，内容经交叉验证与链接检查（HTTP 200）</p>
+  </div>
+
+</div>
+</body>
+</html>

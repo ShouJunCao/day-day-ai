@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.5 工具权限控制与安全沙箱（Docker、E2B） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>8.5 工具权限控制与安全沙箱（Docker、E2B）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块八：Function Calling</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解工具调用的安全风险和威胁场景</li>
+        <li>掌握基于角色的权限控制模型</li>
+        <li>学会使用 Docker 和 E2B 实现工具调用沙箱</li>
+        <li>能够设计完整的工具权限控制方案</li>
+    </ul>
+
+    <h2>一、为什么需要权限控制和安全沙箱？</h2>
+    <p>在 Function Calling 系统中，工具调用可能带来严重的安全风险。如果不对工具调用进行权限控制和安全隔离，恶意用户或错误的工具配置可能导致数据泄露、系统破坏、资源滥用等严重后果。特别是在多用户环境中，不同用户应该有不同的工具访问权限，某些敏感工具（如数据库操作、文件删除、网络请求）必须严格限制访问范围。</p>
+
+    <p>权限控制的核心目标是确保每个用户只能访问其角色允许的工具。我们采用基于角色的访问控制（RBAC）模型，将权限分配给角色，然后将角色分配给用户。这种间接映射的方式使得权限管理更加灵活和可扩展。例如，普通用户只能访问只读工具，编辑用户可以访问读写工具，管理员可以访问所有工具包括管理面板。</p>
+
+    <p>安全沙箱的核心目标是在隔离环境中执行工具调用，防止工具访问宿主机资源或执行恶意操作。沙箱提供了多层次的隔离：子进程隔离可以防止工具影响主进程，Docker 容器隔离可以防止工具访问宿主文件系统，E2B 云端沙箱可以在完全隔离的云端环境中执行工具调用。选择合适的沙箱类型取决于安全要求和性能考虑。在实际生产环境中，通常需要根据工具的危险等级选择不同的沙箱类型，对于高风险工具使用 Docker 或 E2B 沙箱，对于低风险工具可以使用子进程隔离。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="220" viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">安全分层防护体系</text>
+            
+            <!-- 外层 -->
+            <rect x="30" y="50" width="740" height="160" rx="15" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+            <text x="400" y="75" text-anchor="middle" fill="#64748b" font-size="11">第一层：身份认证</text>
+            
+            <!-- 第二层 -->
+            <rect x="60" y="85" width="680" height="115" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="400" y="105" text-anchor="middle" fill="#1e40af" font-size="11">第二层：权限控制（RBAC）</text>
+            
+            <!-- 第三层 -->
+            <rect x="90" y="115" width="620" height="75" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="400" y="135" text-anchor="middle" fill="#065f46" font-size="11">第三层：速率限制 + 命令白名单</text>
+            
+            <!-- 最内层 -->
+            <rect x="120" y="145" width="560" height="35" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="400" y="167" text-anchor="middle" fill="#92400e" font-size="11">第四层：安全沙箱（Docker / E2B）</text>
+        </svg>
+    </div>
+
+    <h2>二、基于角色的权限控制（RBAC）</h2>
+    <p>RBAC（Role-Based Access Control）是最常用的权限模型。它将权限分配给角色，然后将角色分配给用户。这样，用户的权限由其所拥有的角色决定，而不是直接分配给用户。这种间接映射的方式使得权限管理更加灵活和可扩展，当需要修改某类用户的权限时，只需要修改角色的权限定义，所有拥有该角色的用户会自动获得新的权限。</p>
+
+    <p>在 Function Calling 系统中，常见的权限类型包括：READ（只读，允许查询数据）、WRITE（读写，允许修改数据）、EXECUTE（执行，允许运行命令）、NETWORK（网络访问，允许发起网络请求）、ADMIN（管理员，允许管理系统配置）。每种工具需要定义其所需的权限集合，用户必须拥有工具所需的所有权限才能调用该工具。</p>
+
+    <p>权限检查的流程包括：首先检查工具是否已注册，然后检查用户是否拥有工具所需的所有权限，最后检查调用频率是否超过限制。这三个检查步骤确保只有授权用户才能以合理的频率调用工具，防止权限滥用和资源耗尽。</p>
+
+    <h3>2.1 核心实现</h3>
+    <div class="code-file">08_function_calling/05_security_sandbox/security_sandbox.py</div>
+<pre><code class="language-python">class PermissionManager:
+    """权限管理器：管理工具的访问权限"""
+
+    def check_permission(self, user_id: str, tool_name: str) -> Dict:
+        """检查用户是否有权限调用某个工具"""
+        result = {"allowed": False, "reason": ""}
+
+        # 1. 检查工具是否存在
+        if tool_name not in self.tool_permissions:
+            result["reason"] = f"工具 '{tool_name}' 未注册"
+            return result
+
+        # 2. 检查用户权限
+        user_perms = self.user_roles.get(user_id, set())
+        tool_perms = self.tool_permissions[tool_name].allowed_permissions
+
+        # 用户必须拥有工具所需的所有权限
+        if not tool_perms.issubset(user_perms):
+            missing = tool_perms - user_perms
+            result["reason"] = f"缺少权限: {', '.join(p.value for p in missing)}"
+            return result
+
+        # 3. 检查速率限制
+        count = self.call_counts.get(tool_name, 0)
+        if count >= self.tool_permissions[tool_name].rate_limit:
+            result["reason"] = f"工具 '{tool_name}' 调用频率超限"
+            return result
+
+        result["allowed"] = True
+        return result</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">RBAC 权限检查流程</text>
+            
+            <rect x="30" y="55" width="140" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">用户请求</text>
+            <text x="100" y="90" text-anchor="middle" fill="white" font-size="9">user_id + tool</text>
+            
+            <line x1="170" y1="77" x2="210" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="120" height="45" rx="8" fill="#3b82f6"/>
+            <text x="270" y="75" text-anchor="middle" fill="white" font-size="11">工具注册检查</text>
+            
+            <line x1="330" y1="77" x2="370" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="370" y="55" width="120" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="430" y="75" text-anchor="middle" fill="white" font-size="11">角色权限检查</text>
+            
+            <line x1="490" y1="77" x2="530" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="530" y="55" width="120" height="45" rx="8" fill="#f59e0b"/>
+            <text x="590" y="75" text-anchor="middle" fill="white" font-size="11">速率限制检查</text>
+            
+            <line x1="650" y1="77" x2="690" y2="77" stroke="#10b981" stroke-width="2"/>
+            
+            <rect x="690" y="55" width="70" height="45" rx="8" fill="#10b981"/>
+            <text x="725" y="80" text-anchor="middle" fill="white" font-size="11">允许</text>
+        </svg>
+    </div>
+
+    <h2>三、安全沙箱</h2>
+    <p>安全沙箱是在隔离环境中执行工具调用的机制。即使工具调用被授权，也应该在沙箱中执行，以防止工具访问不应访问的资源或执行危险操作。沙箱提供了额外的安全层，即使权限控制被绕过或工具本身存在漏洞，沙箱也能限制潜在的危害范围。</p>
+
+    <p>我们支持四种沙箱类型：无沙箱（NONE）用于开发测试环境，不进行任何隔离；子进程隔离（SUBPROCESS）将工具调用放在独立的子进程中执行，防止影响主进程；Docker 容器隔离（DOCKER）在 Docker 容器中执行工具调用，提供文件系统、网络和进程级别的隔离；E2B 云端沙箱（E2B）在云端完全隔离的环境中执行工具调用，适合多租户环境。</p>
+
+    <p>命令白名单是沙箱的重要安全机制。只有白名单中的命令才能被允许执行，其他命令一律拒绝。这种白名单策略可以有效防止恶意命令注入和意外执行危险操作。例如，允许 weather 和 query 命令，但拒绝 rm、curl、wget 等可能带来安全风险的命令。</p>
+
+    <h3>3.1 核心实现</h3>
+    <div class="code-file">08_function_calling/05_security_sandbox/security_sandbox.py</div>
+<pre><code class="language-python">class SecuritySandbox:
+    """安全沙箱：在隔离环境中执行工具调用"""
+
+    def execute_in_sandbox(self, command: str, timeout: float = 10.0) -> str:
+        """在沙箱中执行命令"""
+        # 1. 检查命令是否在白名单中
+        base_cmd = command.split()[0] if command.split() else ""
+        if self.allowed_commands and base_cmd not in self.allowed_commands:
+            return f"错误: 命令 '{base_cmd}' 不在白名单中"
+
+        # 2. 根据沙箱类型执行
+        if self.sandbox_type == SandboxType.DOCKER:
+            return self._execute_docker(command, timeout)
+        elif self.sandbox_type == SandboxType.E2B:
+            return self._execute_e2b(command, timeout)
+        # ...</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Docker 容器隔离架构</text>
+            
+            <!-- 宿主机 -->
+            <rect x="30" y="50" width="720" height="160" rx="12" fill="#f0f9ff" stroke="#0ea5e9"/>
+            <text x="390" y="75" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="bold">宿主机（Hermes Agent）</text>
+            
+            <!-- Docker 容器 -->
+            <rect x="60" y="85" width="300" height="110" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="210" y="105" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">Docker 容器 A</text>
+            <text x="80" y="125" fill="#2563eb" font-size="10">• 隔离文件系统</text>
+            <text x="80" y="145" fill="#2563eb" font-size="10">• 限制网络访问</text>
+            <text x="80" y="165" fill="#2563eb" font-size="10">• 限制 CPU/内存</text>
+            <text x="80" y="185" fill="#2563eb" font-size="10">• 超时自动终止</text>
+            
+            <rect x="400" y="85" width="300" height="110" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="550" y="105" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">Docker 容器 B</text>
+            <text x="420" y="125" fill="#059669" font-size="10">• 隔离文件系统</text>
+            <text x="420" y="145" fill="#059669" font-size="10">• 限制网络访问</text>
+            <text x="420" y="165" fill="#059669" font-size="10">• 限制 CPU/内存</text>
+            <text x="420" y="185" fill="#059669" font-size="10">• 超时自动终止</text>
+        </svg>
+    </div>
+
+    <h2>四、安全工具执行器</h2>
+    <p>安全工具执行器将权限控制和沙箱执行整合在一起，提供了一个统一的安全执行接口。它首先检查用户权限，然后记录调用（用于限速），接着构建执行命令，最后在沙箱中执行命令。这种分层设计确保了每一步都有相应的安全检查，任何一步失败都会阻止后续执行。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">安全工具执行器完整流程</text>
+            
+            <rect x="30" y="55" width="120" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">用户请求</text>
+            <text x="90" y="90" text-anchor="middle" fill="white" font-size="9">user + tool + args</text>
+            
+            <line x1="150" y1="77" x2="180" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="180" y="55" width="120" height="45" rx="8" fill="#3b82f6"/>
+            <text x="240" y="75" text-anchor="middle" fill="white" font-size="11">权限检查</text>
+            <text x="240" y="90" text-anchor="middle" fill="white" font-size="9">RBAC 验证</text>
+            
+            <line x1="300" y1="77" x2="330" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="330" y="55" width="120" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="11">速率限制</text>
+            <text x="390" y="90" text-anchor="middle" fill="white" font-size="9">调用计数</text>
+            
+            <line x1="450" y1="77" x2="480" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="480" y="55" width="120" height="45" rx="8" fill="#f59e0b"/>
+            <text x="540" y="75" text-anchor="middle" fill="white" font-size="11">命令构建</text>
+            <text x="540" y="90" text-anchor="middle" fill="white" font-size="9">参数拼接</text>
+            
+            <line x1="600" y1="77" x2="630" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="630" y="55" width="120" height="45" rx="8" fill="#10b981"/>
+            <text x="690" y="75" text-anchor="middle" fill="white" font-size="11">沙箱执行</text>
+            <text x="690" y="90" text-anchor="middle" fill="white" font-size="9">Docker/E2B</text>
+            
+            <rect x="30" y="125" width="720" height="60" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+            <text x="390" y="150" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">安全拦截点</text>
+            <text x="50" y="172" fill="#666" font-size="10">① 工具未注册 → 拦截</text>
+            <text x="250" y="172" fill="#666" font-size="10">② 权限不足 → 拦截</text>
+            <text x="430" y="172" fill="#666" font-size="10">③ 频率超限 → 拦截</text>
+            <text x="610" y="172" fill="#666" font-size="10">④ 命令不在白名单 → 拦截</text>
+        </svg>
+    </div>
+
+    <h3>4.1 核心实现</h3>
+    <div class="code-file">08_function_calling/05_security_sandbox/security_sandbox.py</div>
+<pre><code class="language-python">class SecureToolExecutor:
+    """安全工具执行器：结合权限控制和沙箱执行"""
+
+    def execute(self, user_id, tool_name, arguments):
+        """安全执行工具"""
+        # 1. 权限检查
+        perm_result = self.permission_manager.check_permission(user_id, tool_name)
+        if not perm_result["allowed"]:
+            return {"success": False, "error": f"权限拒绝: {perm_result['reason']}"}
+
+        # 2. 记录调用（限速）
+        self.permission_manager.record_call(tool_name)
+
+        # 3. 构建命令
+        command = self._build_command(tool_name, arguments)
+
+        # 4. 在沙箱中执行
+        max_time = self.permission_manager.tool_permissions[tool_name].max_execution_time
+        result = self.sandbox.execute_in_sandbox(command, timeout=max_time)
+
+        return {"success": True, "result": result}</code></pre>
+
+    <h2>五、E2B 云端沙箱</h2>
+    <p>E2B 是一个专为 AI Agent 设计的云端沙箱平台。它提供了完全隔离的云端执行环境，每个沙箱实例都是独立的虚拟机，具有自己的文件系统、网络配置和进程空间。与本地 Docker 容器相比，E2B 的优势在于无需本地安装 Docker，适合 SaaS 应用和多租户场景。对于不想管理基础设施的团队来说，E2B 提供了一种开箱即用的沙箱解决方案。</p>
+
+    <p>使用 E2B 时，每个工具调用会在云端创建一个新的沙箱实例，执行完成后自动销毁。这种临时实例的设计确保了每次调用都在干净的环境中执行，不会受到之前调用的影响。同时，E2B 提供了丰富的 API，支持文件上传下载、命令执行、网络请求等功能，满足各种工具调用的需求。在实际项目中，可以将 E2B 与本地 Docker 沙箱结合使用，根据工具的安全等级选择不同的执行环境。</p>
+
+    <table>
+        <thead>
+            <tr><th>特性</th><th>Docker 容器</th><th>E2B 云端沙箱</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>安装要求</strong></td><td>需要本地安装 Docker</td><td>无需本地安装</td></tr>
+            <tr><td><strong>隔离级别</strong></td><td>容器级隔离</td><td>虚拟机级隔离</td></tr>
+            <tr><td><strong>启动速度</strong></td><td>秒级</td><td>秒级（预构建镜像）</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>自有服务器环境</td><td>SaaS / 多租户环境</td></tr>
+            <tr><td><strong>成本</strong></td><td>本地资源</td><td>按使用量计费</td></tr>
+            <tr><td><strong>可扩展性</strong></td><td>受限于本地资源</td><td>云端弹性扩展</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">E2B 云端沙箱架构</text>
+            
+            <rect x="30" y="55" width="140" height="50" rx="10" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Hermes Agent</text>
+            <text x="100" y="92" text-anchor="middle" fill="white" font-size="9">发起工具调用</text>
+            
+            <line x1="170" y1="80" x2="230" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="55" width="140" height="50" rx="10" fill="#8b5cf6"/>
+            <text x="300" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">E2B API</text>
+            <text x="300" y="92" text-anchor="middle" fill="white" font-size="9">创建沙箱实例</text>
+            
+            <line x1="370" y1="80" x2="430" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="430" y="45" width="140" height="70" rx="10" fill="#3b82f6"/>
+            <text x="500" y="70" text-anchor="middle" fill="white" font-size="12" font-weight="bold">云端沙箱</text>
+            <text x="450" y="90" fill="white" font-size="9">• 隔离文件系统</text>
+            <text x="450" y="105" fill="white" font-size="9">• 工具执行</text>
+            
+            <line x1="570" y1="80" x2="630" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="630" y="55" width="120" height="50" rx="10" fill="#10b981"/>
+            <text x="690" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">返回结果</text>
+            <text x="690" y="92" text-anchor="middle" fill="white" font-size="9">销毁沙箱实例</text>
+            
+            <rect x="100" y="135" width="580" height="35" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="157" text-anchor="middle" fill="#666" font-size="11">每次调用创建新实例 → 执行 → 销毁（确保环境干净）</text>
+        </svg>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>工具权限控制与安全沙箱是构建安全 Function Calling 系统的两道关键防线。权限控制确保只有授权用户才能调用特定工具，沙箱确保工具调用在隔离环境中执行，即使工具本身存在问题也不会影响宿主系统。这两道防线相互配合，形成了完整的安全保障体系。在实际应用中，还需要结合日志审计和异常检测，对工具调用行为进行持续监控。</p>
+
+    <p>在实际项目中，建议采用分层安全策略：首先实施基于角色的权限控制，限制用户只能访问其角色允许的工具；其次实施速率限制，防止工具调用频率过高导致资源耗尽；然后实施命令白名单，只允许执行预定义的安全命令；最后在沙箱中执行工具调用，提供最后一层隔离保护。这种纵深防御策略能够最大程度地降低安全风险。</p>
+
+    <p>在下一节 8.6 中，我们将对比主流 Function Calling 框架（OpenAI、Anthropic、Qwen、Gemini），了解各框架的工具调用特性、优势和适用场景，帮助你在实际项目中做出正确的技术选型。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

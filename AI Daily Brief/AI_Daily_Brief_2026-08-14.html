@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年8月14日</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #0f0f14;
+  color: #e0e0e6;
+  line-height: 1.6;
+  padding: 0;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-radius: 16px;
+  padding: 32px 28px;
+  margin-bottom: 28px;
+  border: 1px solid #1e3a5f;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99,179,237,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.header .subtitle {
+  font-size: 14px;
+  color: #90caf9;
+  font-weight: 500;
+}
+.header .date {
+  font-size: 13px;
+  color: #7986cb;
+  margin-top: 10px;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 32px;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 18px;
+  padding-left: 14px;
+  border-left: 4px solid #42a5f5;
+  letter-spacing: 0.5px;
+}
+.section-title.app {
+  border-left-color: #66bb6a;
+}
+
+/* Quick Summary */
+.summary {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 28px;
+}
+.summary h3 {
+  font-size: 15px;
+  color: #42a5f5;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.summary p {
+  font-size: 14px;
+  color: #b0bec5;
+  line-height: 1.7;
+}
+
+/* News Item */
+.news-item {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+.news-item:hover {
+  border-color: #42a5f5;
+}
+.news-item .tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tag-domestic {
+  background: rgba(255,152,0,0.15);
+  color: #ffb74d;
+  border: 1px solid rgba(255,152,0,0.3);
+}
+.tag-foreign {
+  background: rgba(33,150,243,0.15);
+  color: #64b5f6;
+  border: 1px solid rgba(33,150,243,0.3);
+}
+.news-item h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.news-item h4 a {
+  color: #ffffff;
+  text-decoration: none;
+}
+.news-item h4 a:hover {
+  color: #42a5f5;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.keyword {
+  background: rgba(255,255,255,0.06);
+  color: #90a4ae;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.detail {
+  font-size: 13px;
+  color: #90a4ae;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+.detail strong {
+  color: #b0bec5;
+}
+.source-link {
+  display: inline-block;
+  font-size: 12px;
+  color: #42a5f5;
+  text-decoration: none;
+  margin-top: 4px;
+}
+.source-link:hover {
+  text-decoration: underline;
+}
+
+/* AI Application Case */
+.app-case {
+  background: linear-gradient(135deg, #1a2e1a 0%, #1a1a2e 100%);
+  border: 1px solid #2e4a2a;
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.app-case:hover {
+  border-color: #66bb6a;
+}
+.app-case .tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+.app-case h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.app-case h4 a {
+  color: #ffffff;
+  text-decoration: none;
+}
+.app-case h4 a:hover {
+  color: #66bb6a;
+}
+.app-case .detail {
+  font-size: 13px;
+  color: #a5d6a7;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+.app-case .detail strong {
+  color: #c5e1a5;
+}
+.app-type {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(102,187,106,0.12);
+  color: #81c784;
+  margin-bottom: 10px;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 20px;
+  border-top: 1px solid #2a2a4a;
+  margin-top: 32px;
+  font-size: 12px;
+  color: #546e7a;
+}
+.footer a {
+  color: #42a5f5;
+  text-decoration: none;
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid #2a2a4a;
+  margin: 28px 0;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <h1>🤖 AI行业资讯简报</h1>
+  <div class="subtitle">AI Industry Daily Brief</div>
+  <div class="date">2026年8月14日 · 星期四</div>
+</div>
+
+<!-- Quick Summary -->
+<div class="summary">
+  <h3>⚡ 今日速览</h3>
+  <p>Anthropic 计划 10 月 IPO，估值达 2 万亿美元，有望超越 SpaceX 成史上最大 IPO；谷歌发布 Gemini 3.7 Flash 模型，首发优惠价为原版一半并驱动 Gemini Spark AI Agent；微软整合个人与企业版 Copilot 为"超级应用"铺路；OpenAI 面向 Pro/Business 用户推出 Mac 版 ChatGPT Computer History 功能，不再依赖截图记录活动。</p>
+</div>
+
+<!-- Section 1: LLM & Technology -->
+<div class="section">
+  <div class="section-title">一、大模型 & 技术</div>
+
+  <!-- 1. Foreign -->
+  <div class="news-item">
+    <span class="tag tag-foreign">国外</span>
+    <h4><a href="https://www.theverge.com/tech/979735/gemini-spark-is-now-powered-by-googles-upgraded-flash-model" target="_blank">谷歌发布 Gemini 3.7 Flash，首发优惠价为原 3.6 Flash 的一半</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Gemini 3.7 Flash</span>
+      <span class="keyword">Google</span>
+      <span class="keyword">Spark AI Agent</span>
+      <span class="keyword">AI Agent</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>8月13日，Google 发布 Gemini 3.7 Flash 模型，首发优惠价为 3.6 Flash 的 50%。该模型驱动 Gemini Spark AI Agent，在 Google Workspace 工具使用、软件工程与 Web 开发工作流中带来"显著提升"。</div>
+    <div class="detail"><strong>影响：</strong>降价+性能提升组合拳，降低企业 AI Agent 部署门槛，直接对标 Anthropic/ OpenAI 的企业市场。</div>
+    <a class="source-link" href="https://www.theverge.com/tech/979735/gemini-spark-is-now-powered-by-googles-upgraded-flash-model" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- 2. Foreign -->
+  <div class="news-item">
+    <span class="tag tag-foreign">国外</span>
+    <h4><a href="https://www.theverge.com/ai-artificial-intelligence/979314/claude-in-chrome-is-now-claude-cowork" target="_blank">Claude in Chrome 升级为 Claude Cowork，跨端续聊成标配</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Claude Cowork</span>
+      <span class="keyword">Anthropic</span>
+      <span class="keyword">Chrome 扩展</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>Anthropic 更新其 Chrome 扩展，侧栏机器人对话现可保存至历史，用户可在桌面/Web/移动端继续对话。Cowork 版本当天起面向 Max 和 Team 用户开放，Pro 用户"未来几周"跟进。</div>
+    <div class="detail"><strong>影响：</strong>AI 助手从"单次对话"迈向"跨端连续工作流"，强化 Anthropic 在企业协作场景的竞争力。</div>
+    <a class="source-link" href="https://www.theverge.com/ai-artificial-intelligence/979314/claude-in-chrome-is-now-claude-cowork" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- 3. Domestic -->
+  <div class="news-item">
+    <span class="tag tag-domestic">国内</span>
+    <h4><a href="https://www.ithome.com/0/989/490.htm" target="_blank">DeepSeek-V4-Pro 正式上线：原生支持 OpenAI Responses API，针对性适配 Codex</a></h4>
+    <div class="meta-row">
+      <span class="keyword">DeepSeek</span>
+      <span class="keyword">V4-Pro</span>
+      <span class="keyword">Codex</span>
+      <span class="keyword">Responses API</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>DeepSeek-V4-Pro 正式版上线，原生兼容 OpenAI Responses API，针对性适配 Codex 编码场景，为开发者提供更平滑的迁移路径。</div>
+    <div class="detail"><strong>影响：</strong>开源模型生态加速与 OpenAI 生态接轨，降低开发者切换成本，推动 AI 编程工具竞争升级。</div>
+    <a class="source-link" href="https://www.ithome.com/0/989/490.htm" target="_blank">来源: IT之家 ↗</a>
+  </div>
+
+  <!-- 4. Foreign -->
+  <div class="news-item">
+    <span class="tag tag-foreign">国外</span>
+    <h4><a href="https://www.theverge.com/ai-artificial-intelligence/979815/openai-denise-dresser-leaving-executive-departure" target="_blank">OpenAI 一周内连失两员高管：CRO Denise Dresser 宣布离职</a></h4>
+    <div class="meta-row">
+      <span class="keyword">OpenAI</span>
+      <span class="keyword">高管离职</span>
+      <span class="keyword">Denise Dresser</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>8月14日，OpenAI 首席营收官 Denise Dresser 宣布离职。两天前 Brad Lightcap 亦宣布离职创业，一周内两员核心高管相继离开。</div>
+    <div class="detail"><strong>影响：</strong>高管密集离职引发外界对 OpenAI 内部管理与 IPO 准备进程的关注。</div>
+    <a class="source-link" href="https://www.theverge.com/ai-artificial-intelligence/979815/openai-denise-dresser-leaving-executive-departure" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- 5. Domestic -->
+  <div class="news-item">
+    <span class="tag tag-domestic">国内</span>
+    <h4><a href="https://www.ithome.com/0/989/435.htm" target="_blank">谷歌 Gemini 3.7 Flash 获国内媒体跟进报道，首发优惠价为原版一半</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Gemini 3.7 Flash</span>
+      <span class="keyword">Google</span>
+      <span class="keyword">定价策略</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>谷歌 Gemini 3.7 Flash 模型获国内科技媒体广泛报道，首发定价为原 3.6 Flash 的 50%，进一步降低企业推理成本。</div>
+    <div class="detail"><strong>影响：</strong>大模型价格战持续升级，中小企业 AI 部署门槛进一步降低。</div>
+    <a class="source-link" href="https://www.ithome.com/0/989/435.htm" target="_blank">来源: IT之家 ↗</a>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Section 2: Product & Business -->
+<div class="section">
+  <div class="section-title">二、产品 & 商业</div>
+
+  <!-- 6. Foreign -->
+  <div class="news-item">
+    <span class="tag tag-foreign">国外</span>
+    <h4><a href="https://www.theverge.com/tech/979466/microsoft-copilot-365-app-unified-experience" target="_blank">微软合并 Copilot 应用，为"超级应用"铺路</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Microsoft</span>
+      <span class="keyword">Copilot</span>
+      <span class="keyword">超级应用</span>
+      <span class="keyword">365</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>微软宣布整合其个人版与企业版 Copilot 应用，统一用户体验，为即将推出的"超级应用"奠定基础。</div>
+    <div class="detail"><strong>影响：</strong>微软 AI 产品线从"分散工具"走向"统一入口"，与 Google Workspace + Gemini、Anthropic 形成三足鼎立。</div>
+    <a class="source-link" href="https://www.theverge.com/tech/979466/microsoft-copilot-365-app-unified-experience" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- 7. Domestic -->
+  <div class="news-item">
+    <span class="tag tag-domestic">国内</span>
+    <h4><a href="https://www.ithome.com/0/989/505.htm" target="_blank">曝 Anthropic 计划 10 月 IPO，估值达 2 万亿美元，有望超越 SpaceX</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Anthropic</span>
+      <span class="keyword">IPO</span>
+      <span class="keyword">Claude</span>
+      <span class="keyword">SpaceX</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>8月14日消息，《财富》报道称 Anthropic 计划 2026 年 10 月以 2 万亿美元估值 IPO，6 月已秘密提交文件，5 月公布年化营收突破 470 亿美元。SpaceX 当前市值约 1.77 万亿美元。</div>
+    <div class="detail"><strong>影响：</strong>若成功，将成为史上最大 IPO，AI 行业正式进入"万亿俱乐部"，重塑全球科技巨头格局。</div>
+    <a class="source-link" href="https://www.ithome.com/0/989/505.htm" target="_blank">来源: IT之家 ↗</a>
+  </div>
+
+  <!-- 8. Foreign -->
+  <div class="news-item">
+    <span class="tag tag-foreign">国外</span>
+    <h4><a href="https://www.theverge.com/tech/979350/apple-reportedly-wants-to-use-content-from-publishers-to-make-siri-better-at-the-news" target="_blank">苹果洽谈向出版商付费，用出版内容提升 Siri AI 新闻能力</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Apple</span>
+      <span class="keyword">Siri</span>
+      <span class="keyword">AI</span>
+      <span class="keyword">出版商合作</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>据《华尔街日报》报道，苹果正与出版商洽谈合作，允许 Siri 基于出版商内容提供新闻资讯，出版商将在内容被实际使用时获得报酬。</div>
+    <div class="detail"><strong>影响：</strong>苹果 AI 战略从"封闭自研"走向"开放合作"，为 Siri 的 AI 增强寻找内容生态支撑。</div>
+    <a class="source-link" href="https://www.theverge.com/tech/979350/apple-reportedly-wants-to-use-content-from-publishers-to-make-siri-better-at-the-news" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- 9. Domestic -->
+  <div class="news-item">
+    <span class="tag tag-domestic">国内</span>
+    <h4><a href="https://www.ithome.com/0/989/518.htm" target="_blank">Mac 版 ChatGPT 新增 Computer History，不再依赖截图记录活动</a></h4>
+    <div class="meta-row">
+      <span class="keyword">ChatGPT</span>
+      <span class="keyword">Computer History</span>
+      <span class="keyword">OpenAI</span>
+      <span class="keyword">macOS</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>8月13日，OpenAI 为 Mac 版 ChatGPT 推出 Computer History 功能，取代先前的 Chronicle 预览版。利用 macOS 辅助功能记录用户交互事件（点击、输入、快捷键、切换应用），生成记忆与时间线供 ChatGPT 与 Codex 使用，互动数据本地暂存最多 48 小时后删除。</div>
+    <div class="detail"><strong>影响：</strong>AI 桌面助手从"截屏记忆"走向"系统级交互记录"，记忆精度与隐私保护显著提升，面向 Pro/Business/Enterprise 用户开放。</div>
+    <a class="source-link" href="https://www.ithome.com/0/989/518.htm" target="_blank">来源: IT之家 ↗</a>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Section 3: AI Application Cases (NEW) -->
+<div class="section">
+  <div class="section-title app">三、AI 应用案例</div>
+
+  <!-- Case 1: Foreign - AI in Healthcare -->
+  <div class="app-case">
+    <span class="tag tag-foreign">国外</span>
+    <span class="app-type">🏥 AI + 医疗健康</span>
+    <h4><a href="https://www.theverge.com/ai-artificial-intelligence/978671/ai-cured-dog-cancer-mrna-vaccine-startup-gamgee" target="_blank">AI 治愈狗癌症的 mRNA 疫苗催生初创公司 Gamgee</a></h4>
+    <div class="meta-row">
+      <span class="keyword">AI 医疗</span>
+      <span class="keyword">mRNA 疫苗</span>
+      <span class="keyword">Gamgee</span>
+      <span class="keyword">AI 药物研发</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>此前报道的 AI 辅助设计 mRNA 疫苗治愈狗癌症的案例，已催生初创公司 Gamgee，将 AI 驱动的动物肿瘤治疗方案推向商业化。</div>
+    <div class="detail"><strong>影响：</strong>AI 在药物发现领域从"实验室概念验证"走向"初创公司商业化"，标志着 AI+ 生物医药进入新阶段。</div>
+    <a class="source-link" href="https://www.theverge.com/ai-artificial-intelligence/978671/ai-cured-dog-cancer-mrna-vaccine-startup-gamgee" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- Case 2: Foreign - AI Agent / Enterprise -->
+  <div class="app-case">
+    <span class="tag tag-foreign">国外</span>
+    <span class="app-type">🏢 AI + 企业协作</span>
+    <h4><a href="https://www.theverge.com/ai-artificial-intelligence/978666/spacexai-grok-bot-ai-agent-beta-launch" target="_blank">Grok 升级为 AI"队友"，可分配工作任务</a></h4>
+    <div class="meta-row">
+      <span class="keyword">Grok</span>
+      <span class="keyword">xAI</span>
+      <span class="keyword">AI Agent</span>
+      <span class="keyword">企业自动化</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>xAI 推出 Grok AI Agent Beta 版，将 Grok 从聊天机器人升级为可分配工作任务的"AI 队友"，支持多步骤工作流自主执行。</div>
+    <div class="detail"><strong>影响：</strong>Agentic AI 正从"辅助工具"进化为"协作者"，xAI 加入企业 AI 代理赛道，与 OpenAI Codex、Anthropic Claude 正面竞争。</div>
+    <a class="source-link" href="https://www.theverge.com/ai-artificial-intelligence/978666/spacexai-grok-bot-ai-agent-beta-launch" target="_blank">来源: The Verge ↗</a>
+  </div>
+
+  <!-- Case 3: Domestic - Autonomous Driving -->
+  <div class="app-case">
+    <span class="tag tag-domestic">国内</span>
+    <span class="app-type">🚗 AI + 自动驾驶</span>
+    <h4><a href="https://www.ithome.com/0/989/467.htm" target="_blank">文远知行 2026 上半年营收 3.5 亿同比增长 73%，Robotaxi 超 1800 辆</a></h4>
+    <div class="meta-row">
+      <span class="keyword">文远知行</span>
+      <span class="keyword">Robotaxi</span>
+      <span class="keyword">自动驾驶</span>
+      <span class="keyword">商业化</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>自动驾驶公司文远知行 2026 上半年营收 3.5 亿元，同比增长 73%，Robotaxi 运营车队超 1800 辆，商业化落地加速。</div>
+    <div class="detail"><strong>影响：</strong>自动驾驶行业从"烧钱研发"走向"规模化运营"，AI 驾驶技术正进入商业闭环验证阶段。</div>
+    <a class="source-link" href="https://www.ithome.com/0/989/467.htm" target="_blank">来源: IT之家 ↗</a>
+  </div>
+
+  <!-- Case 4: Domestic - AI + Smart City -->
+  <div class="app-case">
+    <span class="tag tag-domestic">国内</span>
+    <span class="app-type">🌆 AI + 智慧城市</span>
+    <h4><a href="https://www.ithome.com/0/989/369.htm" target="_blank">小马智行与优步扩大合作，计划在欧洲 5 城部署超 2000 辆 Robotaxi</a></h4>
+    <div class="meta-row">
+      <span class="keyword">小马智行</span>
+      <span class="keyword">Uber</span>
+      <span class="keyword">Robotaxi</span>
+      <span class="keyword">出海</span>
+    </div>
+    <div class="detail"><strong>核心：</strong>小马智行（Pony.ai）与优步（Uber）宣布扩大合作，计划在欧洲 5 个城市部署超 2000 辆 Robotaxi，加速中国自动驾驶技术出海。</div>
+    <div class="detail"><strong>影响：</strong>中国 AI 自动驾驶企业借助 Uber 全球网络进入欧洲市场，标志着 AI 技术应用从"国内试点"走向"国际化规模部署"。</div>
+    <a class="source-link" href="https://www.ithome.com/0/989/369.htm" target="_blank">来源: IT之家 ↗</a>
+  </div>
+
+</div>
+
+<hr class="divider">
+
+<!-- Footer -->
+<div class="footer">
+  <p>AI 行业资讯简报 · 每日更新</p>
+  <p style="margin-top:6px;">数据来源：The Verge · IT之家 · 彭博社 · 华尔街日报 · 财富等</p>
+  <p style="margin-top:6px;">本简报由 AI 自动生成，所有新闻均来自权威来源，链接均已验证（HTTP 200）</p>
+</div>
+
+</div>
+</body>
+</html>

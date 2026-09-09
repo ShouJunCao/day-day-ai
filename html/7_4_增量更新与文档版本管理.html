@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7.4 增量更新与文档版本管理 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>7.4 增量更新与文档版本管理</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块七：高级 RAG 技术</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解全量更新与增量更新的区别和适用场景</li>
+        <li>掌握文档哈希检测和内容变更识别的方法</li>
+        <li>学会文档版本管理和回滚机制</li>
+        <li>能够构建一致性检查确保索引与文档状态同步</li>
+    </ul>
+
+    <h2>一、为什么需要增量更新？</h2>
+    <p>在真实的业务场景中，知识库中的文档是不断变化的：新的文档被添加，旧文档被修改，过时的文档被删除。每次文档变化时，向量索引都需要同步更新以保持一致性。这种变化可能每天发生数十次甚至数百次，对系统的更新能力提出了很高的要求。</p>
+
+    <p>最简单的做法是每次文档变化后重新构建整个索引（全量更新）。但当知识库规模达到数万甚至数百万文档时，全量更新的成本非常高：需要重新解析所有文档、重新分块、重新编码向量、重新构建索引。这个过程可能需要数小时甚至数天。</p>
+
+    <p>增量更新的核心思想是：<strong>只处理发生变化的文档</strong>，避免对未变化的文档进行重复处理。通过对比文档内容的哈希值，系统能够准确识别出哪些文档是新增的、哪些被修改了、哪些被删除了，然后只对这些文档执行索引更新操作。</p>
+
+    <p>增量更新不仅能够显著减少更新时间和资源消耗，还能保证知识库的实时性。在文档频繁变化的场景中，增量更新是唯一可行的方案。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">全量更新 vs 增量更新</text>
+            
+            <rect x="40" y="55" width="340" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="210" y="85" text-anchor="middle" fill="#991b1b" font-size="14" font-weight="bold">全量更新</text>
+            <text x="60" y="110" fill="#666" font-size="11">• 重新处理所有文档</text>
+            <text x="60" y="130" fill="#666" font-size="11">• 高计算资源消耗</text>
+            <text x="60" y="150" fill="#666" font-size="11">• 更新耗时长（数小时~数天）</text>
+            <text x="60" y="170" fill="#666" font-size="11">• 适合首次构建</text>
+            
+            <rect x="420" y="55" width="340" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="85" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">增量更新</text>
+            <text x="440" y="110" fill="#666" font-size="11">• 只处理变化的文档</text>
+            <text x="440" y="130" fill="#666" font-size="11">• 低计算资源消耗</text>
+            <text x="440" y="150" fill="#666" font-size="11">• 更新耗时短（秒~分钟级）</text>
+            <text x="440" y="170" fill="#666" font-size="11">• 适合日常维护</text>
+        </svg>
+    </div>
+
+    <h2>二、文档哈希检测</h2>
+    <p>增量更新的第一步是识别哪些文档发生了变化。最可靠的方法是计算文档内容的哈希值（如 MD5 或 SHA256），通过对比新旧哈希值来判断内容是否变化。</p>
+
+    <p>哈希算法的特性是：相同的内容产生相同的哈希值，不同的内容几乎不可能产生相同的哈希值。这意味着只要文档内容有一个字节的差异，哈希值就会完全不同。因此，哈希值是检测文档变化的理想工具。</p>
+
+    <p>MD5 和 SHA256 是两种常用的哈希算法。MD5 计算速度快，生成的哈希值较短（128 位），适合快速检测；SHA256 安全性更高，生成的哈希值较长（256 位），几乎不可能发生碰撞。在增量更新场景中，MD5 已经足够使用，因为我们的目标只是检测变化，而不是保证安全性。</p>
+
+    <h3>2.1 代码实现</h3>
+    <div class="code-file">07_advanced_rag/04_incremental_update/incremental_update.py</div>
+<pre><code class="language-python">class DocumentHasher:
+    """
+    文档哈希计算器：用于检测文档内容变化。
+
+    原理：
+    1. 读取文档内容
+    2. 计算内容的 MD5/SHA256 哈希值
+    3. 通过对比哈希值判断文档是否发生变化
+    """
+
+    def compute_hash(self, file_path: str) -> str:
+        """计算文件内容的哈希值"""
+        content = Path(file_path).read_bytes()
+        if self.algorithm == "md5":
+            return hashlib.md5(content).hexdigest()
+        elif self.algorithm == "sha256":
+            return hashlib.sha256(content).hexdigest()
+
+    def has_changed(self, file_path: str, old_hash: str) -> bool:
+        """判断文件是否发生变化"""
+        new_hash = self.compute_hash(file_path)
+        return new_hash != old_hash</code></pre>
+
+    <h2>三、文档版本管理</h2>
+    <p>版本管理是增量更新的重要组成部分。每次文档更新时，系统需要记录版本号、内容哈希、更新时间等元数据。这些信息不仅用于检测变化，还支持版本回滚和历史追溯。</p>
+
+    <p>版本管理的核心操作包括：添加新版本（文档更新时）、查询活跃版本（获取当前生效的版本）、回滚到历史版本（撤销更新）。每次添加新版本时，旧版本被标记为"archived"，新版本标记为"active"。</p>
+
+    <p>版本记录通常存储在 JSON 文件或数据库中。每次版本变化时，系统将当前状态序列化保存到存储中。这样即使系统重启，版本信息也不会丢失。在分布式环境中，版本记录还可以同步到多个节点，确保所有节点的状态一致。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">文档版本生命周期</text>
+            
+            <!-- V1 -->
+            <rect x="40" y="60" width="140" height="80" rx="10" fill="#10b981"/>
+            <text x="110" y="90" text-anchor="middle" fill="white" font-size="14" font-weight="bold">V1</text>
+            <text x="110" y="110" text-anchor="middle" fill="white" font-size="10">初始版本</text>
+            <text x="110" y="130" text-anchor="middle" fill="white" font-size="9">哈希: abc123</text>
+            
+            <line x1="180" y1="100" x2="230" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- V2 -->
+            <rect x="230" y="60" width="140" height="80" rx="10" fill="#10b981"/>
+            <text x="300" y="90" text-anchor="middle" fill="white" font-size="14" font-weight="bold">V2</text>
+            <text x="300" y="110" text-anchor="middle" fill="white" font-size="10">文档更新</text>
+            <text x="300" y="130" text-anchor="middle" fill="white" font-size="9">哈希: def456</text>
+            
+            <line x1="370" y1="100" x2="420" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- V3 -->
+            <rect x="420" y="60" width="140" height="80" rx="10" fill="#10b981"/>
+            <text x="490" y="90" text-anchor="middle" fill="white" font-size="14" font-weight="bold">V3</text>
+            <text x="490" y="110" text-anchor="middle" fill="white" font-size="10">再次更新</text>
+            <text x="490" y="130" text-anchor="middle" fill="white" font-size="9">哈希: ghi789</text>
+            
+            <!-- 回滚 -->
+            <path d="M 490 140 Q 490 200 300 200 Q 110 200 110 150" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arrow2)"/>
+            <text x="300" y="215" text-anchor="middle" fill="#f59e0b" font-size="11">回滚到 V1</text>
+            
+            <!-- V4 (回滚后) -->
+            <rect x="590" y="60" width="140" height="80" rx="10" fill="#3b82f6"/>
+            <text x="660" y="90" text-anchor="middle" fill="white" font-size="14" font-weight="bold">V4</text>
+            <text x="660" y="110" text-anchor="middle" fill="white" font-size="10">回滚版本</text>
+            <text x="660" y="130" text-anchor="middle" fill="white" font-size="9">哈希: abc123</text>
+            
+            <line x1="560" y1="100" x2="590" y2="100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+                <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>3.1 代码实现</h3>
+<pre><code class="language-python">class VersionManager:
+    """
+    文档版本管理器：管理文档的版本历史和状态。
+
+    功能：
+    1. 记录每个文档的版本历史
+    2. 支持版本回滚
+    3. 跟踪文档的增删改状态
+    """
+
+    def add_version(self, doc_id, file_path, content_hash, chunk_count):
+        """添加新版本，旧版本自动标记为 archived"""
+        # 将当前活跃版本标记为 archived
+        for v in self.versions[doc_id]:
+            if v.status == "active":
+                v.status = "archived"
+
+        # 创建新版本
+        new_version = DocumentVersion(
+            doc_id=doc_id,
+            version=len(self.versions[doc_id]) + 1,
+            content_hash=content_hash,
+            status="active",
+        )
+        self.versions[doc_id].append(new_version)</code></pre>
+
+    <h2>四、增量更新流程</h2>
+    <p>增量更新的完整流程分为四个步骤：扫描目录、计算变化、执行更新、记录日志。每个步骤都有明确的输入和输出，确保更新过程的可靠性和可追溯性。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="280" viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">增量更新完整流程</text>
+            
+            <!-- 步骤 1 -->
+            <rect x="30" y="50" width="180" height="70" rx="10" fill="#3b82f6"/>
+            <text x="120" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">1. 扫描目录</text>
+            <text x="120" y="95" text-anchor="middle" fill="white" font-size="10">获取所有文件和哈希</text>
+            <text x="120" y="110" text-anchor="middle" fill="white" font-size="10">doc_id → hash</text>
+            
+            <line x1="210" y1="85" x2="270" y2="85" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 2 -->
+            <rect x="270" y="50" width="180" height="70" rx="10" fill="#10b981"/>
+            <text x="360" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">2. 计算变化</text>
+            <text x="360" y="95" text-anchor="middle" fill="white" font-size="10">对比新旧哈希值</text>
+            <text x="360" y="110" text-anchor="middle" fill="white" font-size="10">识别增/删/改</text>
+            
+            <line x1="450" y1="85" x2="510" y2="85" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 3 -->
+            <rect x="510" y="50" width="180" height="70" rx="10" fill="#f59e0b"/>
+            <text x="600" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">3. 执行更新</text>
+            <text x="600" y="95" text-anchor="middle" fill="white" font-size="10">处理变化的文档</text>
+            <text x="600" y="110" text-anchor="middle" fill="white" font-size="10">更新向量索引</text>
+            
+            <line x1="690" y1="85" x2="750" y2="85" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 4 -->
+            <rect x="690" y="160" width="90" height="60" rx="10" fill="#8b5cf6"/>
+            <text x="735" y="185" text-anchor="middle" fill="white" font-size="12" font-weight="bold">4. 记录</text>
+            <text x="735" y="205" text-anchor="middle" fill="white" font-size="9">版本日志</text>
+            
+            <!-- 结果展示 -->
+            <rect x="510" y="160" width="160" height="60" rx="8" fill="#f0f9ff" stroke="#0ea5e9"/>
+            <text x="590" y="185" text-anchor="middle" fill="#0369a1" font-size="11" font-weight="bold">更新统计</text>
+            <text x="530" y="205" fill="#666" font-size="10">+3 ~2 -1 (耗时: 2.3s)</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>4.1 变化识别逻辑</h3>
+    <p>增量更新的核心是对比当前文件状态与版本记录中的状态。对于每个文件，系统检查它是否存在于版本记录中：如果不存在，说明是新文件；如果存在但哈希值不同，说明文件已修改；如果文件不存在于当前目录但存在于版本记录中，说明文件已被删除。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">变化识别逻辑</text>
+            
+            <!-- 当前文件 -->
+            <rect x="30" y="50" width="200" height="50" rx="8" fill="#3b82f6"/>
+            <text x="130" y="70" text-anchor="middle" fill="white" font-size="12" font-weight="bold">当前文件扫描</text>
+            <text x="130" y="90" text-anchor="middle" fill="white" font-size="10">doc1: hash_a | doc3: hash_c</text>
+            
+            <!-- 版本记录 -->
+            <rect x="30" y="120" width="200" height="50" rx="8" fill="#10b981"/>
+            <text x="130" y="140" text-anchor="middle" fill="white" font-size="12" font-weight="bold">版本记录</text>
+            <text x="130" y="160" text-anchor="middle" fill="white" font-size="10">doc1: hash_a | doc2: hash_b</text>
+            
+            <!-- 对比 -->
+            <line x1="230" y1="100" x2="290" y2="100" stroke="#64748b" stroke-width="2"/>
+            <rect x="290" y="70" width="120" height="60" rx="8" fill="#f59e0b"/>
+            <text x="350" y="95" text-anchor="middle" fill="white" font-size="12" font-weight="bold">对比结果</text>
+            <text x="350" y="115" text-anchor="middle" fill="white" font-size="10">新增/修改/删除</text>
+            
+            <!-- 结果 -->
+            <rect x="450" y="50" width="300" height="120" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="600" y="75" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">识别结果</text>
+            
+            <rect x="470" y="85" width="120" height="25" rx="4" fill="#10b981"/>
+            <text x="530" y="102" text-anchor="middle" fill="white" font-size="10">新增: doc3</text>
+            
+            <rect x="610" y="85" width="120" height="25" rx="4" fill="#f59e0b"/>
+            <text x="670" y="102" text-anchor="middle" fill="white" font-size="10">修改: (无)</text>
+            
+            <rect x="470" y="120" width="120" height="25" rx="4" fill="#ef4444"/>
+            <text x="530" y="137" text-anchor="middle" fill="white" font-size="10">删除: doc2</text>
+            
+            <rect x="610" y="120" width="120" height="25" rx="4" fill="#3b82f6"/>
+            <text x="670" y="137" text-anchor="middle" fill="white" font-size="10">未变: doc1</text>
+            
+            <!-- 底部说明 -->
+            <rect x="450" y="190" width="300" height="50" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="600" y="210" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">处理策略</text>
+            <text x="600" y="230" text-anchor="middle" fill="#666" font-size="10">新增→解析索引 | 修改→删除旧+索引新 | 删除→清除索引</text>
+        </svg>
+    </div>
+
+    <h3>4.2 代码实现</h3>
+<pre><code class="language-python">class IncrementalUpdater:
+    """增量更新器：只更新发生变化的文档"""
+
+    def compute_changes(self, current_files):
+        """计算新增、修改、删除的文件"""
+        added, updated, deleted = [], [], []
+
+        for doc_id, info in current_files.items():
+            active = self.version_manager.get_active_version(doc_id)
+            if active is None:
+                added.append(doc_id)  # 新文档
+            elif active.content_hash != info["hash"]:
+                updated.append(doc_id)  # 已修改
+
+        # 检查删除
+        for doc_id in self.version_manager.versions:
+            if doc_id not in current_files:
+                deleted.append(doc_id)
+
+        return {"added": added, "updated": updated, "deleted": deleted}
+
+    def execute_update(self, changes, indexer):
+        """执行增量更新"""
+        for doc_id in changes["added"]:
+            # 解析 → 分块 → 添加到索引
+            pass
+        for doc_id in changes["updated"]:
+            # 删除旧块 → 解析新文档 → 添加新块
+            pass
+        for doc_id in changes["deleted"]:
+            # 从索引中删除相关块
+            pass</code></pre>
+
+    <h2>五、一致性检查</h2>
+    <p>增量更新虽然高效，但引入了一个风险：向量索引可能与文档状态不一致。例如，文档被删除后，索引中可能还残留该文档的文本块；或者新文档已经添加到文件系统中，但索引还没有更新。</p>
+
+    <p>一致性检查的目的就是发现并报告这些不一致的情况。它通过对比版本管理器中的活跃文档列表和向量索引中的文档列表，找出孤儿块（索引中有但版本管理中不存在的文档）和缺失文档（版本管理中有但索引中不存在的文档）。</p>
+
+    <p>在实际应用中，建议每次增量更新后执行一次一致性检查。如果发现有孤儿块，应该从索引中清除；如果发现有缺失文档，应该重新索引。定期全量重建也是一种彻底解决一致性问题的方法，通过重新构建整个索引来清除所有累积的不一致。</p>
+
+    <h3>5.1 代码实现</h3>
+<pre><code class="language-python">class ConsistencyChecker:
+    """一致性检查器：确保向量索引与文档状态一致"""
+
+    def check(self, version_manager, index_chunks):
+        """检查一致性"""
+        # 获取活跃文档
+        active_docs = set()
+        for doc_id in version_manager.versions:
+            active = version_manager.get_active_version(doc_id)
+            if active and active.status == "active":
+                active_docs.add(doc_id)
+
+        # 获取索引中的文档
+        indexed_docs = set(c.get("doc_id") for c in index_chunks)
+
+        # 检查不一致
+        orphaned_chunks = indexed_docs - active_docs
+        missing_docs = active_docs - indexed_docs
+
+        return {
+            "consistent": len(orphaned_chunks) == 0,
+            "orphaned_chunks": list(orphaned_chunks),
+            "missing_docs": list(missing_docs),
+        }</code></pre>
+
+    <h2>六、全量更新 vs 增量更新对比</h2>
+
+    <p>全量更新和增量更新各有优劣，适用于不同的场景。全量更新的优势在于实现简单、一致性强，但效率低；增量更新的优势在于效率高、资源消耗少，但实现复杂且需要额外的一致性检查。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>全量更新</th><th>增量更新</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>处理范围</strong></td><td>所有文档</td><td>仅变化文档</td></tr>
+            <tr><td><strong>更新速度</strong></td><td>慢（小时~天）</td><td>快（秒~分钟）</td></tr>
+            <tr><td><strong>资源消耗</strong></td><td>高</td><td>低</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>首次构建</td><td>日常维护</td></tr>
+            <tr><td><strong>一致性保证</strong></td><td>高（重建保证一致）</td><td>需额外检查</td></tr>
+            <tr><td><strong>实现复杂度</strong></td><td>低</td><td>中</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">推荐更新策略</text>
+            
+            <rect x="30" y="50" width="220" height="150" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="80" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">首次部署</text>
+            <text x="140" y="105" text-anchor="middle" fill="#2563eb" font-size="11">使用全量更新</text>
+            <text x="50" y="130" fill="#666" font-size="10">• 重建完整索引</text>
+            <text x="50" y="150" fill="#666" font-size="10">• 确保初始一致性</text>
+            <text x="50" y="170" fill="#666" font-size="10">• 记录版本基线</text>
+            <text x="50" y="190" fill="#666" font-size="10">耗时：取决于文档规模</text>
+            
+            <rect x="280" y="50" width="220" height="150" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="80" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">日常维护</text>
+            <text x="390" y="105" text-anchor="middle" fill="#059669" font-size="11">使用增量更新</text>
+            <text x="300" y="130" fill="#666" font-size="10">• 只处理变化文档</text>
+            <text x="300" y="150" fill="#666" font-size="10">• 定时或触发执行</text>
+            <text x="300" y="170" fill="#666" font-size="10">• 定期一致性检查</text>
+            <text x="300" y="190" fill="#666" font-size="10">耗时：秒~分钟级</text>
+            
+            <rect x="530" y="50" width="220" height="150" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="640" y="80" text-anchor="middle" fill="#92400e" font-size="14" font-weight="bold">定期全量重建</text>
+            <text x="640" y="105" text-anchor="middle" fill="#d97706" font-size="11">每周/月执行</text>
+            <text x="550" y="130" fill="#666" font-size="10">• 清除累积误差</text>
+            <text x="550" y="150" fill="#666" font-size="10">• 重建完整索引</text>
+            <text x="550" y="170" fill="#666" font-size="10">• 清理孤儿块</text>
+            <text x="550" y="190" fill="#666" font-size="10">耗时：小时级</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 最佳实践</div>
+        <p>推荐采用"首次全量 + 日常增量 + 定期全量重建"的混合策略。首次部署使用全量更新确保一致性；日常维护使用增量更新提高效率；每周或每月执行一次全量重建，清除增量更新可能累积的误差和孤儿块，确保长期一致性。同时，建议将增量更新集成到 CI/CD 流程中，实现自动化更新。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>增量更新是大规模知识库管理的必备能力。通过文档哈希检测识别变化，通过版本管理跟踪历史状态，通过一致性检查确保索引与文档同步。这套机制使得知识库能够在文档频繁变化的场景中保持高效和一致。</p>
+
+    <p>在实际项目中，建议采用"首次全量 + 日常增量 + 定期全量重建"的策略。首次部署使用全量更新确保初始一致性，日常维护使用增量更新提高效率，定期全量重建清除累积误差。同时，建议设置自动化脚本，定时执行增量更新和一致性检查，确保知识库始终保持最新状态。增量更新与版本管理不仅提升了系统效率，还为数据追溯和问题排查提供了基础。每次文档变化都有完整的版本记录，可以追溯到任意历史状态。这对于审计合规、问题定位和数据恢复都非常重要。在实际的生产环境中，还需要考虑增量更新失败时的回滚机制和异常处理策略，确保系统的稳定性和可靠性。</p>
+
+    <p>在下一节 7.5 中，我们将学习权限控制与多租户 RAG，解决企业级应用中的安全隔离问题。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

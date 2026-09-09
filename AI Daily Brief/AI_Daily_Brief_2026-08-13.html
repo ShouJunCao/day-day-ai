@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年8月13日</title>
+<style>
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a26;
+    --bg-card-hover: #22222f;
+    --border: #2a2a3a;
+    --text-primary: #e8e8f0;
+    --text-secondary: #9898aa;
+    --text-muted: #68687a;
+    --accent-blue: #4a9eff;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-pink: #ec4899;
+    --tag-domestic: #10b981;
+    --tag-foreign: #4a9eff;
+    --gradient-header: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    --gradient-accent: linear-gradient(135deg, #4a9eff, #8b5cf6);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 800px; margin: 0 auto; padding: 0 20px; }
+
+  /* Header */
+  .header {
+    background: var(--gradient-header);
+    border-bottom: 1px solid var(--border);
+    padding: 36px 0 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 50%, rgba(74,158,255,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(139,92,246,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent-blue);
+    background: rgba(74,158,255,0.1);
+    border: 1px solid rgba(74,158,255,0.2);
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .header-date {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  /* Sections */
+  .section {
+    padding: 32px 0 8px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .section-title .icon.blue { background: rgba(74,158,255,0.15); }
+  .section-title .icon.purple { background: rgba(139,92,246,0.15); }
+  .section-title .icon.green { background: rgba(16,185,129,0.15); }
+  .section-title .icon.orange { background: rgba(245,158,11,0.15); }
+
+  /* Quick overview */
+  .overview {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    border-left: 3px solid var(--accent-blue);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .card:hover {
+    background: var(--bg-card-hover);
+    border-color: rgba(74,158,255,0.3);
+  }
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .card-number {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    min-width: 22px;
+    padding-top: 2px;
+  }
+  .card-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  .card-tag.domestic {
+    color: var(--tag-domestic);
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+  }
+  .card-tag.foreign {
+    color: var(--tag-foreign);
+    background: rgba(74,158,255,0.1);
+    border: 1px solid rgba(74,158,255,0.2);
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .card-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .card-title a:hover {
+    color: var(--accent-blue);
+  }
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .card-keyword {
+    font-size: 11px;
+    color: var(--accent-purple);
+    background: rgba(139,92,246,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .card-detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    line-height: 1.7;
+  }
+  .card-detail strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* Application cases */
+  .app-case {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    border-left: 3px solid var(--accent-green);
+  }
+  .app-case .case-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-green);
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .app-case .case-type {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 6px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 32px 0 40px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .footer a {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  /* Link icon */
+  .link-icon {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-right: 4px;
+    opacity: 0.6;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .header h1 { font-size: 22px; }
+    .card { padding: 16px 18px; }
+    .container { padding: 0 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-label">AI Industry Briefing</div>
+    <h1>AI行业资讯简报</h1>
+    <div class="header-date">2026年8月13日 · 星期四</div>
+  </header>
+
+  <!-- 今日速览 -->
+  <div class="overview">
+    <strong style="color:var(--text-primary);">📌 今日速览：</strong>
+    Anthropic将Claude Chrome扩展升级为Claude Cowork，实现跨平台对话互通；DeepSeek V4 Pro正式版API深夜上线，Agent能力大幅增强；Grok推出AI"同事"功能可分配任务，ChatGPT与Gemini用户量双双突破10亿。AI应用层面，飞猪发布AI旅行助手"飞猪帮帮"，澳大利亚ChatGPT狗癌症疫苗故事催生了Gamgee初创公司。
+  </div>
+
+  <!-- 一、大模型 & 技术 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon blue">🧠</span>
+      一、大模型 & 技术
+    </div>
+
+    <!-- 1. 国外 Claude Cowork -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">1</span>
+        <span class="card-tag foreign">国外</span>
+        <span class="card-title"><a href="https://www.theverge.com/ai-artificial-intelligence/979314/claude-in-chrome-is-now-claude-cowork" target="_blank">Anthropic将Chrome扩展升级为Claude Cowork，实现跨平台对话同步</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">Anthropic</span>
+        <span class="card-keyword">Claude Cowork</span>
+        <span class="card-keyword">Chrome扩展</span>
+        <span class="card-keyword">跨平台</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>8月13日，Anthropic更新Chrome扩展，侧边栏对话现自动保存至历史记录，可在Claude桌面端、网页端或移动端继续对话。Cowork版本面向Max和Team用户开放，Pro用户"未来几周"上线。</div>
+      <div class="card-detail"><strong>影响：</strong>打破浏览器与独立应用的对话壁垒，Claude Cowork向"统一AI工作空间"迈出关键一步，增强用户粘性和跨场景协作体验。</div>
+    </div>
+
+    <!-- 2. 国外 Seedance 2.5 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">2</span>
+        <span class="card-tag foreign">国外</span>
+        <span class="card-title"><a href="https://www.theverge.com/ai-artificial-intelligence/978841/seedance-25-ip-copyright-infringement" target="_blank">Seedance 2.5增强版权保护，拒绝生成好莱坞角色模仿内容</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">Seedance 2.5</span>
+        <span class="card-keyword">版权保护</span>
+        <span class="card-keyword">深度伪造</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>8月12日，据Deadline报道，字节跳动旗下Seedance 2.5在生成更长的可编辑视频片段的同时，显著增强了检测并拒绝基于受版权保护材料生成内容的能力，特别是在Cruise与Pitt深度伪造事件之后。</div>
+      <div class="card-detail"><strong>影响：</strong>AI视频生成的版权合规从"事后补救"转向"事前拦截"，为行业树立新的安全标准，或推动其他视频模型跟进。</div>
+    </div>
+
+    <!-- 3. 国内 DeepSeek V4 Pro -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">3</span>
+        <span class="card-tag domestic">国内</span>
+        <span class="card-title"><a href="https://www.ithome.com/0/989/000.htm" target="_blank">DeepSeek V4 Pro正式版API更新上线，多项测试性能接近Fable 5</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">DeepSeek</span>
+        <span class="card-keyword">V4 Pro</span>
+        <span class="card-keyword">Agent能力</span>
+        <span class="card-keyword">API</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>8月13日凌晨，DeepSeek V4 Pro正式版（DeepSeek-V4-Pro-0813）API上线，增强Agent能力，支持Responses API和Codex接入，多项评测接近Fable 5水平。</div>
+      <div class="card-detail"><strong>影响：</strong>DeepSeek以极高性价比持续缩小与最顶尖模型差距，正式版Agent能力增强将推动AI编程和自动化任务的企业级落地。</div>
+    </div>
+
+    <!-- 4. 国内 Kimi K3开源 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">4</span>
+        <span class="card-tag domestic">国内</span>
+        <span class="card-title"><a href="https://www.ithome.com/0/988/466.htm" target="_blank">李开复：中国开源大模型让美国人担忧，Kimi K3性能接近美国最强且便宜60%</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">Kimi K3</span>
+        <span class="card-keyword">开源大模型</span>
+        <span class="card-keyword">月之暗面</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>8月11日，零一万物CEO李开复在北京表示，越来越多美国公司开始使用中国开源AI产品。月之暗面Kimi K3拥有2.8万亿参数，在Frontend Code Arena榜单中名列前茅，性能接近美国最强AI模型但价格便宜约60%。</div>
+      <div class="card-detail"><strong>影响：</strong>中国开源模型的性价比优势正重塑全球AI竞争格局，可能冲击美国闭源体系的商业护城河，引发行业对开源生态商业模式的深度讨论。</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 二、产品 & 商业 -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon purple">💼</span>
+      二、产品 & 商业
+    </div>
+
+    <!-- 5. 国外 ChatGPT & Gemini 1B -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">5</span>
+        <span class="card-tag foreign">国外</span>
+        <span class="card-title"><a href="https://www.theverge.com/ai-artificial-intelligence/978113/chatgpt-gemini-1-billion-users" target="_blank">ChatGPT与Gemini用户量双双突破10亿，AI聊天机器人进入"十亿俱乐部"</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">ChatGPT</span>
+        <span class="card-keyword">Gemini</span>
+        <span class="card-keyword">用户增长</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>OpenAI的ChatGPT和Google的Gemini均已突破10亿用户大关，两大AI聊天机器人平台在用户规模上达成里程碑。</div>
+      <div class="card-detail"><strong>影响：</strong>AI助手正式从"早期采用者"阶段进入"主流大众"阶段，十亿级用户基础将加速商业化变现和生态闭环构建。</div>
+    </div>
+
+    <!-- 6. 国内 飞猪帮帮 -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">6</span>
+        <span class="card-tag domestic">国内</span>
+        <span class="card-title"><a href="https://www.ithome.com/0/988/010.htm" target="_blank">飞猪推出AI旅行助手"飞猪帮帮"，支持对话式订机酒、做攻略</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">飞猪</span>
+        <span class="card-keyword">AI旅行助手</span>
+        <span class="card-keyword">本地生活</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>8月10日，飞猪发布AI旅行助手"飞猪帮帮"，用户可通过对话实现订机票酒店、规划行程、改签和开发票，产品以周为单位快速迭代，即将支持多人出行规划。</div>
+      <div class="card-detail"><strong>影响：</strong>AI正重塑OTA行业交互范式，从"搜索-筛选-下单"的传统流程转向"对话即服务"，提升用户决策效率的同时降低平台获客成本。</div>
+    </div>
+
+    <!-- 7. 国外 Grok AI Teammate -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-number">7</span>
+        <span class="card-tag foreign">国外</span>
+        <span class="card-title"><a href="https://www.theverge.com/ai-artificial-intelligence/978666/spacexai-grok-bot-ai-agent-beta-launch" target="_blank">Grok推出AI"同事"功能，可作为团队成员分配任务</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">SpaceXAI</span>
+        <span class="card-keyword">Grok</span>
+        <span class="card-keyword">AI Agent</span>
+        <span class="card-keyword">任务分配</span>
+      </div>
+      <div class="card-detail"><strong>核心：</strong>SpaceXAI（xAI）发布Grok AI Agent Beta版，Grok从对话机器人升级为可分配工作的AI"队友"（teammate），标志着xAI向Agentic AI领域正式迈进。</div>
+      <div class="card-detail"><strong>影响：</strong>AI从"问答工具"进化为"工作伙伴"的赛道持续升温，Grok加入战局后与OpenAI Codex、Claude等形成更激烈的Agentic AI竞争。</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 三、AI 应用案例（新增板块） -->
+  <div class="section">
+    <div class="section-title">
+      <span class="icon green">🚀</span>
+      三、AI 应用案例
+    </div>
+
+    <!-- 应用案例 1: Gamgee -->
+    <div class="app-case">
+      <div class="case-label">国外</div>
+      <span class="case-type">AI + 医疗健康</span>
+      <div class="card-header" style="margin-top:10px;">
+        <span class="card-title" style="font-size:15px;"><a href="https://www.theverge.com/ai-artificial-intelligence/978671/ai-cured-dog-cancer-mrna-vaccine-startup-gamgee" target="_blank">Gamgee：用ChatGPT设计个性化mRNA癌症疫苗，获YC孵化并启动临床试验</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">ChatGPT</span>
+        <span class="card-keyword">mRNA疫苗</span>
+        <span class="card-keyword">计算基因组学</span>
+        <span class="card-keyword">Y Combinator</span>
+      </div>
+      <div class="card-detail"><strong>案例概要：</strong>澳大利亚创业者Paul Conyngham利用ChatGPT等AI工具为患癌爱犬Rosie设计个性化mRNA癌症疫苗，部分肿瘤缩小。据此创立Gamgee，获Y Combinator孵化，正与昆士兰大学等机构合作开展首批临床试验，已有全球候诊名单。</div>
+      <div class="card-detail"><strong>落地意义：</strong>AI赋能精准医疗从概念走向实践，非生物学背景创业者借助AI工具切入高壁垒医疗领域，降低药物发现门槛。但科学界提醒需谨慎归因——现有案例尚无法严格证明AI疫苗的独立疗效。</div>
+    </div>
+
+    <!-- 应用案例 2: 飞猪帮帮 -->
+    <div class="app-case">
+      <div class="case-label">国内</div>
+      <span class="case-type">AI + 本地生活 / 在线旅游</span>
+      <div class="card-header" style="margin-top:10px;">
+        <span class="card-title" style="font-size:15px;"><a href="https://www.ithome.com/0/988/010.htm" target="_blank">飞猪帮帮：AI旅行助手实现"对话即服务"，周级别快速迭代</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">飞猪</span>
+        <span class="card-keyword">AI Agent</span>
+        <span class="card-keyword">OTA变革</span>
+        <span class="card-keyword">对话式预订</span>
+      </div>
+      <div class="card-detail"><strong>案例概要：</strong>飞猪AI助手"飞猪帮帮"支持对话式订机票酒店、规划行程、改签和开发票，正在以周为单位快速迭代，即将上线多人出行规划功能。将传统OTA的"搜索-筛选-下单"流程简化为一次自然语言交互。</div>
+      <div class="card-detail"><strong>落地意义：</strong>AI+本地生活从"推荐排序"进化到"全链路代操作"，降低用户使用门槛的同时提升交易转化率，预示OTA行业交互范式即将被AI重构。</div>
+    </div>
+
+    <!-- 应用案例 3: DeepSeek Agent -->
+    <div class="app-case">
+      <div class="case-label">国内</div>
+      <span class="case-type">AI + 企业部署 / Agentic AI</span>
+      <div class="card-header" style="margin-top:10px;">
+        <span class="card-title" style="font-size:15px;"><a href="https://www.ithome.com/0/989/000.htm" target="_blank">DeepSeek V4 Pro支持Responses API与Codex接入，Agent能力企业级落地</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">DeepSeek</span>
+        <span class="card-keyword">Agentic AI</span>
+        <span class="card-keyword">企业API</span>
+        <span class="card-keyword">AI编程</span>
+      </div>
+      <div class="card-detail"><strong>案例概要：</strong>DeepSeek V4 Pro正式版增强Agent能力，支持Responses API和Codex接入，性能接近Fable 5水平。企业可通过API将AI Agent集成到工作流中，实现自主编程、任务分解和执行。</div>
+      <div class="card-detail"><strong>落地意义：</strong>高性价比开源/闭源混合模式正推动AI从"对话玩具"向"生产力工具"转型，中小企业有望以更低成本部署AI Agent系统，加速Agentic AI的企业渗透率。</div>
+    </div>
+
+    <!-- 应用案例 4: Grok Teammate -->
+    <div class="app-case">
+      <div class="case-label">国外</div>
+      <span class="case-type">AI + 自动化办公 / 客服替代</span>
+      <div class="card-header" style="margin-top:10px;">
+        <span class="card-title" style="font-size:15px;"><a href="https://www.theverge.com/ai-artificial-intelligence/978666/spacexai-grok-bot-ai-agent-beta-launch" target="_blank">Grok AI Teammate：从对话机器人到可分配工作的AI同事</a></span>
+      </div>
+      <div class="card-meta">
+        <span class="card-keyword">Grok</span>
+        <span class="card-keyword">AI Agent</span>
+        <span class="card-keyword">任务自动化</span>
+        <span class="card-keyword">Beta发布</span>
+      </div>
+      <div class="card-detail"><strong>案例概要：</strong>SpaceXAI发布Grok AI Agent Beta，用户可将Grok视为"团队成员"并分配工作，Grok从被动回答转向主动执行任务，是xAI向Agentic AI领域的重要战略延伸。</div>
+      <div class="card-detail"><strong>落地意义：</strong>AI Agent正从实验室概念走向实际生产力工具，"AI同事"模式可能重塑工作流程设计，在客服自动化、数据分析、内容生成等场景中替代或增强人力。</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>AI行业资讯简报 · 每日速览版</p>
+    <p style="margin-top:6px;">信源：The Verge · IT之家 · 36氪 · Deadline 等</p>
+    <p style="margin-top:6px;opacity:0.6;">所有新闻均来自可验证信源，链接经curl验证（HTTP 200），生成时间：2026-08-13</p>
+  </footer>
+
+</div>
+</body>
+</html>

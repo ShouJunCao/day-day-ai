@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.6 主流框架对比（OpenAI、Anthropic、Qwen、Gemini） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>8.6 主流框架对比（OpenAI、Anthropic、Qwen、Gemini）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块八：Function Calling</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>了解四大主流框架的 Function Calling 特性差异</li>
+        <li>掌握各框架的工具定义格式和 API 调用方式</li>
+        <li>学会根据项目需求选择合适的框架</li>
+        <li>理解工具定义格式转换的方法</li>
+    </ul>
+
+    <h2>一、为什么需要框架对比？</h2>
+    <p>在 Function Calling 的实际应用中，选择合适的框架是项目成功的关键因素之一。不同的框架在工具调用格式、并行支持、生态成熟度、成本和本地部署能力等方面有显著差异。了解这些差异能够帮助你在项目初期做出正确的技术选型，避免后期因为框架限制而需要重构代码。错误的框架选择可能导致开发效率低下、维护成本增加，甚至无法满足业务需求。</p>
+
+    <p>目前主流的 Function Calling 框架包括 OpenAI、Anthropic（Claude）、Qwen（通义千问）和 Gemini（Google）。这四个框架各有优势：OpenAI 的生态最成熟，工具调用功能最完善；Anthropic 的安全对齐优秀，上下文窗口大；Qwen 支持本地部署且中文能力强；Gemini 原生多模态且免费额度高。</p>
+
+    <p>在进行技术选型时，需要综合考虑项目需求：如果需要最完善的工具调用生态，选择 OpenAI；如果重视安全和长上下文，选择 Anthropic；如果需要本地部署和中文优化，选择 Qwen；如果需要多模态能力和高性价比，选择 Gemini。在实际项目中，也可以通过抽象层（如 LangChain）实现框架无关的代码，降低切换成本。对于中国团队来说，Qwen 通常是最优选择，因为它在中文理解和本地部署方面有明显优势。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="180" viewBox="0 0 800 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">四大框架能力雷达对比</text>
+            
+            <!-- OpenAI -->
+            <rect x="30" y="50" width="170" height="115" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="115" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">OpenAI</text>
+            <text x="50" y="98" fill="#2563eb" font-size="10">工具生态: ★★★★★</text>
+            <text x="50" y="115" fill="#2563eb" font-size="10">并行调用: ★★★★★</text>
+            <text x="50" y="132" fill="#2563eb" font-size="10">本地部署: ★☆☆☆☆</text>
+            <text x="50" y="149" fill="#2563eb" font-size="10">中文支持: ★★★☆☆</text>
+            
+            <!-- Anthropic -->
+            <rect x="220" y="50" width="170" height="115" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="305" y="75" text-anchor="middle" fill="#5b21b6" font-size="12" font-weight="bold">Anthropic</text>
+            <text x="240" y="98" fill="#7c3aed" font-size="10">工具生态: ★★★★☆</text>
+            <text x="240" y="115" fill="#7c3aed" font-size="10">并行调用: ★★☆☆☆</text>
+            <text x="240" y="132" fill="#7c3aed" font-size="10">本地部署: ★☆☆☆☆</text>
+            <text x="240" y="149" fill="#7c3aed" font-size="10">中文支持: ★★★☆☆</text>
+            
+            <!-- Qwen -->
+            <rect x="410" y="50" width="170" height="115" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="495" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">Qwen（通义）</text>
+            <text x="430" y="98" fill="#b45309" font-size="10">工具生态: ★★★☆☆</text>
+            <text x="430" y="115" fill="#b45309" font-size="10">并行调用: ★★★★☆</text>
+            <text x="430" y="132" fill="#b45309" font-size="10">本地部署: ★★★★★</text>
+            <text x="430" y="149" fill="#b45309" font-size="10">中文支持: ★★★★★</text>
+            
+            <!-- Gemini -->
+            <rect x="600" y="50" width="170" height="115" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="685" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">Gemini</text>
+            <text x="620" y="98" fill="#059669" font-size="10">工具生态: ★★★★☆</text>
+            <text x="620" y="115" fill="#059669" font-size="10">并行调用: ★★★★☆</text>
+            <text x="620" y="132" fill="#059669" font-size="10">本地部署: ★★☆☆☆</text>
+            <text x="620" y="149" fill="#059669" font-size="10">中文支持: ★★★☆☆</text>
+        </svg>
+    </div>
+
+    <h2>二、工具定义格式对比</h2>
+    <p>不同框架使用不同的格式来定义工具。理解这些格式差异是实现跨框架兼容的关键。OpenAI 使用 function 格式，包含 type、function.name、function.description 和 function.parameters 字段；Anthropic 使用 tool 格式，包含 name、description 和 input_schema 字段；Gemini 使用 function_declarations 格式，包含 name、description 和 parameters 字段；Qwen 兼容 OpenAI 格式，可以直接使用 OpenAI 的工具定义。</p>
+
+    <p>虽然各框架的工具定义格式有所不同，但核心思想是一致的：都需要定义工具名称、功能描述和参数结构。这种一致性使得我们可以通过格式转换器在不同框架之间转换工具定义，从而实现跨框架兼容。在实际开发中，建议先定义一套统一的内部工具格式，然后通过转换器生成各框架所需的格式，这样可以大幅降低多框架支持的复杂度。</p>
+
+    <h3>2.1 各框架工具定义格式</h3>
+    <div class="code-file">08_function_calling/06_framework_comparison/framework_comparison.py</div>
+<pre><code class="language-python">class ToolFormatConverter:
+    """工具调用格式转换器"""
+
+    @staticmethod
+    def to_openai(name, description, parameters):
+        return {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": parameters,
+            }
+        }
+
+    @staticmethod
+    def to_anthropic(name, description, parameters):
+        return {
+            "name": name,
+            "description": description,
+            "input_schema": parameters,
+        }
+
+    @staticmethod
+    def to_gemini(name, description, parameters):
+        return {
+            "name": name,
+            "description": description,
+            "parameters": parameters,
+        }</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">工具定义格式转换流程</text>
+            
+            <rect x="30" y="50" width="160" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="70" text-anchor="middle" fill="white" font-size="12" font-weight="bold">统一工具定义</text>
+            <text x="110" y="88" text-anchor="middle" fill="white" font-size="9">name + desc + params</text>
+            
+            <line x1="190" y1="75" x2="230" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="50" width="130" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="295" y="75" text-anchor="middle" fill="white" font-size="11">格式转换器</text>
+            <text x="295" y="90" text-anchor="middle" fill="white" font-size="9">ToolFormatConverter</text>
+            
+            <line x1="360" y1="65" x2="400" y2="55" stroke="#3b82f6" stroke-width="1.5"/>
+            <line x1="360" y1="75" x2="400" y2="75" stroke="#8b5cf6" stroke-width="1.5"/>
+            <line x1="360" y1="85" x2="400" y2="95" stroke="#f59e0b" stroke-width="1.5"/>
+            
+            <rect x="400" y="40" width="100" height="30" rx="5" fill="#3b82f6"/>
+            <text x="450" y="60" text-anchor="middle" fill="white" font-size="10">OpenAI</text>
+            
+            <rect x="400" y="75" width="100" height="30" rx="5" fill="#8b5cf6"/>
+            <text x="450" y="95" text-anchor="middle" fill="white" font-size="10">Anthropic</text>
+            
+            <rect x="400" y="110" width="100" height="30" rx="5" fill="#f59e0b"/>
+            <text x="450" y="130" text-anchor="middle" fill="white" font-size="10">Gemini</text>
+            
+            <rect x="540" y="55" width="210" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="645" y="78" text-anchor="middle" fill="#1a1a2e" font-size="11" font-weight="bold">Qwen 兼容 OpenAI</text>
+            <text x="560" y="100" fill="#666" font-size="9">→ 直接使用 OpenAI 格式</text>
+            <text x="560" y="118" fill="#666" font-size="9">→ 无需额外转换</text>
+        </svg>
+    </div>
+
+    <h2>三、各框架详细对比</h2>
+    <p>为了帮助你更直观地了解各框架的差异，我们从多个维度进行了详细对比。工具格式方面，OpenAI 使用 function 格式，Anthropic 使用 tool_use 格式，Qwen 兼容 OpenAI 格式，Gemini 使用 function_declarations 格式。并行调用方面，OpenAI 最多支持 128 个工具同时调用，Gemini 支持 64 个，Qwen 支持 10 个，而 Anthropic 早期版本不支持并行调用。本地部署方面，只有 Qwen 提供了开源模型支持本地部署，其他三个框架都是闭源服务。中文能力方面，Qwen 作为阿里巴巴开发的模型，在中文理解方面表现最优；其他三个框架的中文能力相对较弱，但也能满足基本需求。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>OpenAI</th><th>Anthropic</th><th>Qwen</th><th>Gemini</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>工具格式</strong></td><td>function</td><td>tool_use</td><td>function_call</td><td>function_declarations</td></tr>
+            <tr><td><strong>并行调用</strong></td><td>✅ 支持（最多 128）</td><td>❌ 早期不支持</td><td>✅ 支持（最多 10）</td><td>✅ 支持（最多 64）</td></tr>
+            <tr><td><strong>Streaming</strong></td><td>✅ 支持</td><td>✅ 支持</td><td>✅ 支持</td><td>✅ 支持</td></tr>
+            <tr><td><strong>API 端点</strong></td><td>chat.completions</td><td>messages</td><td>chat.completions</td><td>generateContent</td></tr>
+            <tr><td><strong>本地部署</strong></td><td>❌ 不支持</td><td>❌ 不支持</td><td>✅ 开源模型</td><td>❌ 不支持</td></tr>
+            <tr><td><strong>中文能力</strong></td><td>★★★☆☆</td><td>★★★☆☆</td><td>★★★★★</td><td>★★★☆☆</td></tr>
+            <tr><td><strong>多模态</strong></td><td>✅ GPT-4V</td><td>✅ Claude 3</td><td>✅ Qwen-VL</td><td>✅ 原生</td></tr>
+            <tr><td><strong>工具生态</strong></td><td>★★★★★</td><td>★★★★☆</td><td>★★★☆☆</td><td>★★★★☆</td></tr>
+            <tr><td><strong>成本</strong></td><td>高</td><td>中高</td><td>低（可本地）</td><td>低（免费额度高）</td></tr>
+        </tbody>
+    </table>
+
+    <h2>四、API 调用示例对比</h2>
+    <p>各框架的 API 调用方式有显著差异。OpenAI 和 Qwen 使用 chat.completions 端点，通过 tools 参数传递工具定义；Anthropic 使用 messages 端点，通过 tools 参数传递工具定义，但返回格式不同；Gemini 使用 generateContent 端点，通过 tools 参数传递 function_declarations。理解这些差异是实现跨框架兼容的关键。</p>
+
+    <p>在实际开发中，如果你需要同时支持多个框架，建议将工具定义和 API 调用逻辑分离。首先定义一套统一的工具描述格式，然后通过格式转换器将其转换为各框架所需的格式。这样可以确保工具定义的一致性，降低维护成本。同时，API 调用逻辑也应该通过适配器模式进行封装，使得切换框架时只需要修改适配器，而不需要修改业务代码。</p>
+
+    <h3>4.1 OpenAI 格式调用</h3>
+    <p>OpenAI 的 Function Calling API 是最成熟和完善的。通过 chat.completions 端点，使用 tools 参数传递工具定义，模型会根据用户查询自动决定是否需要调用工具以及调用哪个工具。如果模型决定调用工具，它会返回一个包含工具名称和参数的结构化响应，开发者需要执行工具调用并将结果返回给模型。</p>
+
+    <div class="code-file">Python（OpenAI SDK）</div>
+<pre><code class="language-python">from openai import OpenAI
+
+client = OpenAI(api_key="YOUR_API_KEY")
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "北京天气？"}],
+    tools=[{
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取天气",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string"}
+                },
+                "required": ["city"],
+            },
+        }
+    }],
+)</code></pre>
+
+    <h3>4.2 Qwen 格式调用（兼容 OpenAI）</h3>
+    <p>Qwen 的 API 调用格式与 OpenAI 完全兼容，这意味着使用 OpenAI SDK 编写的代码可以几乎无缝迁移到 Qwen。这是 Qwen 的一个重要优势，可以大幅降低从 OpenAI 迁移到 Qwen 的成本。开发者只需要修改 API 端点和认证方式，工具定义和业务逻辑代码无需修改。</p>
+
+    <div class="code-file">Python（DashScope SDK）</div>
+<pre><code class="language-python">from dashscope import Generation
+
+# Qwen 兼容 OpenAI 格式
+response = Generation.call(
+    model="qwen-max",
+    messages=[{"role": "user", "content": "北京天气？"}],
+    tools=[{
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "获取天气",
+            "parameters": {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"],
+            },
+        }
+    }],
+    result_format="message",
+)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">框架选择决策树</text>
+            
+            <rect x="300" y="50" width="180" height="35" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="72" text-anchor="middle" fill="white" font-size="11">你的核心需求是什么？</text>
+            
+            <line x1="300" y1="67" x2="100" y2="110" stroke="#64748b" stroke-width="1.5"/>
+            <text x="180" y="85" text-anchor="middle" fill="#3b82f6" font-size="9">最完善生态</text>
+            <rect x="30" y="110" width="140" height="35" rx="6" fill="#3b82f6"/>
+            <text x="100" y="132" text-anchor="middle" fill="white" font-size="11">→ OpenAI</text>
+            
+            <line x1="340" y1="85" x2="280" y2="110" stroke="#64748b" stroke-width="1.5"/>
+            <text x="300" y="98" text-anchor="middle" fill="#8b5cf6" font-size="9">安全+长上下文</text>
+            <rect x="210" y="110" width="140" height="35" rx="6" fill="#8b5cf6"/>
+            <text x="280" y="132" text-anchor="middle" fill="white" font-size="11">→ Anthropic</text>
+            
+            <line x1="440" y1="85" x2="500" y2="110" stroke="#64748b" stroke-width="1.5"/>
+            <text x="480" y="98" text-anchor="middle" fill="#f59e0b" font-size="9">本地部署+中文</text>
+            <rect x="390" y="110" width="140" height="35" rx="6" fill="#f59e0b"/>
+            <text x="460" y="132" text-anchor="middle" fill="white" font-size="11">→ Qwen</text>
+            
+            <line x1="480" y1="67" x2="680" y2="110" stroke="#64748b" stroke-width="1.5"/>
+            <text x="600" y="85" text-anchor="middle" fill="#10b981" font-size="9">多模态+低成本</text>
+            <rect x="610" y="110" width="140" height="35" rx="6" fill="#10b981"/>
+            <text x="680" y="132" text-anchor="middle" fill="white" font-size="11">→ Gemini</text>
+            
+            <rect x="100" y="160" width="580" height="30" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="180" text-anchor="middle" fill="#666" font-size="11">实际项目可通过 LangChain 等框架实现跨框架兼容</text>
+        </svg>
+    </div>
+
+    <h2>五、选型建议</h2>
+    <p>在选择 Function Calling 框架时，建议从以下几个维度进行评估：工具生态成熟度、并行调用支持、本地部署能力、中文处理能力、多模态支持、成本预算和团队熟悉度。对于大多数中国团队，Qwen 是一个性价比很高的选择，它既支持本地部署，又有很强的中文理解能力，同时兼容 OpenAI API 格式，迁移成本低。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">跨框架兼容架构</text>
+            
+            <rect x="30" y="50" width="160" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="72" text-anchor="middle" fill="white" font-size="12" font-weight="bold">统一工具定义</text>
+            <text x="110" y="88" text-anchor="middle" fill="white" font-size="9">Internal Format</text>
+            
+            <line x1="190" y1="75" x2="230" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="50" width="160" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="310" y="72" text-anchor="middle" fill="white" font-size="12" font-weight="bold">格式转换器</text>
+            <text x="310" y="88" text-anchor="middle" fill="white" font-size="9">ToolFormatConverter</text>
+            
+            <line x1="390" y1="75" x2="430" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="430" y="50" width="160" height="50" rx="8" fill="#3b82f6"/>
+            <text x="510" y="72" text-anchor="middle" fill="white" font-size="12" font-weight="bold">框架适配器</text>
+            <text x="510" y="88" text-anchor="middle" fill="white" font-size="9">Framework Adapter</text>
+            
+            <line x1="590" y1="75" x2="630" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="630" y="50" width="120" height="50" rx="8" fill="#10b981"/>
+            <text x="690" y="72" text-anchor="middle" fill="white" font-size="12" font-weight="bold">目标框架</text>
+            <text x="690" y="88" text-anchor="middle" fill="white" font-size="9">OpenAI/Qwen/...</text>
+            
+            <rect x="100" y="125" width="580" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="150" text-anchor="middle" fill="#666" font-size="11">统一工具定义 → 格式转换 → 框架适配 → 目标框架（切换框架只需改适配器）</text>
+        </svg>
+    </div>
+
+    <p>如果你的项目需要最强的工具调用生态和最完善的功能支持，OpenAI 是首选；如果重视安全性和长上下文处理，Anthropic 是不错的选择；如果需要本地部署和中文优化，Qwen 是最佳选择；如果需要多模态能力和高性价比，Gemini 值得考虑。在实际项目中，建议先使用抽象层（如 LangChain、LlamaIndex）封装工具调用逻辑，这样可以在不同框架之间灵活切换。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">各框架工具调用响应格式</text>
+            
+            <rect x="30" y="50" width="160" height="90" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">OpenAI 响应</text>
+            <text x="50" y="98" fill="#2563eb" font-size="9">choices[0].message</text>
+            <text x="50" y="115" fill="#2563eb" font-size="9">.tool_calls</text>
+            <text x="50" y="132" fill="#2563eb" font-size="9">→ [{function:{...}}]</text>
+            
+            <rect x="220" y="50" width="160" height="90" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="300" y="75" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">Anthropic 响应</text>
+            <text x="240" y="98" fill="#7c3aed" font-size="9">content 数组</text>
+            <text x="240" y="115" fill="#7c3aed" font-size="9">→ tool_use block</text>
+            <text x="240" y="132" fill="#7c3aed" font-size="9">→ {input:{...}}</text>
+            
+            <rect x="410" y="50" width="160" height="90" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="490" y="75" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">Qwen 响应</text>
+            <text x="430" y="98" fill="#b45309" font-size="9">兼容 OpenAI 格式</text>
+            <text x="430" y="115" fill="#b45309" font-size="9">choices[0].message</text>
+            <text x="430" y="132" fill="#b45309" font-size="9">.tool_calls</text>
+            
+            <rect x="600" y="50" width="160" height="90" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="680" y="75" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">Gemini 响应</text>
+            <text x="620" y="98" fill="#059669" font-size="9">candidates[0].content</text>
+            <text x="620" y="115" fill="#059669" font-size="9">.parts.functionCall</text>
+            <text x="620" y="132" fill="#059669" font-size="9">→ {name, args}</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在项目初期，建议先选择单一框架进行原型验证，确认 Function Calling 的整体流程后再考虑多框架支持。如果需要同时支持多个框架，可以使用 ToolFormatConverter 这样的格式转换器来统一工具定义，减少代码重复。同时，建议将工具调用逻辑与框架 API 调用逻辑分离，这样在切换框架时只需要修改 API 适配层，而不需要修改核心业务逻辑。对于中国团队来说，建议优先考虑 Qwen，因为它的中文理解能力最强，且支持本地部署，可以在保证数据安全的同时降低 API 调用成本。</p>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>主流 Function Calling 框架各有特点：OpenAI 生态最成熟，Anthropic 安全对齐优秀，Qwen 支持本地部署且中文能力强，Gemini 原生多模态且成本低。理解各框架的工具定义格式和 API 调用方式，是进行技术选型和跨框架兼容的基础。在实际开发中，通过格式转换器和适配器模式，可以实现跨框架兼容，降低框架切换成本。</p>
+
+    <p>对于大多数中国团队来说，Qwen 是一个很好的起点，因为它兼容 OpenAI 格式、支持本地部署、中文能力强。如果项目需要最强的工具调用生态，可以考虑 OpenAI。在实际项目中，建议通过抽象层实现框架无关的代码，这样在框架切换时只需要修改适配层，而不需要修改核心业务逻辑。同时，统一的工具定义格式和格式转换器可以大幅降低多框架支持的复杂度。</p>
+
+    <p>在下一节 8.7 中，我们将学习 Parallel Function Calling（并行工具调用），掌握如何同时调用多个工具提高执行效率，了解各框架对并行工具调用的支持情况和实现方式。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

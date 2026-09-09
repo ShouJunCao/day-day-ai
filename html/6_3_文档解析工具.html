@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.3 文档解析工具 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.3 文档解析工具（MinerU、Unstructured、LlamaParse、Marker）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 系统构建</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>了解主流文档解析工具的特点和适用场景</li>
+        <li>掌握 Unstructured、MinerU、LlamaParse 的使用方法</li>
+        <li>学会根据文档复杂度选择合适的解析工具</li>
+        <li>理解工具回退机制和统一调度架构</li>
+    </ul>
+
+    <h2>一、为什么需要高级解析工具？</h2>
+    <p>在上一节 6.2 中，我们学习了基于正则表达式的文档解析方法。这种方法对于简单的 Markdown 和 HTML 文件足够有效，但面对复杂的文档格式时就显得力不从心了。</p>
+
+    <p>现实中的文档远比我们想象的复杂：PDF 文件可能包含多栏排版、嵌入的图片和表格、脚注和参考文献；Word 文档可能有复杂的样式层级和嵌套表格；PowerPoint 演示文稿包含大量的非结构化文本和图形元素。</p>
+
+    <p>高级解析工具通过使用专业的解析引擎和 AI 模型，能够更准确地识别文档结构，提取表格、公式、图片等复杂元素，并将其转换为适合后续处理的格式。这不仅能提高解析质量，还能减少后续分块和 Embedding 阶段的噪声干扰。</p>
+
+    <p>选择合适的解析工具对于 RAG 系统的整体效果至关重要。一个低质量的解析器会导致后续所有环节都受到影响，而高质量的解析器虽然前期投入更多，但能显著提升最终的检索和回答质量。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="tool1" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="tool2" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="tool3" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">文档解析工具生态矩阵</text>
+            
+            <!-- Unstructured -->
+            <rect x="30" y="50" width="180" height="120" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+            <text x="120" y="80" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">Unstructured</text>
+            <text x="120" y="100" text-anchor="middle" fill="#2563eb" font-size="11">开源 · 多格式通用</text>
+            <text x="120" y="120" text-anchor="middle" fill="#666" font-size="10">PDF/HTML/MD/DOCX/PPTX</text>
+            <text x="120" y="140" text-anchor="middle" fill="#666" font-size="10">自动识别文档结构</text>
+            <text x="120" y="160" text-anchor="middle" fill="#3b82f6" font-size="10">适用度: ★★★★★</text>
+            
+            <!-- MinerU -->
+            <rect x="310" y="50" width="180" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="400" y="80" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">MinerU</text>
+            <text x="400" y="100" text-anchor="middle" fill="#059669" font-size="11">开源 · AI 驱动</text>
+            <text x="400" y="120" text-anchor="middle" fill="#666" font-size="10">复杂 PDF 版面分析</text>
+            <text x="400" y="140" text-anchor="middle" fill="#666" font-size="10">提取表格/公式/图片</text>
+            <text x="400" y="160" text-anchor="middle" fill="#10b981" font-size="10">适用度: ★★★★</text>
+            
+            <!-- LlamaParse -->
+            <rect x="590" y="50" width="180" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="680" y="80" text-anchor="middle" fill="#92400e" font-size="14" font-weight="bold">LlamaParse</text>
+            <text x="680" y="100" text-anchor="middle" fill="#d97706" font-size="11">云端 · LLM 驱动</text>
+            <text x="680" y="120" text-anchor="middle" fill="#666" font-size="10">高精度结构化输出</text>
+            <text x="680" y="140" text-anchor="middle" fill="#666" font-size="10">返回 Markdown 格式</text>
+            <text x="680" y="160" text-anchor="middle" fill="#f59e0b" font-size="10">适用度: ★★★</text>
+        </svg>
+    </div>
+
+    <h2>二、Unstructured 解析器</h2>
+    <p>Unstructured 是目前最流行的开源多格式文档解析库。它能够自动识别文档的结构元素（标题、段落、表格、列表、图片等），并将其转换为统一的数据结构。这使得下游的分块和 Embedding 模块能够更准确地处理文档内容。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Unstructured 文档分区流程</text>
+            
+            <!-- 输入 -->
+            <rect x="30" y="60" width="140" height="60" rx="8" fill="#3b82f6"/>
+            <text x="100" y="85" text-anchor="middle" fill="white" font-size="13" font-weight="bold">原始文档</text>
+            <text x="100" y="105" text-anchor="middle" fill="white" font-size="10">PDF/DOCX/PPTX</text>
+            
+            <!-- 箭头 -->
+            <line x1="170" y1="90" x2="230" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 分区 -->
+            <rect x="230" y="50" width="160" height="80" rx="8" fill="#10b981"/>
+            <text x="310" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">文档分区</text>
+            <text x="310" y="95" text-anchor="middle" fill="white" font-size="10">自动识别结构元素</text>
+            <text x="310" y="115" text-anchor="middle" fill="white" font-size="10">Title/Paragraph/Table</text>
+            
+            <!-- 箭头 -->
+            <line x1="390" y1="90" x2="450" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 元素 -->
+            <rect x="450" y="50" width="160" height="80" rx="8" fill="#f59e0b"/>
+            <text x="530" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">元素分类</text>
+            <text x="530" y="95" text-anchor="middle" fill="white" font-size="10">文本/表格/图片/列表</text>
+            <text x="530" y="115" text-anchor="middle" fill="white" font-size="10">标题/段落/代码块</text>
+            
+            <!-- 箭头 -->
+            <line x1="610" y1="90" x2="670" y2="90" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 输出 -->
+            <rect x="670" y="50" width="100" height="80" rx="8" fill="#8b5cf6"/>
+            <text x="720" y="80" text-anchor="middle" fill="white" font-size="12" font-weight="bold">统一输出</text>
+            <text x="720" y="100" text-anchor="middle" fill="white" font-size="10">Elements 列表</text>
+            <text x="720" y="115" text-anchor="middle" fill="white" font-size="10">可迭代处理</text>
+            
+            <!-- 底部元素类型 -->
+            <rect x="100" y="170" width="80" height="50" rx="6" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="190" text-anchor="middle" fill="#1e40af" font-size="10">Title</text>
+            <text x="140" y="205" text-anchor="middle" fill="#1e40af" font-size="10">标题</text>
+            
+            <rect x="200" y="170" width="80" height="50" rx="6" fill="#d1fae5" stroke="#10b981"/>
+            <text x="240" y="190" text-anchor="middle" fill="#065f46" font-size="10">NarrativeText</text>
+            <text x="240" y="205" text-anchor="middle" fill="#065f46" font-size="10">段落</text>
+            
+            <rect x="300" y="170" width="80" height="50" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="340" y="190" text-anchor="middle" fill="#92400e" font-size="10">Table</text>
+            <text x="340" y="205" text-anchor="middle" fill="#92400e" font-size="10">表格</text>
+            
+            <rect x="400" y="170" width="80" height="50" rx="6" fill="#fce7f3" stroke="#ec4899"/>
+            <text x="440" y="190" text-anchor="middle" fill="#9d174d" font-size="10">Image</text>
+            <text x="440" y="205" text-anchor="middle" fill="#9d174d" font-size="10">图片</text>
+            
+            <rect x="500" y="170" width="80" height="50" rx="6" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="540" y="190" text-anchor="middle" fill="#5b21b6" font-size="10">ListItem</text>
+            <text x="540" y="205" text-anchor="middle" fill="#5b21b6" font-size="10">列表项</text>
+            
+            <rect x="600" y="170" width="80" height="50" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="640" y="190" text-anchor="middle" fill="#991b1b" font-size="10">CodeSnippet</text>
+            <text x="640" y="205" text-anchor="middle" fill="#991b1b" font-size="10">代码</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>2.1 核心功能</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>功能</th>
+                <th>说明</th>
+                <th>支持格式</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>文档分区</strong></td>
+                <td>自动识别文档结构元素</td>
+                <td>PDF、HTML、MD、DOCX、PPTX</td>
+            </tr>
+            <tr>
+                <td><strong>表格提取</strong></td>
+                <td>提取并格式化表格内容</td>
+                <td>PDF、DOCX、HTML</td>
+            </tr>
+            <tr>
+                <td><strong>元数据提取</strong></td>
+                <td>提取作者、创建时间等信息</td>
+                <td>所有支持格式</td>
+            </tr>
+            <tr>
+                <td><strong>OCR 支持</strong></td>
+                <td>处理扫描版文档</td>
+                <td>PDF（扫描版）</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>2.2 解析策略</h3>
+    <p>Unstructured 提供四种解析策略，适用于不同的文档类型和性能需求：</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>策略</th>
+                <th>速度</th>
+                <th>精度</th>
+                <th>适用场景</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>auto</strong></td>
+                <td>中等</td>
+                <td>高</td>
+                <td>默认推荐，自动选择最佳策略</td>
+            </tr>
+            <tr>
+                <td><strong>hi_res</strong></td>
+                <td>慢</td>
+                <td>最高</td>
+                <td>高精度需求，包含 OCR</td>
+            </tr>
+            <tr>
+                <td><strong>fast</strong></td>
+                <td>快</td>
+                <td>中</td>
+                <td>快速处理纯文本 PDF</td>
+            </tr>
+            <tr>
+                <td><strong>ocr_only</strong></td>
+                <td>最慢</td>
+                <td>高</td>
+                <td>仅扫描版 PDF</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>2.3 代码实现</h3>
+    <div class="code-file">06_rag_architecture/03_doc_parsing_tools/doc_parsing_tools.py</div>
+<pre><code class="language-python">class UnstructuredParser:
+    """
+    Unstructured 解析器：开源的多格式文档解析库。
+
+    特点：
+    - 支持 PDF、HTML、Markdown、DOCX、PPTX 等格式
+    - 自动识别文档结构（标题、段落、表格、列表）
+    - 提取元数据（创建时间、作者等）
+    """
+
+    SUPPORTED_FORMATS = [".pdf", ".html", ".md", ".docx", ".pptx", ".txt"]
+
+    def __init__(self, strategy: str = "auto"):
+        """
+        初始化解析器。
+
+        参数：
+        - strategy (str): 解析策略
+            - "auto": 自动选择最佳策略
+            - "hi_res": 高精度模式（使用 OCR）
+            - "fast": 快速模式（仅文本提取）
+            - "ocr_only": 仅 OCR（适用于扫描版 PDF）
+        """
+        self.strategy = strategy
+        self._available = self._check_availability()
+
+    def parse(self, filepath: str) -> Optional[ParsedDocument]:
+        """解析文档文件"""
+        if not self._available:
+            print(f"[警告] unstructured 未安装: {filepath}")
+            return None
+
+        from unstructured.partition.auto import partition
+
+        elements = partition(filename=filepath, strategy=self.strategy)
+
+        text_parts = []
+        table_count = 0
+        image_count = 0
+
+        for element in elements:
+            element_type = type(element).__name__
+            text = element.text if hasattr(element, 'text') else str(element)
+
+            if element_type == "Table":
+                table_count += 1
+                text_parts.append(f"[表格] {text}")
+            elif element_type == "Image":
+                image_count += 1
+            else:
+                text_parts.append(text)
+
+        full_text = "\n\n".join(text_parts)
+
+        return ParsedDocument(
+            text=full_text.strip(),
+            source=filepath,
+            tool="unstructured",
+            metadata={
+                "strategy": self.strategy,
+                "num_elements": len(elements),
+                "tables": table_count,
+                "images": image_count,
+            },
+        )</code></pre>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 安装提示</div>
+        <p>Unstructured 需要安装额外的依赖来处理不同格式：<code>pip install "unstructured[pdf,docx,pptx]"</code>。对于 PDF 解析，还需要安装系统依赖（如 poppler、tesseract）。</p>
+    </div>
+
+    <h2>三、MinerU 解析器</h2>
+    <p>MinerU 是由上海人工智能实验室开发的开源文档解析工具。它基于深度学习模型进行文档版面分析，特别适合处理学术论文、技术文档等结构复杂的 PDF 文件。</p>
+    
+    <p>与传统的基于规则的 PDF 解析不同，MinerU 使用 AI 模型来识别文档中的各种元素类型，包括标题、段落、表格、公式、图片等。这种基于深度学习方法使得 MinerU 能够处理多栏排版、跨页表格、嵌入公式等复杂场景，而这些场景往往会让传统解析器失效。</p>
+
+    <p>MinerU 的核心优势在于其对学术论文和技术文档的专门优化。它能够准确识别论文的标题、作者、摘要、正文、参考文献等结构元素，并将其转换为结构化的 Markdown 格式。这使得 MinerU 成为学术研究和知识管理场景下的理想选择。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MinerU 解析流程</text>
+            
+            <!-- 步骤 1 -->
+            <rect x="40" y="50" width="140" height="60" rx="8" fill="#10b981"/>
+            <text x="110" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">1. 文档预处理</text>
+            <text x="110" y="95" text-anchor="middle" fill="white" font-size="10">格式检测 + 图像增强</text>
+            
+            <!-- 箭头 -->
+            <line x1="180" y1="80" x2="220" y2="80" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 2 -->
+            <rect x="220" y="50" width="140" height="60" rx="8" fill="#059669"/>
+            <text x="290" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">2. 版面分析</text>
+            <text x="290" y="95" text-anchor="middle" fill="white" font-size="10">AI 模型识别布局</text>
+            
+            <!-- 箭头 -->
+            <line x1="360" y1="80" x2="400" y2="80" stroke="#059669" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 3 -->
+            <rect x="400" y="50" width="140" height="60" rx="8" fill="#047857"/>
+            <text x="470" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">3. 元素提取</text>
+            <text x="470" y="95" text-anchor="middle" fill="white" font-size="10">文本/表格/公式/图片</text>
+            
+            <!-- 箭头 -->
+            <line x1="540" y1="80" x2="580" y2="80" stroke="#047857" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 4 -->
+            <rect x="580" y="50" width="160" height="60" rx="8" fill="#065f46"/>
+            <text x="660" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">4. 结构化输出</text>
+            <text x="660" y="95" text-anchor="middle" fill="white" font-size="10">Markdown / JSON 格式</text>
+            
+            <!-- 元素展示 -->
+            <rect x="40" y="130" width="140" height="110" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+            <text x="110" y="155" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">版面分析元素</text>
+            <text x="50" y="175" fill="#059669" font-size="10">• 标题区域</text>
+            <text x="50" y="190" fill="#059669" font-size="10">• 段落区域</text>
+            <text x="50" y="205" fill="#059669" font-size="10">• 表格区域</text>
+            <text x="50" y="220" fill="#059669" font-size="10">• 图片区域</text>
+            
+            <rect x="220" y="130" width="140" height="110" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+            <text x="290" y="155" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">文本提取</text>
+            <text x="230" y="175" fill="#2563eb" font-size="10">• OCR 文字识别</text>
+            <text x="230" y="190" fill="#2563eb" font-size="10">• 阅读顺序恢复</text>
+            <text x="230" y="205" fill="#2563eb" font-size="10">• 多栏文档处理</text>
+            <text x="230" y="220" fill="#2563eb" font-size="10">• 脚注/参考文献</text>
+            
+            <rect x="400" y="130" width="140" height="110" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="470" y="155" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">表格提取</text>
+            <text x="410" y="175" fill="#d97706" font-size="10">• 表格边界检测</text>
+            <text x="410" y="190" fill="#d97706" font-size="10">• 单元格识别</text>
+            <text x="410" y="205" fill="#d97706" font-size="10">• 合并单元格处理</text>
+            <text x="410" y="220" fill="#d97706" font-size="10">• Markdown 转换</text>
+            
+            <rect x="580" y="130" width="160" height="110" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="660" y="155" text-anchor="middle" fill="#991b1b" font-size="11" font-weight="bold">公式提取</text>
+            <text x="590" y="175" fill="#dc2626" font-size="10">• 行内公式识别</text>
+            <text x="590" y="190" fill="#dc2626" font-size="10">• 独立公式识别</text>
+            <text x="590" y="205" fill="#dc2626" font-size="10">• LaTeX 格式输出</text>
+            <text x="590" y="220" fill="#dc2626" font-size="10">• 复杂公式解析</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#059669" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>3.1 安装与配置</h3>
+<pre><code class="language-bash"># 安装 MinerU
+pip install magic-pdf
+
+# 下载模型文件（首次使用）
+magic-pdf download --model
+
+# 命令行使用
+magic-pdf -p document.pdf -o ./output</code></pre>
+
+    <h3>3.2 代码实现</h3>
+<pre><code class="language-python">class MinerUParser:
+    """
+    MinerU 解析器：基于深度学习的文档解析工具。
+
+    特点：
+    - 使用 AI 模型识别文档结构
+    - 支持复杂 PDF 的版面分析
+    - 能准确提取表格、公式、图片
+    - 适用于学术论文和技术文档
+    """
+
+    def __init__(self, model_name: str = "default"):
+        self.model_name = model_name
+        self._available = self._check_availability()
+
+    def parse(self, filepath: str) -> Optional[ParsedDocument]:
+        """解析文档文件（主要支持 PDF）"""
+        if not self._available:
+            print(f"[警告] MinerU 未安装: {filepath}")
+            return None
+
+        # 实际使用：
+        # from magic_pdf.tools.cli import process_pdf
+        # result = process_pdf(filepath)
+        
+        return ParsedDocument(
+            text=result.get_markdown(),
+            source=filepath,
+            tool="mineru",
+            metadata={"model": self.model_name},
+        )</code></pre>
+
+    <h2>四、LlamaParse 解析器</h2>
+    <p>LlamaParse 是由 LlamaIndex 团队开发的云端文档解析服务。它基于大语言模型的强大理解能力，能够高精度地解析复杂文档，并输出结构化的 Markdown 格式内容。</p>
+
+    <p>与其他本地解析工具不同，LlamaParse 需要将文档上传到云端服务器进行处理。这种方式的优势是解析精度高、无需本地计算资源；劣势是需要付费、有网络延迟、且文档需要上传到第三方服务器（存在数据安全考虑）。因此，对于包含敏感信息的文档，建议优先使用本地解析工具。</p>
+
+    <p>LlamaParse 特别适合那些需要最高解析精度的场景，比如法律合同、财务报表、学术论文等。在这些场景下，即使是小的解析错误也可能导致严重的后果，因此使用基于 LLM 的高精度解析是值得的投资。</p>
+
+    <h3>4.1 核心优势</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>优势</th>
+                <th>说明</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>高精度</strong></td>
+                <td>基于 LLM 的语义理解，解析准确率最高</td>
+            </tr>
+            <tr>
+                <td><strong>零配置</strong></td>
+                <td>无需安装本地依赖，API Key 即可使用</td>
+            </tr>
+            <tr>
+                <td><strong>结构化输出</strong></td>
+                <td>自动返回 Markdown 格式，便于后续处理</td>
+            </tr>
+            <tr>
+                <td><strong>表格理解</strong></td>
+                <td>能准确理解复杂表格的语义结构</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 代码实现</h3>
+<pre><code class="language-python">class LlamaParseParser:
+    """
+    LlamaParse 解析器：由 LlamaIndex 提供的云端文档解析服务。
+
+    特点：
+    - 基于 LLM 的文档理解能力
+    - 支持复杂的 PDF 解析（表格、公式、图表）
+    - 返回结构化的 Markdown 格式
+    - 需要 API Key（付费服务）
+    """
+
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        初始化 LlamaParse 解析器。
+
+        参数：
+        - api_key (str): LlamaParse API Key
+        """
+        self.api_key = api_key or os.getenv("LLAMA_PARSE_API_KEY", "")
+        self._available = self._check_availability()
+
+    def parse(self, filepath: str) -> Optional[ParsedDocument]:
+        """解析文档文件（主要支持 PDF）"""
+        if not self._available:
+            print(f"[警告] LlamaParse 不可用: {filepath}")
+            return None
+
+        from llama_parse import LlamaParse
+
+        parser = LlamaParse(
+            api_key=self.api_key,
+            result_type="markdown",  # 返回 Markdown 格式
+            verbose=True,
+        )
+
+        documents = await parser.aload_data(filepath)
+        full_text = "\n\n".join(doc.text for doc in documents)
+
+        return ParsedDocument(
+            text=full_text.strip(),
+            source=filepath,
+            tool="llamaparse",
+            metadata={"num_pages": len(documents)},
+        )</code></pre>
+
+    <h2>五、Marker 解析器</h2>
+    <p>Marker 是另一个开源的 PDF 转 Markdown 工具，专注于高质量地转换 PDF 文档为 Markdown 格式。它使用 Surya OCR 模型进行文字识别，能够处理扫描版 PDF 和复杂的排版布局。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Marker 解析特点</text>
+            
+            <!-- 特点 1 -->
+            <rect x="30" y="50" width="220" height="110" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <circle cx="140" cy="80" r="15" fill="#3b82f6"/>
+            <text x="140" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">1</text>
+            <text x="140" y="110" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">Surya OCR 模型</text>
+            <text x="140" y="130" text-anchor="middle" fill="#666" font-size="10">高精度文字识别</text>
+            <text x="140" y="145" text-anchor="middle" fill="#666" font-size="10">支持多语言 OCR</text>
+            
+            <!-- 特点 2 -->
+            <rect x="280" y="50" width="220" height="110" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <circle cx="390" cy="80" r="15" fill="#10b981"/>
+            <text x="390" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">2</text>
+            <text x="390" y="110" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">版面保留</text>
+            <text x="390" y="130" text-anchor="middle" fill="#666" font-size="10">保持原始排版结构</text>
+            <text x="390" y="145" text-anchor="middle" fill="#666" font-size="10">支持多栏文档</text>
+            
+            <!-- 特点 3 -->
+            <rect x="530" y="50" width="220" height="110" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="640" cy="80" r="15" fill="#f59e0b"/>
+            <text x="640" y="85" text-anchor="middle" fill="white" font-size="14" font-weight="bold">3</text>
+            <text x="640" y="110" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">Markdown 输出</text>
+            <text x="640" y="130" text-anchor="middle" fill="#666" font-size="10">直接输出 Markdown</text>
+            <text x="640" y="145" text-anchor="middle" fill="#666" font-size="10">表格和公式保留</text>
+        </svg>
+    </div>
+
+    <pre><code class="language-bash"># 安装 Marker
+pip install marker-pdf
+
+# 转换 PDF 为 Markdown
+marker document.pdf ./output</code></pre>
+
+    <h2>六、工具选择决策树</h2>
+    <p>面对多种解析工具，如何选择最适合的方案？下面是一个实用的决策流程：</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="420" viewBox="0 0 780 420" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">文档解析工具选择决策树</text>
+            
+            <!-- Q1: 文档格式？ -->
+            <rect x="320" y="50" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">文档格式？</text>
+            
+            <!-- 简单格式 → 左侧 -->
+            <line x1="320" y1="70" x2="200" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="240" y="90" fill="#64748b" font-size="10">TXT / MD / HTML</text>
+            
+            <rect x="100" y="120" width="200" height="50" rx="8" fill="#3b82f6"/>
+            <text x="200" y="145" text-anchor="middle" fill="white" font-size="13" font-weight="bold">基础解析器（6.2 节）</text>
+            <text x="200" y="160" text-anchor="middle" fill="white" font-size="11">正则表达式即可</text>
+            
+            <!-- 复杂格式 → 右侧 -->
+            <line x1="460" y1="70" x2="580" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="540" y="90" fill="#64748b" font-size="10">PDF / DOCX / PPTX</text>
+            
+            <rect x="500" y="120" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="570" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">需要高精度？</text>
+            
+            <!-- 否 → Unstructured -->
+            <line x1="500" y1="140" x2="400" y2="180" stroke="#64748b" stroke-width="1.5"/>
+            <text x="420" y="155" fill="#64748b" font-size="10">否</text>
+            
+            <rect x="300" y="180" width="200" height="50" rx="8" fill="#10b981"/>
+            <text x="400" y="205" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Unstructured</text>
+            <text x="400" y="220" text-anchor="middle" fill="white" font-size="11">免费、开源、多格式</text>
+            
+            <!-- 是 → Q3 -->
+            <line x1="640" y1="140" x2="640" y2="180" stroke="#64748b" stroke-width="1.5"/>
+            <text x="655" y="165" fill="#64748b" font-size="10">是</text>
+            
+            <rect x="560" y="180" width="160" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="640" y="205" text-anchor="middle" fill="white" font-size="12" font-weight="bold">有预算？</text>
+            
+            <!-- 有预算 → LlamaParse -->
+            <line x1="720" y1="200" x2="720" y2="240" stroke="#64748b" stroke-width="1.5"/>
+            <text x="735" y="225" fill="#64748b" font-size="10">是</text>
+            
+            <rect x="640" y="240" width="160" height="50" rx="8" fill="#f59e0b"/>
+            <text x="720" y="265" text-anchor="middle" fill="white" font-size="13" font-weight="bold">LlamaParse</text>
+            <text x="720" y="280" text-anchor="middle" fill="white" font-size="11">LLM 驱动、最高精度</text>
+            
+            <!-- 无预算 → MinerU -->
+            <line x1="560" y1="200" x2="460" y2="240" stroke="#64748b" stroke-width="1.5"/>
+            <text x="480" y="215" fill="#64748b" font-size="10">否</text>
+            
+            <rect x="360" y="240" width="180" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="450" y="265" text-anchor="middle" fill="white" font-size="13" font-weight="bold">MinerU</text>
+            <text x="450" y="280" text-anchor="middle" fill="white" font-size="11">开源、AI 驱动、免费</text>
+            
+            <!-- 底部提示 -->
+            <rect x="100" y="320" width="580" height="80" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+            <text x="390" y="345" text-anchor="middle" fill="#1a1a2e" font-size="13" font-weight="bold">💡 实用建议</text>
+            <text x="120" y="365" fill="#333" font-size="11">1. 先用 Unstructured 做基线测试，覆盖 80% 的场景</text>
+            <text x="120" y="385" fill="#333" font-size="11">2. 对于解析质量不满意的文档，尝试 MinerU 或 LlamaParse</text>
+            <text x="120" y="405" fill="#333" font-size="11">3. 建议建立解析质量评估机制，自动化选择最佳工具</text>
+        </svg>
+    </div>
+
+    <h2>七、统一解析工具调度器</h2>
+    <p>在实际项目中，我们通常不会只使用一个解析工具。不同的文档类型和复杂度需要不同的工具来处理。设计一个<strong>统一的调度器</strong>可以自动选择最佳工具，并提供回退机制。</p>
+
+    <h3>7.1 调度器架构</h3>
+    <pre><code class="language-python">class ParsingToolScheduler:
+    """
+    统一解析工具调度器：管理和调度多个解析工具。
+
+    特点：
+    - 根据文件类型和复杂度自动选择最佳工具
+    - 支持多工具回退机制
+    - 提供统一的解析接口
+    """
+
+    def parse(self, filepath: str, force_tool: Optional[str] = None):
+        """解析文档，自动选择最佳工具"""
+        if force_tool:
+            return self._try_parse(filepath, force_tool)
+
+        ext = Path(filepath).suffix.lower()
+        
+        # 简单格式使用基础解析器
+        if ext in [".txt", ".md"]:
+            return self._try_parse(filepath, "basic")
+        
+        # 复杂格式尝试高级工具
+        elif ext in [".pdf", ".docx", ".pptx"]:
+            result = self._try_parse(filepath, "unstructured")
+            if result is None:
+                result = self._try_parse(filepath, "mineru")
+            return result
+        
+        # HTML 使用 unstructured
+        elif ext in [".html"]:
+            return self._try_parse(filepath, "unstructured")
+        
+        return None</code></pre>
+
+    <h3>7.2 回退策略</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>优先级</th>
+                <th>工具</th>
+                <th>适用场景</th>
+                <th>回退条件</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Unstructured</td>
+                <td>通用文档解析</td>
+                <td>未安装或解析失败</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>MinerU</td>
+                <td>复杂 PDF 解析</td>
+                <td>未安装或解析失败</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>LlamaParse</td>
+                <td>高精度需求</td>
+                <td>未配置 API Key</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>Basic</td>
+                <td>纯文本文件</td>
+                <td>无</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>八、常见问题与最佳实践</h2>
+    
+    <h3>8.1 常见问题</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>问题</th>
+                <th>原因</th>
+                <th>解决方案</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>PDF 解析后内容丢失</td>
+                <td>扫描版 PDF 需要 OCR</td>
+                <td>使用 hi_res 策略或 MinerU</td>
+            </tr>
+            <tr>
+                <td>表格提取不完整</td>
+                <td>复杂表格结构难以识别</td>
+                <td>使用 LlamaParse 或 pdfplumber</td>
+            </tr>
+            <tr>
+                <td>多栏文档解析混乱</td>
+                <td>阅读顺序识别错误</td>
+                <td>使用 MinerU 的版面分析功能</td>
+            </tr>
+            <tr>
+                <td>解析速度过慢</td>
+                <td>使用了高精度策略</td>
+                <td>对纯文本 PDF 使用 fast 策略</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.2 最佳实践清单</h3>
+    <ul>
+        <li><strong>渐进式解析</strong>：先尝试简单工具，失败后再尝试复杂工具</li>
+        <li><strong>缓存解析结果</strong>：避免重复解析相同文件，节省时间和资源</li>
+        <li><strong>记录解析日志</strong>：跟踪每个文件的解析工具、耗时和质量</li>
+        <li><strong>质量评估</strong>：定期检查解析结果，调整工具选择策略</li>
+        <li><strong>敏感数据处理</strong>：对于包含敏感信息的文档，优先使用本地工具</li>
+    </ul>
+
+    <h2>九、小结</h2>
+    <p>本章介绍了四种主流的文档解析工具：Unstructured 是多格式通用的开源首选；MinerU 擅长复杂 PDF 的 AI 驱动解析；LlamaParse 提供基于 LLM 的高精度云端解析；Marker 专注于高质量的 PDF 转 Markdown 转换。每种工具都有其独特的优势和适用场景。</p>
+
+    <p>在实际项目中，建议采用渐进式解析策略：先用 Unstructured 做基线测试，对于解析质量不满意的文档再尝试 MinerU 或 LlamaParse。同时，建议建立统一的调度器来管理多个工具，提供自动选择和回退机制，确保解析流程的可靠性和效率。</p>
+
+    <p>文档解析质量直接影响后续的分块、Embedding 和检索效果。一个高质量的解析器能够准确保留文档的结构信息，避免噪声干扰，为整个 RAG 系统打下良好的基础。因此，在工具选择上不能仅仅考虑速度和成本，更要关注解析质量对最终效果的影响。</p>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 下一步建议</div>
+        <p>完成文档解析后，下一步是分块策略（6.4 节）。分块质量直接影响 Embedding 的效果和检索的准确性。建议根据文档类型和解析工具的输出格式，选择合适的分块策略。</p>
+    </div>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

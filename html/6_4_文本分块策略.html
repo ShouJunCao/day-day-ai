@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.4 文本分块策略 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.4 文本分块策略（固定长度、语义分块、递归分块、Sentence Window）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 系统构建</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解文本分块在 RAG 系统中的关键作用</li>
+        <li>掌握四种主流分块策略的原理和适用场景</li>
+        <li>学会根据文档类型选择合适的分块策略</li>
+        <li>能够对比不同分块策略的效果</li>
+    </ul>
+
+    <h2>一、为什么文本分块很重要？</h2>
+    <p>在 RAG 系统中，文本分块是连接文档解析和向量检索的关键桥梁。分块质量直接影响 Embedding 的效果和检索的准确性。如果分块过大，Embedding 会丢失细粒度语义；如果分块过小，检索结果可能缺乏足够的上下文。</p>
+
+    <p>分块的核心挑战在于：如何在保持语义完整性的同时，控制块的大小以适应 Embedding 模型的限制。不同的文档类型和内容结构需要不同的分块策略。例如，技术文档适合按章节分块，而新闻文章适合按段落分块。</p>
+
+    <p>此外，分块策略还会影响检索的粒度。细粒度分块（小块）能精确定位相关信息，但可能缺乏上下文；粗粒度分块（大块）提供完整上下文，但可能引入噪声。因此，选择合适的分块策略需要权衡检索精度和上下文完整性。</p>
+
+    <p>在实际项目中，分块往往是 RAG 系统调优的第一步。一个合适的分块策略可以显著提升检索准确率，而错误的分块策略会导致后续所有优化都难以见效。因此，在构建 RAG 系统时，应该投入足够的时间来评估和选择分块策略。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="240" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">分块策略决策树</text>
+            
+            <!-- Q1 -->
+            <rect x="340" y="50" width="120" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="400" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">文档结构？</text>
+            
+            <!-- 无结构 → 左侧 -->
+            <line x1="340" y1="70" x2="200" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="250" y="90" fill="#64748b" font-size="10">无结构/连续文本</text>
+            
+            <rect x="120" y="120" width="120" height="40" rx="8" fill="#3b82f6"/>
+            <text x="180" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">固定长度分块</text>
+            
+            <line x1="180" y1="160" x2="180" y2="190" stroke="#3b82f6" stroke-width="2"/>
+            <text x="180" y="180" fill="#3b82f6" font-size="9">简单快速</text>
+            
+            <rect x="120" y="190" width="120" height="30" rx="6" fill="#dbeafe"/>
+            <text x="180" y="210" text-anchor="middle" fill="#1e40af" font-size="10">适用：日志/对话</text>
+            
+            <!-- 有结构 → 右侧 -->
+            <line x1="460" y1="70" x2="600" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="550" y="90" fill="#64748b" font-size="10">有结构/段落分明</text>
+            
+            <rect x="540" y="120" width="120" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="600" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">需要语义边界？</text>
+            
+            <!-- 是 → 语义分块 -->
+            <line x1="540" y1="140" x2="440" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <text x="460" y="160" fill="#64748b" font-size="10">是</text>
+            
+            <rect x="340" y="190" width="140" height="30" rx="6" fill="#10b981"/>
+            <text x="410" y="210" text-anchor="middle" fill="white" font-size="10" font-weight="bold">语义分块 / 递归分块</text>
+            
+            <!-- 否 → Sentence Window -->
+            <line x1="660" y1="140" x2="680" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <text x="680" y="160" fill="#64748b" font-size="10">否</text>
+            
+            <rect x="620" y="190" width="140" height="30" rx="6" fill="#f59e0b"/>
+            <text x="690" y="210" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Sentence Window</text>
+        </svg>
+    </div>
+
+    <h2>二、固定长度分块</h2>
+    <p>固定长度分块是最简单直接的分块策略。它按固定字符数将文本切分为多个块，相邻块之间可以设置重叠部分以避免语义被硬切断。</p>
+
+    <p>这种策略的优势在于实现简单、速度极快，不需要任何自然语言处理知识。但它的缺点也很明显：完全不考虑语义边界，可能会在句子中间切断文本，导致每个块的语义不完整。对于信息密度均匀的文本（如日志文件），这种策略效果不错；但对于结构化文档（如论文、报告），效果往往不理想。</p>
+
+    <h3>2.1 原理与实现</h3>
+    <p>固定长度分块使用滑动窗口策略：从文本开头开始，每次截取 chunk_size 个字符作为一个块，然后向后移动 chunk_size - overlap 个字符继续截取。这种策略实现简单、速度快，但完全不考虑语义边界，可能会在句子中间切断文本。</p>
+
+    <div class="code-file">06_rag_architecture/04_text_chunking/text_chunking.py</div>
+<pre><code class="language-python">class FixedSizeChunker:
+    """
+    固定长度分块器：按固定字符数切分文本。
+
+    特点：
+    - 实现简单，速度快
+    - 不考虑语义边界
+    - 适合均匀分布的文本
+    """
+
+    def __init__(self, chunk_size: int = 500, overlap: int = 50):
+        self.chunk_size = chunk_size
+        self.overlap = overlap
+
+    def chunk(self, text: str) -> List[Chunk]:
+        """将文本切分为固定大小的块"""
+        chunks = []
+        start = 0
+
+        while start < len(text):
+            end = start + self.chunk_size
+            chunk_text = text[start:end]
+
+            chunks.append(Chunk(
+                text=chunk_text,
+                index=len(chunks),
+                metadata={"strategy": "fixed_size"},
+            ))
+            start = end - self.overlap  # 滑动窗口
+
+        return chunks</code></pre>
+
+    <h3>2.2 适用场景</h3>
+    <table>
+        <thead>
+            <tr><th>场景</th><th>适合原因</th><th>注意事项</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>日志文件</strong></td><td>每行独立，语义边界不明显</td><td>按行分块更合适</td></tr>
+            <tr><td><strong>对话记录</strong></td><td>每轮对话相对独立</td><td>可按对话轮次分块</td></tr>
+            <tr><td><strong>均匀文本</strong></td><td>信息密度均匀分布</td><td>重叠部分很重要</td></tr>
+        </tbody>
+    </table>
+
+    <h3>2.3 分块效果示意</h3>
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">固定长度分块滑动窗口示意</text>
+            
+            <!-- 原始文本 -->
+            <rect x="40" y="50" width="700" height="40" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+            <text x="390" y="75" text-anchor="middle" fill="#1a1a2e" font-size="11">原始文本：[--------------------------------------------------------------------------------------------------------------------------]</text>
+            
+            <!-- 块 1 -->
+            <rect x="40" y="100" width="200" height="30" rx="4" fill="#3b82f6"/>
+            <text x="140" y="120" text-anchor="middle" fill="white" font-size="10">块 1: 0-200 字符</text>
+            
+            <!-- 块 2 (重叠 50) -->
+            <rect x="190" y="130" width="200" height="30" rx="4" fill="#60a5fa"/>
+            <text x="290" y="150" text-anchor="middle" fill="white" font-size="10">块 2: 150-350 (重叠 50)</text>
+            
+            <!-- 块 3 (重叠 50) -->
+            <rect x="340" y="100" width="200" height="30" rx="4" fill="#93c5fd"/>
+            <text x="440" y="120" text-anchor="middle" fill="white" font-size="10">块 3: 300-500 (重叠 50)</text>
+            
+            <!-- 箭头指示重叠 -->
+            <line x1="190" y1="115" x2="240" y2="115" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,2"/>
+            <text x="215" y="110" text-anchor="middle" fill="#ef4444" font-size="9">重叠区</text>
+            
+            <!-- 图例 -->
+            <rect x="620" y="100" width="120" height="60" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="680" y="120" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="bold">图例</text>
+            <text x="630" y="140" fill="#3b82f6" font-size="9">■ 块 1</text>
+            <text x="630" y="152" fill="#60a5fa" font-size="9">■ 块 2</text>
+        </svg>
+    </div>
+
+    <h2>三、语义分块</h2>
+    <p>语义分块在句子边界处切分文本，避免在句子中间切断。它首先将文本按句子分割，然后累积句子直到达到目标大小，在句子边界处切分。</p>
+
+    <p>语义分块的关键在于识别句子边界。中文的句子通常以句号、问号、叹号等标点符号结束。通过正则表达式匹配这些标点符号，可以将文本分割为句子列表，然后在句子边界处进行切分。</p>
+
+    <p>这种方法的优势是保持了句子的完整性，不会在句子中间切断语义。缺点是块大小不均匀，有些块可能远小于目标大小，有些可能略大于目标大小。对于 Embedding 模型来说，块大小不均匀可能导致向量质量波动，但通常比固定长度分块的语义完整性更好。</p>
+
+    <p>在实际应用中，语义分块适合处理文章、博客、新闻等自然语言文本。这些文本通常有清晰的句子结构，按句子切分能够保持语义的连贯性。但对于代码文档或技术手册，语义分块可能不如递归分块有效。</p>
+
+    <h3>3.1 代码实现</h3>
+<pre><code class="language-python">class SemanticChunker:
+    """
+    语义分块器：基于语义相似度动态调整块边界。
+
+    原理：
+    1. 按句子分割文本
+    2. 累积句子直到达到目标大小
+    3. 在句子边界切分（不切断句子）
+    """
+
+    def __init__(self, chunk_size: int = 500, overlap: int = 50):
+        self.chunk_size = chunk_size
+        self.overlap = overlap
+        # 句子分割正则
+        self.sentence_pattern = re.compile(r'(?<=[。！？；.!?\n])\s*')
+
+    def chunk(self, text: str) -> List[Chunk]:
+        """基于语义边界切分文本"""
+        sentences = self._split_sentences(text)
+        chunks = []
+        current_chunk = []
+        current_length = 0
+
+        for sentence in sentences:
+            if current_length + len(sentence) > self.chunk_size and current_chunk:
+                chunks.append(Chunk(text=" ".join(current_chunk), ...))
+                current_chunk = self._get_overlap()
+
+            current_chunk.append(sentence)
+            current_length += len(sentence)
+
+        return chunks</code></pre>
+
+    <h3>3.2 分块效果对比</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">语义分块 vs 固定长度分块</text>
+            
+            <!-- 固定长度 -->
+            <rect x="40" y="50" width="340" height="120" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="210" y="75" text-anchor="middle" fill="#991b1b" font-size="13" font-weight="bold">固定长度分块</text>
+            
+            <rect x="60" y="90" width="120" height="25" rx="4" fill="#ef4444"/>
+            <text x="120" y="107" text-anchor="middle" fill="white" font-size="9">块 1: 0-200</text>
+            <rect x="60" y="120" width="120" height="25" rx="4" fill="#ef4444"/>
+            <text x="120" y="137" text-anchor="middle" fill="white" font-size="9">块 2: 200-400</text>
+            
+            <rect x="200" y="90" width="160" height="25" rx="4" fill="#ef4444"/>
+            <text x="280" y="107" text-anchor="middle" fill="white" font-size="9">块 3: 句子被切断 ✗</text>
+            <rect x="200" y="120" width="160" height="25" rx="4" fill="#ef4444"/>
+            <text x="280" y="137" text-anchor="middle" fill="white" font-size="9">块 4: 语义不完整 ✗</text>
+            
+            <!-- 语义分块 -->
+            <rect x="420" y="50" width="340" height="120" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="75" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">语义分块</text>
+            
+            <rect x="440" y="90" width="140" height="25" rx="4" fill="#10b981"/>
+            <text x="510" y="107" text-anchor="middle" fill="white" font-size="9">块 1: 完整句子 1 ✓</text>
+            <rect x="440" y="120" width="140" height="25" rx="4" fill="#10b981"/>
+            <text x="510" y="137" text-anchor="middle" fill="white" font-size="9">块 2: 完整句子 2 ✓</text>
+            
+            <rect x="600" y="90" width="140" height="25" rx="4" fill="#10b981"/>
+            <text x="670" y="107" text-anchor="middle" fill="white" font-size="9">块 3: 完整句子 3 ✓</text>
+            <rect x="600" y="120" width="140" height="25" rx="4" fill="#10b981"/>
+            <text x="670" y="137" text-anchor="middle" fill="white" font-size="9">块 4: 完整句子 4 ✓</text>
+        </svg>
+    </div>
+
+    <h2>四、递归分块</h2>
+    <p>递归分块按层次结构逐步细化切分文本。它首先尝试在大边界（如段落）处切分，如果块仍然过大，再逐步使用更小的边界（如句子、分号、空格）进行切分。</p>
+
+    <p>递归分块是 LangChain 等主流框架默认推荐的分块策略。它的核心优势是既考虑了文档的自然结构，又能在结构不明显时退回到更细粒度的切分。这种"先大后小"的策略能够最大程度地保持语义完整性，同时确保块大小在可控范围内。</p>
+
+    <h3>4.1 分隔符层次</h3>
+    <table>
+        <thead>
+            <tr><th>层次</th><th>分隔符</th><th>边界类型</th><th>优先级</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>1</td><td><code>\n\n</code></td><td>段落</td><td>最高</td></tr>
+            <tr><td>2</td><td><code>\n</code></td><td>换行</td><td>高</td></tr>
+            <tr><td>3</td><td><code>。</code></td><td>句号</td><td>中</td></tr>
+            <tr><td>4</td><td><code>；</code></td><td>分号</td><td>低</td></tr>
+            <tr><td>5</td><td><code> </code></td><td>空格</td><td>最低</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 递归过程示意</h3>
+    <div class="diagram-container">
+        <svg width="780" height="280" viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">递归分块层次结构</text>
+            
+            <!-- Level 1: 段落 -->
+            <rect x="250" y="50" width="280" height="40" rx="6" fill="#3b82f6"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Level 1: 段落边界 (\n\n)</text>
+            
+            <!-- 箭头 -->
+            <line x1="390" y1="90" x2="390" y2="120" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Level 2: 换行 -->
+            <rect x="250" y="120" width="280" height="40" rx="6" fill="#60a5fa"/>
+            <text x="390" y="145" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Level 2: 换行边界 (\n)</text>
+            
+            <!-- 箭头 -->
+            <line x1="390" y1="160" x2="390" y2="190" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Level 3: 句号 -->
+            <rect x="250" y="190" width="280" height="40" rx="6" fill="#93c5fd"/>
+            <text x="390" y="215" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Level 3: 句号边界 (。)</text>
+            
+            <!-- 箭头 -->
+            <line x1="390" y1="230" x2="390" y2="260" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Level 4: 分号/空格 -->
+            <rect x="250" y="260" width="280" height="20" rx="4" fill="#bfdbfe"/>
+            <text x="390" y="275" text-anchor="middle" fill="#1e3a8a" font-size="10">Level 4+: 分号/空格/固定长度 (兜底)</text>
+            
+            <!-- 右侧说明 -->
+            <rect x="560" y="50" width="200" height="230" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="660" y="75" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">递归逻辑</text>
+            <text x="570" y="100" fill="#333" font-size="10">1. 尝试用段落切分</text>
+            <text x="570" y="120" fill="#333" font-size="10">2. 如果块仍过大，</text>
+            <text x="590" y="135" fill="#333" font-size="10">用换行切分</text>
+            <text x="570" y="160" fill="#333" font-size="10">3. 如果仍过大，</text>
+            <text x="590" y="175" fill="#333" font-size="10">用句号切分</text>
+            <text x="570" y="200" fill="#333" font-size="10">4. 依此类推...</text>
+            <text x="570" y="230" fill="#333" font-size="10">5. 最后回退到固定长度</text>
+            <text x="570" y="250" fill="#333" font-size="10">   分块作为兜底方案</text>
+        </svg>
+    </div>
+
+    <h3>4.3 代码实现</h3>
+<pre><code class="language-python">class RecursiveChunker:
+    """
+    递归分块器：按层次结构递归切分文本。
+
+    分隔符层次（从大到小）：
+    1. 双换行（段落）
+    2. 单换行
+    3. 句号
+    4. 分号
+    5. 空格
+    """
+
+    SEPARATORS = [
+        ("\n\n", "paragraph"),
+        ("\n", "newline"),
+        ("。", "period"),
+        ("；", "semicolon"),
+        (" ", "space"),
+    ]
+
+    def chunk(self, text: str) -> List[Chunk]:
+        """递归切分文本"""
+        return self._recursive_split(text, level=0)
+
+    def _recursive_split(self, text: str, level: int) -> List[Chunk]:
+        """递归切分：从大边界到小边界"""
+        if len(text) <= self.chunk_size:
+            return [Chunk(text=text, index=0)]
+
+        if level >= len(self.SEPARATORS):
+            return self._fallback_split(text)
+
+        # 按当前层级分隔符切分
+        separator, name = self.SEPARATORS[level]
+        parts = text.split(separator)
+
+        # 合并相邻部分，递归处理过大的部分
+        chunks = []
+        # ... (详细实现见代码文件)
+
+        return chunks</code></pre>
+
+    <h2>五、Sentence Window 分块</h2>
+    <p>Sentence Window 分块以单个句子为核心，保留前后若干句作为上下文窗口。检索时使用核心句子进行匹配，生成时使用完整上下文提供背景信息。</p>
+
+    <h3>5.1 核心思想</h3>
+    <p>Sentence Window 的核心思想是<strong>检索与生成分离</strong>：检索阶段使用核心句子（精确匹配），生成阶段使用完整上下文（提供背景）。这种设计既能保证检索精度，又能保证生成的连贯性。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Sentence Window 分块原理</text>
+            
+            <!-- 句子序列 -->
+            <rect x="40" y="50" width="700" height="40" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+            <text x="390" y="75" text-anchor="middle" fill="#1a1a2e" font-size="11">句子序列：[句 1] [句 2] [句 3] [句 4] [句 5] [句 6] [句 7] [句 8]</text>
+            
+            <!-- 窗口 1 (以句 3 为核心) -->
+            <rect x="40" y="110" width="280" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="180" y="135" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">窗口 1 (核心: 句 3)</text>
+            <text x="180" y="155" text-anchor="middle" fill="#2563eb" font-size="10">[句 1] [句 2] [句 3] [句 4] [句 5]</text>
+            
+            <!-- 窗口 2 (以句 5 为核心) -->
+            <rect x="260" y="110" width="280" height="60" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="400" y="135" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">窗口 2 (核心: 句 5)</text>
+            <text x="400" y="155" text-anchor="middle" fill="#059669" font-size="10">[句 3] [句 4] [句 5] [句 6] [句 7]</text>
+            
+            <!-- 窗口 3 (以句 7 为核心) -->
+            <rect x="480" y="110" width="280" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="620" y="135" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">窗口 3 (核心: 句 7)</text>
+            <text x="620" y="155" text-anchor="middle" fill="#d97706" font-size="10">[句 5] [句 6] [句 7] [句 8]</text>
+            
+            <!-- 说明 -->
+            <rect x="100" y="200" width="580" height="50" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="220" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">检索时：使用核心句子匹配 | 生成时：使用完整窗口提供上下文</text>
+            <text x="390" y="240" text-anchor="middle" fill="#64748b" font-size="10">窗口大小 = 核心句子 + 前后各 N 句（通常 N=2~3）</text>
+        </svg>
+    </div>
+
+    <h3>5.2 适用场景</h3>
+    <table>
+        <thead>
+            <tr><th>场景</th><th>为什么适合</th><th>示例</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>法律文档</strong></td><td>需要精确匹配条款，同时需要上下文</td><td>合同条款检索</td></tr>
+            <tr><td><strong>医学文献</strong></td><td>医学术语需要精确匹配，但理解需要上下文</td><td>症状 - 疾病匹配</td></tr>
+            <tr><td><strong>技术文档</strong></td><td>API 文档需要精确匹配函数名</td><td>代码示例检索</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.3 代码实现</h3>
+<pre><code class="language-python">class SentenceWindowChunker:
+    """
+    Sentence Window 分块器：以句子为中心，保留上下文窗口。
+
+    特点：
+    - 每个块以单个句子为核心
+    - 包含前后若干句作为上下文
+    - 检索时使用核心句子，生成时使用完整上下文
+    """
+
+    def __init__(self, window_size: int = 3):
+        self.window_size = window_size
+        self.sentence_pattern = re.compile(r'(?<=[。！？.!?])\s*')
+
+    def chunk(self, text: str) -> List[Chunk]:
+        """生成带上下文窗口的句子块"""
+        sentences = self._split_sentences(text)
+        chunks = []
+
+        for i, sentence in enumerate(sentences):
+            # 获取前后上下文
+            start = max(0, i - self.window_size)
+            end = min(len(sentences), i + self.window_size + 1)
+            context = " ".join(sentences[start:end])
+
+            chunks.append(Chunk(
+                text=context,
+                index=i,
+                metadata={
+                    "core_sentence": sentence,
+                    "core_index": i,
+                    "context_start": start,
+                    "context_end": end,
+                },
+            ))
+
+        return chunks</code></pre>
+
+    <h2>六、四种分块策略全面对比</h2>
+
+    <table>
+        <thead>
+            <tr><th>策略</th><th>速度</th><th>语义完整性</th><th>块大小</th><th>适用场景</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>固定长度</strong></td><td>最快</td><td>差</td><td>均匀</td><td>日志/对话/均匀文本</td></tr>
+            <tr><td><strong>语义分块</strong></td><td>快</td><td>好</td><td>不均匀</td><td>文章/博客/新闻</td></tr>
+            <tr><td><strong>递归分块</strong></td><td>中等</td><td>最好</td><td>较均匀</td><td>技术文档/论文</td></tr>
+            <tr><td><strong>Sentence Window</strong></td><td>快</td><td>好</td><td>均匀</td><td>法律/医学/技术文档</td></tr>
+        </tbody>
+    </table>
+
+    <h3>6.1 性能对比数据</h3>
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">分块策略效果对比（5000 字测试文本）</text>
+            
+            <!-- 柱状图：块数 -->
+            <text x="150" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">块数（越少越好）</text>
+            
+            <rect x="50" y="80" width="40" height="100" rx="4" fill="#3b82f6"/>
+            <text x="70" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">固定</text>
+            <text x="70" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">12</text>
+            
+            <rect x="110" y="80" width="40" height="95" rx="4" fill="#60a5fa"/>
+            <text x="130" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">语义</text>
+            <text x="130" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">11</text>
+            
+            <rect x="170" y="80" width="40" height="85" rx="4" fill="#93c5fd"/>
+            <text x="190" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">递归</text>
+            <text x="190" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">10</text>
+            
+            <rect x="230" y="80" width="40" height="140" rx="4" fill="#bfdbfe"/>
+            <text x="250" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">窗口</text>
+            <text x="250" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">25</text>
+            
+            <!-- 柱状图：语义完整性 -->
+            <text x="450" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">语义完整性（越高越好）</text>
+            
+            <rect x="350" y="80" width="40" height="50" rx="4" fill="#ef4444"/>
+            <text x="370" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">固定</text>
+            <text x="370" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">30%</text>
+            
+            <rect x="410" y="80" width="40" height="100" rx="4" fill="#f59e0b"/>
+            <text x="430" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">语义</text>
+            <text x="430" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">80%</text>
+            
+            <rect x="470" y="80" width="40" height="120" rx="4" fill="#10b981"/>
+            <text x="490" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">递归</text>
+            <text x="490" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">95%</text>
+            
+            <rect x="530" y="80" width="40" height="110" rx="4" fill="#3b82f6"/>
+            <text x="550" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">窗口</text>
+            <text x="550" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">90%</text>
+            
+            <!-- 柱状图：检索精度 -->
+            <text x="700" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">检索精度（越高越好）</text>
+            
+            <rect x="650" y="80" width="40" height="70" rx="4" fill="#8b5cf6"/>
+            <text x="670" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">固定</text>
+            <text x="670" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">60%</text>
+            
+            <rect x="710" y="80" width="40" height="110" rx="4" fill="#a78bfa"/>
+            <text x="730" y="195" text-anchor="middle" fill="#1a1a2e" font-size="9">语义</text>
+            <text x="730" y="75" text-anchor="middle" fill="#1a1a2e" font-size="9">85%</text>
+        </svg>
+    </div>
+
+    <h2>七、分块策略选择建议</h2>
+    <p>选择合适的分块策略需要考虑文档类型、Embedding 模型限制和检索需求。以下是实用的选择建议：</p>
+
+    <ul>
+        <li><strong>日志/对话记录</strong>：固定长度分块，按行或按轮次切分</li>
+        <li><strong>文章/博客</strong>：语义分块，保持段落完整性</li>
+        <li><strong>技术文档/论文</strong>：递归分块，利用章节结构</li>
+        <li><strong>法律/医学文档</strong>：Sentence Window，精确匹配 + 上下文</li>
+    </ul>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实用建议</div>
+        <p>建议先用递归分块做基线测试，然后根据实际效果调整。如果块大小差异过大，可以切换到语义分块；如果需要更精确的检索，可以尝试 Sentence Window。分块策略的选择应该基于实际的检索效果评估，而不是理论分析。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>本章介绍了四种主流文本分块策略：固定长度分块实现简单但不考虑语义边界；语义分块在句子边界处切分，保持语义完整性；递归分块按层次结构逐步细化，兼顾效率和语义；Sentence Window 以核心句子为中心保留上下文窗口，适合精确检索场景。</p>
+
+    <p>分块质量直接影响 Embedding 的效果和检索的准确性。在实际项目中，建议先用递归分块做基线测试，然后根据文档类型和检索需求调整策略。同时，建议建立分块效果评估机制，定期检查分块质量，确保 RAG 系统的整体效果。</p>
+
+    <p>在下一节 6.5 中，我们将学习检索优化技术，包括 Query 改写、HyDE、Multi-Query 和 Step-back 等高级检索策略。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

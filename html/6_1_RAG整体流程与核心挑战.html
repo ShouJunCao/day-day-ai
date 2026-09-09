@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.1 RAG 整体流程与核心挑战 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.1 RAG 整体流程与核心挑战</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 核心架构</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 RAG（检索增强生成）的整体架构和工作流程</li>
+        <li>掌握 RAG 与传统问答系统的本质区别</li>
+        <li>识别 RAG 系统中的核心组件及其职责</li>
+        <li>了解 RAG 面临的核心挑战：幻觉、召回质量、上下文窗口限制等</li>
+    </ul>
+
+    <h2>一、什么是 RAG？</h2>
+    <p>RAG（Retrieval-Augmented Generation，检索增强生成）是一种将外部知识检索与大语言模型生成能力相结合的技术范式。它的核心思想是：<strong>在让大语言模型回答问题之前，先从外部知识库中检索相关信息，将检索结果作为上下文提供给模型</strong>。这样，模型可以基于最新的、准确的外部知识来生成回答，而不是仅依赖训练数据中的过期信息。</p>
+
+    <p>RAG 的出现解决了一个根本性问题：大语言模型的训练数据有截止时间，且模型参数是静态的，无法自动获取新知识。通过 RAG，我们可以在不重新训练模型的情况下，让模型"知道"最新的信息——只需要更新外部知识库即可。</p>
+
+    <p>举个例子：如果你的知识库中包含了 2024 年的最新政策文件，RAG 系统可以让大语言模型回答关于这些政策的问题，即使模型的训练数据截止到 2023 年。这就是 RAG 的核心价值——让静态模型具备动态知识访问能力。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="380" viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="28" text-anchor="middle" fill="#1a1a2e" font-size="17" font-weight="bold">RAG 整体工作流程</text>
+
+            <!-- 阶段 1：索引 -->
+            <text x="200" y="60" text-anchor="middle" fill="#4361ee" font-size="13" font-weight="bold">索引阶段</text>
+            <rect x="50" y="75" width="100" height="40" rx="8" fill="#4361ee"/>
+            <text x="100" y="100" text-anchor="middle" fill="white" font-size="11">文档加载</text>
+            <line x1="150" y1="95" x2="180" y2="95" stroke="#4361ee" stroke-width="2"/>
+            <rect x="180" y="75" width="100" height="40" rx="8" fill="#3a56d4"/>
+            <text x="230" y="100" text-anchor="middle" fill="white" font-size="11">文本分块</text>
+            <line x1="280" y1="95" x2="310" y2="95" stroke="#3a56d4" stroke-width="2"/>
+            <rect x="310" y="75" width="120" height="40" rx="8" fill="#2c44b0"/>
+            <text x="370" y="100" text-anchor="middle" fill="white" font-size="11">Embedding 编码</text>
+            <line x1="430" y1="95" x2="460" y2="95" stroke="#2c44b0" stroke-width="2"/>
+            <rect x="460" y="75" width="120" height="40" rx="8" fill="#1e36a0"/>
+            <text x="520" y="100" text-anchor="middle" fill="white" font-size="11">向量存储入库</text>
+
+            <!-- 分隔线 -->
+            <line x1="400" y1="130" x2="400" y2="150" stroke="#6b7c93" stroke-width="1"/>
+
+            <!-- 阶段 2：检索 + 生成 -->
+            <text x="400" y="175" text-anchor="middle" fill="#10b981" font-size="13" font-weight="bold">检索增强生成阶段</text>
+
+            <!-- 查询 -->
+            <rect x="340" y="190" width="120" height="40" rx="8" fill="#10b981"/>
+            <text x="400" y="215" text-anchor="middle" fill="white" font-size="11">用户查询</text>
+
+            <!-- 分叉 -->
+            <line x1="400" y1="230" x2="250" y2="265" stroke="#10b981" stroke-width="2"/>
+            <line x1="400" y1="230" x2="550" y2="265" stroke="#10b981" stroke-width="2"/>
+
+            <!-- 检索 -->
+            <rect x="150" y="265" width="200" height="40" rx="8" fill="#059669"/>
+            <text x="250" y="290" text-anchor="middle" fill="white" font-size="11">Embedding + 向量检索</text>
+
+            <!-- Prompt 构建 -->
+            <rect x="450" y="265" width="200" height="40" rx="8" fill="#047857"/>
+            <text x="550" y="290" text-anchor="middle" fill="white" font-size="11">Prompt 构建（查询 + 上下文）</text>
+
+            <!-- 汇聚 -->
+            <line x1="350" y1="285" x2="450" y2="285" stroke="#047857" stroke-width="2"/>
+
+            <!-- LLM 生成 -->
+            <line x1="550" y1="305" x2="550" y2="330" stroke="#047857" stroke-width="2"/>
+            <rect x="450" y="330" width="200" height="40" rx="8" fill="#065f46"/>
+            <text x="550" y="355" text-anchor="middle" fill="white" font-size="11">LLM 生成回答</text>
+
+            <!-- 返回 -->
+            <line x1="550" y1="370" x2="550" y2="375" stroke="#065f46" stroke-width="2"/>
+            <text x="550" y="375" fill="#065f46" font-size="10">→ 最终回答</text>
+        </svg>
+    </div>
+
+    <h2>二、RAG vs 传统问答系统</h2>
+    <p>传统的问答系统通常依赖关键词匹配或预定义的规则来检索答案，而 RAG 系统则完全不同。下面是两者的核心差异对比：</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>传统问答系统</th><th>RAG 系统</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>知识来源</strong></td><td>预定义知识库或规则</td><td>动态外部文档库</td></tr>
+            <tr><td><strong>理解能力</strong></td><td>关键词匹配，无语义理解</td><td>基于 LLM 的语义理解</td></tr>
+            <tr><td><strong>知识更新</strong></td><td>需要人工更新知识库</td><td>更新文档库即可</td></tr>
+            <tr><td><strong>回答生成</strong></td><td>固定模板或预定义答案</td><td>LLM 动态生成</td></tr>
+            <tr><td><strong>幻觉问题</strong></td><td>不存在（固定答案）</td><td>可能存在（需控制）</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>FAQ、简单客服</td><td>复杂问答、知识检索</td></tr>
+        </tbody>
+    </table>
+
+    <p>RAG 的核心优势在于：<strong>它结合了检索系统的知识准确性和大语言模型的表达能力</strong>。检索系统确保答案基于真实的外部知识，避免了 LLM 的幻觉问题；LLM 则提供了自然流畅的语言表达能力，超越了传统问答系统的僵硬模板。</p>
+
+    <h2>三、RAG 的核心组件</h2>
+
+    <div class="diagram-container">
+        <svg width="780" height="320" viewBox="0 0 780 320" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="24" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">RAG 核心组件架构图</text>
+            <!-- 左侧：文档处理流水线 -->
+            <rect x="20" y="50" width="220" height="250" rx="12" fill="#eff6ff" stroke="#3b82f6"/>
+            <text x="130" y="75" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">文档处理流水线</text>
+            <rect x="40" y="90" width="180" height="35" rx="6" fill="#4361ee"/>
+            <text x="130" y="112" text-anchor="middle" fill="white" font-size="11">文档加载（PDF/Word/网页）</text>
+            <line x1="130" y1="125" x2="130" y2="140" stroke="#4361ee" stroke-width="2"/>
+            <rect x="40" y="140" width="180" height="35" rx="6" fill="#3a56d4"/>
+            <text x="130" y="162" text-anchor="middle" fill="white" font-size="11">文本分块（固定长度/滑动窗口）</text>
+            <line x1="130" y1="175" x2="130" y2="190" stroke="#3a56d4" stroke-width="2"/>
+            <rect x="40" y="190" width="180" height="35" rx="6" fill="#2c44b0"/>
+            <text x="130" y="212" text-anchor="middle" fill="white" font-size="11">Embedding 编码（BGE-M3）</text>
+            <line x1="130" y1="225" x2="130" y2="240" stroke="#2c44b0" stroke-width="2"/>
+            <rect x="40" y="240" width="180" height="35" rx="6" fill="#1e36a0"/>
+            <text x="130" y="262" text-anchor="middle" fill="white" font-size="11">向量存储入库（Milvus/Qdrant）</text>
+            <!-- 中间：向量数据库 -->
+            <rect x="290" y="100" width="180" height="150" rx="12" fill="#f0fdf4" stroke="#10b981"/>
+            <text x="380" y="130" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">向量数据库</text>
+            <!-- 数据库图标 -->
+            <ellipse cx="380" cy="155" rx="60" ry="12" fill="#10b981"/>
+            <path d="M 320,155 L 320,210" stroke="#10b981" stroke-width="2"/>
+            <path d="M 440,155 L 440,210" stroke="#10b981" stroke-width="2"/>
+            <ellipse cx="380" cy="210" rx="60" ry="12" fill="#059669"/>
+            <ellipse cx="380" cy="180" rx="60" ry="12" fill="#047857"/>
+            <line x1="240" y1="175" x2="290" y2="175" stroke="#10b981" stroke-width="2"/>
+            <!-- 右侧：查询生成流水线 -->
+            <rect x="520" y="50" width="240" height="250" rx="12" fill="#fdf2f8" stroke="#ec4899"/>
+            <text x="640" y="75" text-anchor="middle" fill="#9d174d" font-size="13" font-weight="bold">查询生成流水线</text>
+            <rect x="540" y="90" width="200" height="35" rx="6" fill="#ec4899"/>
+            <text x="640" y="112" text-anchor="middle" fill="white" font-size="11">用户查询 → Embedding 编码</text>
+            <line x1="470" y1="175" x2="540" y2="175" stroke="#ec4899" stroke-width="2"/>
+            <line x1="470" y1="175" x2="540" y2="107" stroke="#ec4899" stroke-width="2" stroke-dasharray="4,3"/>
+            <text x="505" y="165" fill="#ec4899" font-size="9">Top-K 向量</text>
+            <rect x="540" y="140" width="200" height="35" rx="6" fill="#db2777"/>
+            <text x="640" y="162" text-anchor="middle" fill="white" font-size="11">向量检索（余弦相似度）</text>
+            <line x1="640" y1="175" x2="640" y2="190" stroke="#db2777" stroke-width="2"/>
+            <rect x="540" y="190" width="200" height="35" rx="6" fill="#be185d"/>
+            <text x="640" y="212" text-anchor="middle" fill="white" font-size="11">Prompt 构建（查询 + 上下文）</text>
+            <line x1="640" y1="225" x2="640" y2="240" stroke="#be185d" stroke-width="2"/>
+            <rect x="540" y="240" width="200" height="35" rx="6" fill="#9d174d"/>
+            <text x="640" y="262" text-anchor="middle" fill="white" font-size="11">LLM 生成回答（GPT/Claude）</text>
+        </svg>
+    </div>
+
+    <h3>3.1 文档加载（Document Loader）</h3>
+    <p>文档加载是将各种格式的文件（PDF、Word、网页、Markdown 等）转换为纯文本的过程。不同格式需要不同的解析器——PDF 需要处理页眉页脚和表格，网页需要去除 HTML 标签，Word 需要保留段落结构。这一步看似简单，但质量直接影响后续所有环节的效果。</p>
+
+<div class="code-file">06_rag_architecture/01_rag_overview/doc_loader.py</div>
+<pre><code class="language-python">"""
+doc_loader.py — 文档加载器实现
+支持多种文档格式的加载和文本提取。
+"""
+from pathlib import Path
+from typing import Optional
+
+
+class DocumentLoader:
+    """
+    文档加载器：将各种格式的文件转换为纯文本。
+
+    支持的格式：
+    - .txt: 直接读取
+    - .md: 去除 Markdown 标记
+    - .html: 去除 HTML 标签
+    """
+
+    @staticmethod
+    def load_txt(filepath: str) -> str:
+        """加载纯文本文件"""
+        path = Path(filepath)
+        return path.read_text(encoding="utf-8")
+
+    @staticmethod
+    def load_markdown(filepath: str) -> str:
+        """加载 Markdown 文件，去除格式标记"""
+        text = Path(filepath).read_text(encoding="utf-8")
+        # 去除标题标记
+        text = text.replace("# ", "").replace("## ", "")
+        # 去除粗体和斜体标记
+        text = text.replace("**", "").replace("*", "")
+        return text.strip()
+
+    @staticmethod
+    def load_html(filepath: str) -> str:
+        """加载 HTML 文件，提取纯文本"""
+        import re
+        html = Path(filepath).read_text(encoding="utf-8")
+        # 去除所有 HTML 标签
+        text = re.sub(r"<[^>]+>", " ", html)
+        # 清理多余空白
+        text = " ".join(text.split())
+        return text
+
+    @classmethod
+    def load(cls, filepath: str) -> Optional[str]:
+        """根据文件扩展名自动选择加载方式"""
+        ext = Path(filepath).suffix.lower()
+        loaders = {
+            ".txt": cls.load_txt,
+            ".md": cls.load_markdown,
+            ".html": cls.load_html,
+        }
+        loader = loaders.get(ext)
+        if loader is None:
+            print(f"不支持的文件格式: {ext}")
+            return None
+        return loader(filepath)</code></pre>
+
+    <h3>3.2 文本分块（Text Chunking）</h3>
+    <p>长文档不能直接作为一个整体进行 Embedding 和检索——一方面超出模型的上下文窗口限制，另一方面大文本块的 Embedding 会丢失细粒度语义。分块的目的是将长文档切分为固定大小（通常 200-1000 字符）的文本块，每个块独立 Embedding 和检索。</p>
+
+    <p>分块策略很关键：按固定字符数切分简单但可能切断语义完整性；按段落切分保留语义但块大小不均匀；滑动窗口重叠（相邻块之间保留部分重叠）可以避免上下文断裂。实际项目中通常组合使用多种策略。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="24" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">分块策略对比图</text>
+            <!-- 策略 1：固定长度 -->
+            <rect x="20" y="45" width="220" height="160" rx="10" fill="#eff6ff" stroke="#3b82f6"/>
+            <text x="130" y="70" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">固定长度切分</text>
+            <rect x="40" y="85" width="180" height="20" rx="3" fill="#93c5fd"/>
+            <text x="130" y="99" text-anchor="middle" fill="#1e3a8a" font-size="9">块 1: 0-500 字符</text>
+            <rect x="40" y="110" width="180" height="20" rx="3" fill="#60a5fa"/>
+            <text x="130" y="124" text-anchor="middle" fill="#1e3a8a" font-size="9">块 2: 500-1000 字符</text>
+            <rect x="40" y="135" width="180" height="20" rx="3" fill="#3b82f6"/>
+            <text x="130" y="149" text-anchor="middle" fill="white" font-size="9">块 3: 1000-1500 字符</text>
+            <rect x="40" y="160" width="180" height="20" rx="3" fill="#2563eb"/>
+            <text x="130" y="174" text-anchor="middle" fill="white" font-size="9">块 4: 1500-2000 字符</text>
+            <text x="130" y="195" text-anchor="middle" fill="#666" font-size="9">⚠️ 可能切断语义</text>
+
+            <!-- 策略 2：滑动窗口 -->
+            <rect x="280" y="45" width="220" height="160" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="70" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">滑动窗口重叠</text>
+            <rect x="300" y="85" width="180" height="20" rx="3" fill="#6ee7b7"/>
+            <text x="390" y="99" text-anchor="middle" fill="#064e3b" font-size="9">块 1: 0-500</text>
+            <rect x="310" y="105" width="180" height="20" rx="3" fill="#34d399"/>
+            <text x="400" y="119" text-anchor="middle" fill="#064e3b" font-size="9">块 2: 450-950 (重叠 50)</text>
+            <rect x="320" y="125" width="180" height="20" rx="3" fill="#10b981"/>
+            <text x="410" y="139" text-anchor="middle" fill="white" font-size="9">块 3: 900-1400 (重叠 50)</text>
+            <rect x="330" y="145" width="180" height="20" rx="3" fill="#059669"/>
+            <text x="420" y="159" text-anchor="middle" fill="white" font-size="9">块 4: 1350-1850</text>
+            <text x="390" y="195" text-anchor="middle" fill="#666" font-size="9">✅ 保留上下文连续性</text>
+
+            <!-- 策略 3：语义分块 -->
+            <rect x="540" y="45" width="220" height="160" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="650" y="70" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">语义/段落分块</text>
+            <rect x="560" y="85" width="180" height="30" rx="3" fill="#fde68a"/>
+            <text x="650" y="104" text-anchor="middle" fill="#78350f" font-size="9">块 1: 段落 1 (380 字符)</text>
+            <rect x="560" y="120" width="180" height="20" rx="3" fill="#fbbf24"/>
+            <text x="650" y="134" text-anchor="middle" fill="#78350f" font-size="9">块 2: 段落 2 (150 字符)</text>
+            <rect x="560" y="145" width="180" height="40" rx="3" fill="#f59e0b"/>
+            <text x="650" y="160" text-anchor="middle" fill="white" font-size="9">块 3: 段落 3 (620 字符)</text>
+            <text x="650" y="175" text-anchor="middle" fill="white" font-size="9">(按自然段落边界)</text>
+            <text x="650" y="195" text-anchor="middle" fill="#666" font-size="9">✅ 语义完整性最好</text>
+        </svg>
+    </div>
+
+    <h3>3.3 Embedding 编码</h3>
+    <p>将每个文本块转换为高维向量（768-1024 维），使其能够在向量空间中进行语义相似度比较。这一步依赖模块五学到的 Embedding 模型（BGE-M3、OpenAI 等）。</p>
+
+    <h3>3.4 向量存储与检索</h3>
+    <p>将所有文本块的向量存储到向量数据库（Milvus、Qdrant 等）中。当用户发起查询时，将查询文本也编码为向量，然后在数据库中搜索最相似的 K 个文本块。</p>
+
+<div class="code-file">06_rag_architecture/01_rag_overview/vector_store.py</div>
+<pre><code class="language-python">"""
+vector_store.py — 简易向量存储实现
+使用 FAISS 或内存存储向量，支持相似度检索。
+"""
+import math
+from typing import Optional
+
+
+class MemoryVectorStore:
+    """
+    内存向量存储：将向量和文本存储在内存中，
+    通过余弦相似度进行检索。
+
+    适用于小规模数据的教学演示。
+    """
+
+    def __init__(self) -> None:
+        self._vectors: list[list[float]] = []
+        self._texts: list[str] = []
+        self._metadata: list[dict] = []
+
+    def add(self, vector: list[float], text: str, metadata: Optional[dict] = None) -> None:
+        """
+        添加一个向量到存储中。
+
+        参数：
+        - vector (list[float]): 嵌入向量
+        - text (str): 对应的文本
+        - metadata (dict): 元数据（可选）
+        """
+        self._vectors.append(vector)
+        self._texts.append(text)
+        self._metadata.append(metadata or {})
+
+    def _cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
+        """计算余弦相似度"""
+        dot = sum(a * b for a, b in zip(vec1, vec2))
+        norm1 = math.sqrt(sum(a * a for a in vec1))
+        norm2 = math.sqrt(sum(b * b for b in vec2))
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return dot / (norm1 * norm2)
+
+    def search(self, query_vector: list[float], top_k: int = 3) -> list[dict]:
+        """
+        检索最相似的 K 个向量。
+
+        参数：
+        - query_vector (list[float]): 查询向量
+        - top_k (int): 返回结果数
+
+        返回：
+        - list[dict]: 包含文本、相似度和元数据的结果列表
+        """
+        scores = []
+        for i, vec in enumerate(self._vectors):
+            sim = self._cosine_similarity(query_vector, vec)
+            scores.append({
+                "text": self._texts[i],
+                "similarity": sim,
+                "metadata": self._metadata[i],
+            })
+        # 按相似度降序排序
+        scores.sort(key=lambda x: x["similarity"], reverse=True)
+        return scores[:top_k]</code></pre>
+
+    <h3>3.5 Prompt 构建</h3>
+    <p>将检索到的相关文本块与用户查询组合成一个完整的 Prompt，提供给大语言模型。Prompt 的质量直接影响回答的准确性——需要清晰地区分"参考资料"和"用户问题"，并明确告诉模型如何基于参考资料回答。</p>
+
+    <h3>3.6 LLM 生成</h3>
+    <p>大语言模型根据构建好的 Prompt 生成回答。模型会先理解参考资料的内容，然后结合用户问题，生成基于参考资料的准确回答。</p>
+
+<div class="code-file">06_rag_architecture/01_rag_overview/rag_pipeline.py</div>
+<pre><code class="language-python">"""
+rag_pipeline.py — RAG 检索增强生成管道实现
+包含文档加载、分块、Embedding、检索、Prompt 构建的完整流程。
+"""
+import os
+from typing import Optional
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Document:
+    """文档对象：包含文本内容和元数据"""
+    text: str
+    metadata: dict = field(default_factory=dict)
+    doc_id: str = ""
+
+
+class DocumentChunker:
+    """
+    文档分块器：将长文档切分为固定大小的文本块。
+
+    分块策略：
+    1. 按固定字符数分割（控制块大小）
+    2. 滑动窗口重叠（避免上下文断裂）
+    """
+
+    def __init__(self, chunk_size: int = 500, overlap: int = 50):
+        self.chunk_size = chunk_size
+        self.overlap = overlap
+
+    def chunk_document(self, doc: Document) -> list[Document]:
+        """
+        将长文档切分为多个文本块。
+
+        使用滑动窗口策略：
+        - 每块最大 chunk_size 字符
+        - 相邻块之间重叠 overlap 字符
+        - 避免语义被硬切断
+        """
+        text = doc.text
+        chunks = []
+        start = 0
+
+        while start < len(text):
+            end = start + self.chunk_size
+            chunk_text = text[start:end]
+            chunk_id = f"{doc.doc_id}_chunk_{len(chunks)}"
+
+            chunks.append(Document(
+                text=chunk_text,
+                metadata={**doc.metadata, "chunk_index": len(chunks)},
+                doc_id=chunk_id,
+            ))
+            start = end - self.overlap  # 滑动窗口
+
+        return chunks
+
+
+class RAGPipeline:
+    """
+    RAG（检索增强生成）管道：整合检索和生成的完整流程。
+
+    核心流程：
+    1. 文档加载 → 2. 分块 → 3. Embedding → 4. 存储
+    5. 查询 Embedding → 6. 检索 Top-K → 7. 构建 Prompt → 8. LLM 生成
+    """
+
+    def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50, top_k: int = 3):
+        self.chunker = DocumentChunker(chunk_size, chunk_overlap)
+        self.top_k = top_k
+        self._documents: list[Document] = []
+        self._chunks: list[Document] = []
+
+    def load_documents(self, texts: list[str], metadata_list: Optional[list[dict]] = None) -> None:
+        """加载文档并分块"""
+        for i, text in enumerate(texts):
+            meta = metadata_list[i] if metadata_list else {}
+            doc = Document(text=text, metadata=meta, doc_id=f"doc_{i}")
+            self._documents.append(doc)
+            chunks = self.chunker.chunk_document(doc)
+            self._chunks.extend(chunks)
+
+    def _build_prompt(self, query: str, context: list[Document]) -> str:
+        """构建 RAG Prompt：将查询和检索到的上下文组合"""
+        context_text = "\n\n".join(
+            f"参考资料 {i+1}:\n{doc.text}"
+            for i, doc in enumerate(context)
+        )
+
+        prompt = f"""你是一个知识助手。请根据以下参考资料回答用户的问题。
+
+参考资料：
+{context_text}
+
+用户问题：{query}
+
+请基于上述参考资料给出准确的回答。如果参考资料中没有相关信息，请明确告知用户。"""
+        return prompt
+
+    def query(self, question: str) -> dict:
+        """执行完整的 RAG 查询流程"""
+        # 1. 查询 Embedding
+        query_vector = self._embed_documents([question])[0]
+        # 2. 检索相关文档
+        context_docs = self._search(query_vector, self.top_k)
+        # 3. 构建 Prompt
+        prompt = self._build_prompt(question, context_docs)
+
+        return {
+            "question": question,
+            "context": [doc.text for doc in context_docs],
+            "prompt": prompt,
+            "num_docs_retrieved": len(context_docs),
+        }</code></pre>
+
+    <h2>四、RAG 的核心挑战</h2>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="24" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">RAG 核心挑战链路图</text>
+            <!-- 挑战 1：幻觉 -->
+            <rect x="20" y="50" width="130" height="130" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+            <text x="85" y="80" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="bold">幻觉</text>
+            <text x="85" y="100" text-anchor="middle" fill="#666" font-size="10">LLM 生成与参考</text>
+            <text x="85" y="115" text-anchor="middle" fill="#666" font-size="10">资料不一致的内容</text>
+            <text x="85" y="140" text-anchor="middle" fill="#999" font-size="10">最高优先级</text>
+            <!-- 挑战 2：召回质量 -->
+            <rect x="170" y="50" width="130" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="235" y="80" text-anchor="middle" fill="#d97706" font-size="13" font-weight="bold">召回质量</text>
+            <text x="235" y="100" text-anchor="middle" fill="#666" font-size="10">检索文档不相关</text>
+            <text x="235" y="115" text-anchor="middle" fill="#666" font-size="10">或漏掉关键信息</text>
+            <text x="235" y="140" text-anchor="middle" fill="#999" font-size="10">依赖 Embedding</text>
+            <!-- 挑战 3：上下文窗口 -->
+            <rect x="320" y="50" width="130" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="385" y="80" text-anchor="middle" fill="#2563eb" font-size="13" font-weight="bold">上下文窗口</text>
+            <text x="385" y="100" text-anchor="middle" fill="#666" font-size="10">检索文档总长度</text>
+            <text x="385" y="115" text-anchor="middle" fill="#666" font-size="10">超过 LLM 限制</text>
+            <text x="385" y="140" text-anchor="middle" fill="#999" font-size="10">需截断或筛选</text>
+            <!-- 挑战 4：知识更新 -->
+            <rect x="470" y="50" width="130" height="130" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="535" y="80" text-anchor="middle" fill="#059669" font-size="13" font-weight="bold">知识更新延迟</text>
+            <text x="535" y="100" text-anchor="middle" fill="#666" font-size="10">文档库更新需要</text>
+            <text x="535" y="115" text-anchor="middle" fill="#666" font-size="10">重新加载分块入库</text>
+            <text x="535" y="140" text-anchor="middle" fill="#999" font-size="10">非实时更新</text>
+            <!-- 挑战 5：多跳推理 -->
+            <rect x="620" y="50" width="140" height="130" rx="10" fill="#f3e8ff" stroke="#8b5cf6"/>
+            <text x="690" y="80" text-anchor="middle" fill="#7c3aed" font-size="13" font-weight="bold">多跳推理</text>
+            <text x="690" y="100" text-anchor="middle" fill="#666" font-size="10">答案需要跨多个</text>
+            <text x="690" y="115" text-anchor="middle" fill="#666" font-size="10">文档综合推理</text>
+            <text x="690" y="140" text-anchor="middle" fill="#999" font-size="10">需迭代检索</text>
+            <!-- 箭头连接 -->
+            <line x1="150" y1="115" x2="170" y2="115" stroke="#999" stroke-width="1"/>
+            <line x1="300" y1="115" x2="320" y2="115" stroke="#999" stroke-width="1"/>
+            <line x1="450" y1="115" x2="470" y2="115" stroke="#999" stroke-width="1"/>
+            <line x1="600" y1="115" x2="620" y2="115" stroke="#999" stroke-width="1"/>
+        </svg>
+    </div>
+
+    <h3>4.1 幻觉（Hallucination）</h3>
+    <p>即使提供了参考资料，大语言模型仍可能生成与参考资料不一致的内容。这种"幻觉"是 RAG 系统最需要解决的问题。缓解策略包括：<strong>在 Prompt 中明确要求基于参考资料回答</strong>、<strong>添加引用来源要求</strong>、<strong>对生成结果进行事实核查</strong>。但完全消除幻觉仍然是一个开放问题。</p>
+
+    <h3>4.2 召回质量</h3>
+    <p>RAG 的效果高度依赖检索的质量。如果检索到的文档不相关，模型会基于错误信息生成回答；如果检索漏掉了关键信息，模型会因为缺乏必要上下文而给出不完整答案。这直接依赖模块五学到的 Embedding 模型选择、索引类型、混合检索等知识。</p>
+
+    <h3>4.3 上下文窗口限制</h3>
+    <p>大语言模型的上下文窗口有限（通常 4K-128K Token）。如果检索到的文档总长度超过窗口限制，需要截断或筛选。这引入了新的决策：保留哪些文档、舍弃哪些文档？常见的策略是按检索相关性排序，优先保留最相关的文档。</p>
+
+    <h3>4.4 知识更新延迟</h3>
+    <p>虽然 RAG 允许通过更新文档库来更新知识，但文档库的更新不是实时的——需要重新加载、分块、Embedding、入库。在知识频繁变化的场景中（如实时新闻），这种更新延迟可能成为问题。解决方案包括增量更新、流式处理等。</p>
+
+    <h3>4.5 多跳推理</h3>
+    <p>当问题的答案需要跨多个文档综合推理时（多跳推理），单次检索往往不够。比如"张三开发的产品和李四的公司有什么关系？"可能需要先检索"张三开发的产品"，再检索"李四的公司"，最后综合两者的关系。这需要迭代检索（Iterative Retrieval）或递归检索（Recursive Retrieval）策略。</p>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ RAG 常见陷阱</div>
+        <p>新手最容易犯的错误是：<strong>假设 RAG 能自动解决所有知识问题</strong>。实际上，RAG 的效果取决于文档库的质量、分块策略、检索精度、Prompt 设计等多个环节。任何一个环节出问题，最终回答的质量都会下降。建议从简单的场景开始，逐步优化每个环节。</p>
+    </div>
+
+    <h2>五、RAG 的应用场景</h2>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="24" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">RAG 应用场景覆盖图</text>
+            <!-- 场景 1 -->
+            <rect x="20" y="50" width="220" height="170" rx="12" fill="#eff6ff" stroke="#3b82f6"/>
+            <circle cx="130" cy="85" r="20" fill="#4361ee"/>
+            <text x="130" y="90" text-anchor="middle" fill="white" font-size="14">🏢</text>
+            <text x="130" y="115" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">企业知识库问答</text>
+            <text x="130" y="135" text-anchor="middle" fill="#666" font-size="10">文档：内部手册/Wiki</text>
+            <text x="130" y="150" text-anchor="middle" fill="#666" font-size="10">挑战：格式多样/权限</text>
+            <text x="130" y="170" text-anchor="middle" fill="#666" font-size="10">模型：BGE-M3 + Qwen</text>
+            <text x="130" y="190" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="bold">使用率: ★★★★</text>
+
+            <!-- 场景 2 -->
+            <rect x="280" y="50" width="220" height="170" rx="12" fill="#ecfdf5" stroke="#10b981"/>
+            <circle cx="390" cy="85" r="20" fill="#10b981"/>
+            <text x="390" y="90" text-anchor="middle" fill="white" font-size="14">💬</text>
+            <text x="390" y="115" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">客服智能问答</text>
+            <text x="390" y="135" text-anchor="middle" fill="#666" font-size="10">文档：产品手册/FAQ</text>
+            <text x="390" y="150" text-anchor="middle" fill="#666" font-size="10">挑战：准确性/多语言</text>
+            <text x="390" y="170" text-anchor="middle" fill="#666" font-size="10">模型：GTE + Claude</text>
+            <text x="390" y="190" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">使用率: ★★★★★</text>
+
+            <!-- 场景 3 -->
+            <rect x="540" y="50" width="220" height="170" rx="12" fill="#fef3c7" stroke="#f59e0b"/>
+            <circle cx="650" cy="85" r="20" fill="#f59e0b"/>
+            <text x="650" y="90" text-anchor="middle" fill="white" font-size="14">⚖️</text>
+            <text x="650" y="115" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">法律/医疗咨询</text>
+            <text x="650" y="135" text-anchor="middle" fill="#666" font-size="10">文档：法规/案例/文献</text>
+            <text x="650" y="150" text-anchor="middle" fill="#666" font-size="10">挑战：精确引用/合规</text>
+            <text x="650" y="170" text-anchor="middle" fill="#666" font-size="10">模型：BGE-M3 + GPT-4</text>
+            <text x="650" y="190" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="bold">使用率: ★★★</text>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>文档来源</th><th>核心挑战</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>企业知识库问答</strong></td><td>内部文档、Wiki、手册</td><td>文档格式多样、权限管理</td></tr>
+            <tr><td><strong>客服智能问答</strong></td><td>产品手册、FAQ、工单</td><td>回答准确性、多语言</td></tr>
+            <tr><td><strong>法律/医疗咨询</strong></td><td>法规、案例、文献</td><td>精确引用、合规要求</td></tr>
+            <tr><td><strong>学术研究辅助</strong></td><td>论文、报告、数据</td><td>多跳推理、长文本</td></tr>
+            <tr><td><strong>代码问答</strong></td><td>代码库、文档、Issue</td><td>代码理解、版本同步</td></tr>
+        </tbody>
+    </table>
+
+    <h2>六、小结</h2>
+    <p>RAG（检索增强生成）将外部知识检索与大语言模型生成能力相结合，解决了模型知识过期和幻觉两大核心问题。RAG 的工作流程分为两个阶段：索引阶段（文档加载 → 分块 → Embedding → 存储）和检索增强生成阶段（查询 → 检索 → Prompt 构建 → LLM 生成）。核心组件包括文档加载器、分块器、Embedding 模型、向量数据库和 LLM。</p>
+
+    <p>RAG 面临的核心挑战包括幻觉、召回质量、上下文窗口限制、知识更新延迟和多跳推理。解决这些挑战需要在各个环节持续优化——从文档处理质量、分块策略、检索算法到 Prompt 设计。在后续的章节中，我们将逐一深入每个环节，学习具体的优化策略和实践方法。</p>
+
+    <p>在下一节 6.2 中，我们将学习文档加载和分块的最佳实践，这是 RAG 系统的基础环节。</p>
+
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>
