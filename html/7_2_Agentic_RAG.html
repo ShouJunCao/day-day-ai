@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7.2 Agentic RAG（Agent 自主检索路由） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>7.2 Agentic RAG（Agent 自主检索路由）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块七：高级 RAG 技术</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解传统 RAG 的固定流程局限性</li>
+        <li>掌握 ReAct Agent 范式在 RAG 中的应用</li>
+        <li>学会构建路由 Agent 实现智能策略选择</li>
+        <li>了解 Agentic RAG 与传统 RAG 的优劣对比</li>
+    </ul>
+
+    <h2>一、为什么需要 Agentic RAG？</h2>
+    <p>传统 RAG 系统遵循固定的流程：用户提问 → 向量检索 → 重排序 → Prompt 构建 → LLM 生成。这种流程对于简单问题效果良好，但面对复杂问题时存在明显局限。</p>
+
+    <p>主要问题包括：第一，流程僵化。无论问题简单还是复杂，都执行相同的步骤，无法根据问题难度动态调整。第二，缺乏推理能力。传统 RAG 无法进行多步推理，当答案需要综合多个信息源时，效果大打折扣。第三，无法自主决策。系统不能根据检索结果的质量决定是否需要补充检索或更换策略。第四，缺乏自我验证能力。即使检索结果质量不佳，传统 RAG 仍然会将结果交给 LLM 生成回答，可能导致错误或低质量的输出。</p>
+
+    <p>Agentic RAG 通过将 Agent 技术引入 RAG 系统，解决了这些问题。Agent 具备自主决策能力，能够根据问题的类型和复杂度，动态选择最合适的检索策略和工具组合。这种转变不仅仅是技术上的升级，更是思维方式的根本变化：从"系统按照预设流程执行"转变为"系统自主思考并决定最佳行动方案"。</p>
+
+    <p>从技术演进来看，Agentic RAG 代表了 RAG 系统从"被动执行"向"主动决策"的转变。它不再是一个固定的流水线，而是一个能够思考、决策和执行的智能系统。这种能力使得 Agentic RAG 能够处理更复杂、更多样化的用户请求，为 RAG 技术的应用场景开辟了新的可能性。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">传统 RAG vs Agentic RAG</text>
+            
+            <rect x="40" y="55" width="340" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="210" y="85" text-anchor="middle" fill="#991b1b" font-size="14" font-weight="bold">传统 RAG</text>
+            <text x="60" y="110" fill="#666" font-size="11">• 固定流程：检索→排序→生成</text>
+            <text x="60" y="130" fill="#666" font-size="11">• 无推理能力</text>
+            <text x="60" y="150" fill="#666" font-size="11">• 无法自主决策</text>
+            <text x="60" y="170" fill="#666" font-size="11">• 适合简单问答</text>
+            
+            <rect x="420" y="55" width="340" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="85" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">Agentic RAG</text>
+            <text x="440" y="110" fill="#666" font-size="11">• 动态流程：自主决策工具组合</text>
+            <text x="440" y="130" fill="#666" font-size="11">• 有推理能力（ReAct/Plan）</text>
+            <text x="440" y="150" fill="#666" font-size="11">• 能自主选择和切换策略</text>
+            <text x="440" y="170" fill="#666" font-size="11">• 适合复杂多步推理</text>
+        </svg>
+    </div>
+
+    <h2>二、ReAct Agent 范式</h2>
+    <p>ReAct（Reasoning + Acting）是目前最主流的 Agent 范式。它将推理和行动结合起来，让 Agent 能够在执行任务的过程中不断思考、观察和调整。</p>
+
+    <p>ReAct 的核心循环包含四个步骤：思考（Thought）决定下一步行动，执行（Action）调用工具获取信息，观察（Observation）分析工具返回的结果，然后循环执行直到得出最终答案。这种范式最早由 Yao 等人在 2022 年提出，后来成为构建智能 Agent 的标准方法。</p>
+
+    <p>ReAct 的优势在于：每一步都有明确的推理过程，Agent 的行为是可解释的；同时，通过观察结果来调整后续行动，使系统具备一定的自适应能力。在 RAG 场景中，ReAct Agent 可以根据检索结果的质量决定是否需要补充检索、更换策略，或者直接生成答案。</p>
+
+    <p>与传统 RAG 的固定流程不同，ReAct Agent 的每一步都是动态决定的。这意味着对于简单问题，Agent 可能只需要一步检索就能回答；对于复杂问题，Agent 可以执行多步推理，综合多个信息源。这种灵活性是 Agentic RAG 的核心价值所在。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="280" viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">ReAct Agent 核心循环</text>
+            
+            <!-- Thought -->
+            <circle cx="390" cy="140" r="60" fill="#3b82f6"/>
+            <text x="390" y="135" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Thought</text>
+            <text x="390" y="155" text-anchor="middle" fill="white" font-size="11">思考下一步</text>
+            
+            <!-- Action -->
+            <circle cx="220" cy="220" r="50" fill="#10b981"/>
+            <text x="220" y="215" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Action</text>
+            <text x="220" y="235" text-anchor="middle" fill="white" font-size="10">执行工具</text>
+            
+            <!-- Observation -->
+            <circle cx="560" cy="220" r="50" fill="#f59e0b"/>
+            <text x="560" y="215" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Observation</text>
+            <text x="560" y="235" text-anchor="middle" fill="white" font-size="10">观察结果</text>
+            
+            <!-- 箭头循环 -->
+            <path d="M 340 185 Q 270 200 230 215" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+            <path d="M 265 250 Q 390 270 515 250" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+            <path d="M 550 185 Q 480 160 440 145" stroke="#64748b" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+            
+            <!-- 外部：Final Answer -->
+            <rect x="650" y="120" width="120" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="710" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">最终答案</text>
+            <line x1="450" y1="140" x2="650" y2="140" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="550" y="132" text-anchor="middle" fill="#8b5cf6" font-size="10">得出结论</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>2.1 代码实现</h3>
+    <div class="code-file">07_advanced_rag/02_agentic_rag/agentic_rag.py</div>
+<pre><code class="language-python">class ReActAgent:
+    """
+    ReAct Agent：基于 ReAct 范式的智能代理。
+
+    原理：
+    1. Thought：思考下一步应该做什么
+    2. Action：执行具体动作（如检索、计算、查询）
+    3. Observation：观察动作的结果
+    4. 循环执行直到得出最终答案
+    """
+
+    def __init__(self, tools: List[Callable], max_steps: int = 5):
+        self.tools = {tool.__name__: tool for tool in tools}
+        self.max_steps = max_steps
+        self.steps = []
+
+    def execute(self, question: str) -> AgentResult:
+        """执行 Agent 推理流程"""
+        self.steps = []
+        route_taken = []
+
+        for step_num in range(1, self.max_steps + 1):
+            # 1. Thought：决定下一步行动
+            thought = self._decide_next_step(question, step_num)
+
+            # 2. Action：选择并执行工具
+            action_name, action_input = self._select_action(thought)
+            action = AgentAction(
+                action_name=action_name,
+                action_input=action_input,
+                thought=thought,
+            )
+
+            # 3. Observation：执行工具并观察结果
+            if action_name in self.tools:
+                result = self.tools[action_name](action_input)
+                action.action_result = str(result)
+
+            step = AgentStep(step_number=step_num, action=action,
+                           observation=str(result))
+            self.steps.append(step)
+            route_taken.append(action_name)
+
+            # 4. 判断是否得出答案
+            if self._is_final_answer(action_name, result):
+                break
+
+        return AgentResult(answer=..., steps=self.steps,
+                          confidence=..., route_taken=route_taken)</code></pre>
+
+    <h2>三、路由 Agent</h2>
+    <p>路由 Agent 是 Agentic RAG 的另一种重要模式。它根据用户问题的类型，自动选择最合适的检索策略。</p>
+
+    <p>与 ReAct Agent 不同，路由 Agent 不需要多步推理。它的核心能力是"识别问题类型"，然后"选择合适的工具"。这种模式适合那些需要多种检索策略但问题类型相对明确的场景。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">路由 Agent 工作流程</text>
+            
+            <!-- 用户问题 -->
+            <rect x="320" y="50" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">用户问题</text>
+            
+            <!-- 箭头 -->
+            <line x1="390" y1="90" x2="390" y2="120" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 路由决策 -->
+            <rect x="300" y="120" width="180" height="40" rx="8" fill="#3b82f6"/>
+            <text x="390" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">路由决策</text>
+            
+            <!-- 分叉 -->
+            <line x1="300" y1="140" x2="100" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="350" y1="160" x2="300" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="430" y1="160" x2="480" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="480" y1="140" x2="680" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 策略 1 -->
+            <rect x="30" y="190" width="140" height="40" rx="6" fill="#10b981"/>
+            <text x="100" y="215" text-anchor="middle" fill="white" font-size="11">向量检索</text>
+            
+            <!-- 策略 2 -->
+            <rect x="230" y="190" width="140" height="40" rx="6" fill="#f59e0b"/>
+            <text x="300" y="215" text-anchor="middle" fill="white" font-size="11">关键词检索</text>
+            
+            <!-- 策略 3 -->
+            <rect x="410" y="190" width="140" height="40" rx="6" fill="#8b5cf6"/>
+            <text x="480" y="215" text-anchor="middle" fill="white" font-size="11">图谱检索</text>
+            
+            <!-- 策略 4 -->
+            <rect x="610" y="190" width="140" height="40" rx="6" fill="#ef4444"/>
+            <text x="680" y="215" text-anchor="middle" fill="white" font-size="11">混合检索</text>
+            
+            <!-- 规则说明 -->
+            <rect x="100" y="245" width="580" height="20" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="260" text-anchor="middle" fill="#64748b" font-size="10">规则：什么/谁→向量 | 比较/区别→混合 | 关系/关联→图谱 | 其他→关键词</text>
+        </svg>
+    </div>
+
+    <h3>3.1 代码实现</h3>
+<pre><code class="language-python">class RoutingAgent:
+    """
+    路由 Agent：根据问题类型自动选择最佳检索策略。
+
+    支持的策略：
+    - vector_search: 向量检索（默认）
+    - keyword_search: 关键词检索
+    - graph_search: 图谱检索
+    - hybrid_search: 混合检索
+    """
+
+    STRATEGIES = {
+        "vector_search": "向量检索",
+        "keyword_search": "关键词检索",
+        "graph_search": "图谱检索",
+        "hybrid_search": "混合检索",
+    }
+
+    def route(self, question: str) -> str:
+        """根据问题类型选择最佳策略"""
+        if any(kw in question for kw in ["什么", "谁", "哪里"]):
+            return "vector_search"
+        elif any(kw in question for kw in ["比较", "区别", "对比"]):
+            return "hybrid_search"
+        elif any(kw in question for kw in ["关系", "关联", "联系"]):
+            return "graph_search"
+        else:
+            return "keyword_search"</code></pre>
+
+    <h3>3.2 路由规则扩展</h3>
+    <p>在实际项目中，路由规则可以根据业务需求进行扩展。除了基于关键词的简单规则，还可以使用分类模型来实现更精准的路由。例如，训练一个文本分类模型，将用户问题分为"事实型"、"比较型"、"推理型"和"操作型"四类，然后为每类问题选择最合适的检索策略。</p>
+
+    <p>基于模型的路由相比基于规则的路由有显著优势：它能够理解问题的语义，而不仅仅是匹配关键词。这意味着即使用户使用不同的表达方式来询问相同的问题，路由系统也能正确分类。例如，"X 和 Y 有什么不同"和"比较一下 X 与 Y"虽然关键词不同，但都属于比较型问题，应该使用混合检索策略。</p>
+
+    <p>此外，路由系统还可以考虑上下文信息。比如，根据用户的历史查询记录、当前会话状态和可用的数据源来动态调整路由决策。这种上下文感知的路由能够提供更精准的检索策略选择，进一步提升问答质量。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">路由规则分类体系</text>
+            
+            <rect x="30" y="50" width="160" height="110" rx="10" fill="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">事实型问题</text>
+            <text x="110" y="95" text-anchor="middle" fill="white" font-size="10">"什么是 X？"</text>
+            <text x="110" y="115" text-anchor="middle" fill="white" font-size="10">"谁开发了 Y？"</text>
+            <text x="110" y="145" text-anchor="middle" fill="white" font-size="10">→ 向量检索</text>
+            
+            <rect x="220" y="50" width="160" height="110" rx="10" fill="#10b981"/>
+            <text x="300" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">比较型问题</text>
+            <text x="300" y="95" text-anchor="middle" fill="white" font-size="10">"X 和 Y 的区别？"</text>
+            <text x="300" y="115" text-anchor="middle" fill="white" font-size="10">"哪个更好？"</text>
+            <text x="300" y="145" text-anchor="middle" fill="white" font-size="10">→ 混合检索</text>
+            
+            <rect x="410" y="50" width="160" height="110" rx="10" fill="#f59e0b"/>
+            <text x="490" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">推理型问题</text>
+            <text x="490" y="95" text-anchor="middle" fill="white" font-size="10">"X 和 Y 的关系？"</text>
+            <text x="490" y="115" text-anchor="middle" fill="white" font-size="10">"为什么 X 比 Y 好？"</text>
+            <text x="490" y="145" text-anchor="middle" fill="white" font-size="10">→ 图谱检索</text>
+            
+            <rect x="600" y="50" width="160" height="110" rx="10" fill="#8b5cf6"/>
+            <text x="680" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">操作型问题</text>
+            <text x="680" y="95" text-anchor="middle" fill="white" font-size="10">"如何做 X？"</text>
+            <text x="680" y="115" text-anchor="middle" fill="white" font-size="10">"步骤是什么？"</text>
+            <text x="680" y="145" text-anchor="middle" fill="white" font-size="10">→ 关键词检索</text>
+        </svg>
+    </div>
+
+    <h2>四、Agentic RAG vs 传统 RAG 全面对比</h2>
+
+    <p>Agentic RAG 与传统 RAG 的核心差异在于决策方式。传统 RAG 遵循预设的固定流程，每一步都是确定的；而 Agentic RAG 的 Agent 能够根据当前状态动态决定下一步行动。这种差异使得 Agentic RAG 在处理复杂问题时具有显著优势，但也带来了更高的复杂度和成本。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>传统 RAG</th><th>Agentic RAG</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>检索方式</strong></td>
+                <td>固定流程</td>
+                <td>自主决策</td>
+            </tr>
+            <tr>
+                <td><strong>工具使用</strong></td>
+                <td>单一检索</td>
+                <td>多工具组合</td>
+            </tr>
+            <tr>
+                <td><strong>推理能力</strong></td>
+                <td>无</td>
+                <td>有（ReAct/Plan）</td>
+            </tr>
+            <tr>
+                <td><strong>适应性</strong></td>
+                <td>低</td>
+                <td>高</td>
+            </tr>
+            <tr>
+                <td><strong>复杂度</strong></td>
+                <td>低</td>
+                <td>高</td>
+            </tr>
+            <tr>
+                <td><strong>适用场景</strong></td>
+                <td>简单问答</td>
+                <td>复杂多步推理</td>
+            </tr>
+            <tr>
+                <td><strong>可解释性</strong></td>
+                <td>中等</td>
+                <td>高（推理链可见）</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>五、Agentic RAG 的适用场景</h2>
+    <p>Agentic RAG 并非在所有场景下都优于传统 RAG。它的优势主要体现在需要自主决策和多步推理的场景中。</p>
+
+    <h3>5.1 工具定义示例</h3>
+    <p>在 Agentic RAG 中，工具是 Agent 的"手和脚"。每个工具都是一个可调用的函数，Agent 根据当前状态选择合适的工具来执行。工具的设计需要遵循单一职责原则：每个工具只做一件事，但要把这件事做好。这样 Agent 才能灵活组合多个工具来完成复杂任务。</p>
+
+<div class="code-file">07_advanced_rag/02_agentic_rag/agentic_rag.py</div>
+<pre><code class="language-python"># 工具定义：每个工具是一个独立的函数
+def vector_search(query: str) -> str:
+    """向量检索工具"""
+    return f"[检索结果] 找到与'{query}'相关的文档片段。"
+
+def rerank(query: str) -> str:
+    """重排序工具"""
+    return f"[重排序结果] Top-3 相关性分数为 0.95, 0.88, 0.82。"
+
+def verify(query: str) -> str:
+    """验证工具"""
+    return f"[验证结果] 当前检索结果足以回答'{query}'。"
+
+def generate(query: str) -> str:
+    """生成工具"""
+    return f"[生成结果] 基于检索和验证，生成最终回答。"</code></pre>
+
+    <ul>
+        <li><strong>复杂问答</strong>：当答案需要综合多个信息源、进行多步推理时，Agentic RAG 能够自主规划检索路径</li>
+        <li><strong>动态策略选择</strong>：当系统需要支持多种检索策略，且问题类型多样时，路由 Agent 能自动选择最优策略</li>
+        <li><strong>交互式检索</strong>：当用户问题模糊或不完整时，Agent 可以主动提问澄清，而不是盲目检索</li>
+        <li><strong>工具调用</strong>：当检索需要结合外部工具（如计算器、API 调用、数据库查询）时，Agent 能够协调多个工具</li>
+    </ul>
+
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Agentic RAG 工具生态系统</text>
+            
+            <!-- 中心 Agent -->
+            <circle cx="390" cy="110" r="45" fill="#1a1a2e"/>
+            <text x="390" y="105" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Agent</text>
+            <text x="390" y="125" text-anchor="middle" fill="white" font-size="10">核心决策</text>
+            
+            <!-- 工具 1 -->
+            <rect x="40" y="40" width="120" height="50" rx="8" fill="#3b82f6"/>
+            <text x="100" y="60" text-anchor="middle" fill="white" font-size="11">向量检索</text>
+            <text x="100" y="78" text-anchor="middle" fill="white" font-size="9">语义匹配</text>
+            <line x1="160" y1="65" x2="345" y2="95" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 工具 2 -->
+            <rect x="40" y="130" width="120" height="50" rx="8" fill="#10b981"/>
+            <text x="100" y="150" text-anchor="middle" fill="white" font-size="11">关键词检索</text>
+            <text x="100" y="168" text-anchor="middle" fill="white" font-size="9">精确匹配</text>
+            <line x1="160" y1="155" x2="345" y2="125" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 工具 3 -->
+            <rect x="620" y="40" width="120" height="50" rx="8" fill="#f59e0b"/>
+            <text x="680" y="60" text-anchor="middle" fill="white" font-size="11">图谱检索</text>
+            <text x="680" y="78" text-anchor="middle" fill="white" font-size="9">关系遍历</text>
+            <line x1="620" y1="65" x2="435" y2="95" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 工具 4 -->
+            <rect x="620" y="130" width="120" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="680" y="150" text-anchor="middle" fill="white" font-size="11">外部 API</text>
+            <text x="680" y="168" text-anchor="middle" fill="white" font-size="9">实时数据</text>
+            <line x1="620" y1="155" x2="435" y2="125" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 底部说明 -->
+            <rect x="100" y="200" width="580" height="20" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="215" text-anchor="middle" fill="#64748b" font-size="10">Agent 根据问题类型和检索结果，动态选择和组合工具</text>
+        </svg>
+    </div>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 成本与延迟</div>
+        <p>Agentic RAG 需要多次 LLM 调用来完成 Thought-Action-Observation 循环，这显著增加了延迟和成本。在实际应用中，需要设置最大步数限制（通常 3-5 步），并监控 Token 消耗。对于简单问题，建议直接使用传统 RAG，避免不必要的 Agent 开销。</p>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>Agentic RAG 将 Agent 技术引入 RAG 系统，实现了从"被动执行"向"主动决策"的转变。ReAct Agent 通过 Thought-Action-Observation 循环实现多步推理，路由 Agent 根据问题类型自动选择最佳检索策略。</p>
+
+    <p>Agentic RAG 的核心优势在于自主决策和多步推理能力，适合复杂问答和动态策略选择场景。但其成本较高，需要多次 LLM 调用，在实际应用中需要权衡收益和开销。建议在简单场景中使用传统 RAG，在复杂场景中使用 Agentic RAG，根据实际需求灵活选择。</p>
+
+    <p>在实际项目中，建议先用传统 RAG 快速上线，再根据用户反馈和业务复杂度逐步引入 Agentic RAG。可以从简单的路由 Agent 开始，根据问题类型选择不同的检索策略，再逐步升级到完整的 ReAct Agent 实现多步推理。这种渐进式的引入方式能够在控制成本的同时，逐步提升系统的智能化水平。</p>
+
+    <p>在下一节 7.3 中，我们将学习多模态 RAG，处理图片、表格和代码块等复杂内容的检索和生成。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.2 MCP 核心概念（Server、Client、Tools、Resources） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.2 MCP 核心概念（Server、Client、Tools、Resources）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 MCP Server 和 MCP Client 的角色和职责</li>
+        <li>掌握 Tools、Resources、Prompts 三大核心概念的定义和使用</li>
+        <li>了解 MCP 客户端与服务器的连接和交互流程</li>
+        <li>能够使用 Python SDK 构建 MCP 服务器和客户端</li>
+    </ul>
+
+    <h2>一、MCP Server（服务器）</h2>
+    <p>MCP Server 是 MCP 协议中的数据提供方或服务提供方。它负责暴露工具（Tools）、资源（Resources）和 Prompt 模板（Prompts）给 MCP 客户端。Server 的核心职责是：注册和暴露能力、处理客户端的请求、执行工具调用、读取资源内容、生成 Prompt。在实际应用中，一个 MCP Server 可以是一个独立的进程（通过 stdio 通信），也可以是一个远程服务（通过 SSE 或 HTTP 通信）。Server 的设计和实现决定了整个 MCP 生态系统的扩展性和可用性。</p>
+
+    <p>MCP Server 的生命周期由客户端驱动：客户端通过 initialize 请求发起连接，Server 回复其能力列表和版本信息；随后客户端通过 initialized 通知确认握手完成；在交互阶段，客户端可以随时调用 Server 暴露的工具、读取资源或获取 Prompt；最后，任何一方都可以断开连接。这种设计确保了 Server 始终处于被动响应的状态，不会主动向客户端推送数据（除非客户端订阅了资源变更）。</p>
+
+    <p>Server 的设计原则是简单和可扩展。每个 Server 只需要关注自己的核心功能，不需要关心客户端的实现细节。通过 MCP 协议的统一接口，Server 可以被任何支持 MCP 的客户端使用，实现了真正的解耦和互操作性。这种设计使得 MCP 生态系统能够快速扩展，新的 Server 可以立即被现有的客户端使用，无需额外的集成工作。</p>
+
+    <h3>1.1 Server 核心接口</h3>
+    <div class="code-file">Python（MCP Server 示例）</div>
+<pre><code class="language-python">from mcp import Server
+
+# 创建 MCP 服务器
+server = Server(name="weather-server", version="1.0.0")
+
+# 注册工具
+@server.tool()
+def get_weather(city: str) -> str:
+    """获取指定城市天气"""
+    data = {"北京": "晴, 25°C", "上海": "多云, 28°C"}
+    return data.get(city, "未知城市")
+
+# 注册资源
+@server.resource(uri="file:///docs/guide.md")
+async def read_guide() -> str:
+    """读取用户指南"""
+    return "# MCP 用户指南\n欢迎使用..."
+
+# 注册 Prompt
+@server.prompt()
+def weather_report(city: str) -> str:
+    """生成天气报告模板"""
+    return f"请生成{city}的天气报告"</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP Server 职责与能力</text>
+            
+            <rect x="30" y="50" width="220" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">MCP Server</text>
+            <text x="140" y="95" text-anchor="middle" fill="#2563eb" font-size="10">数据/服务提供方</text>
+            
+            <rect x="50" y="105" width="180" height="25" rx="5" fill="#93c5fd"/>
+            <text x="140" y="122" text-anchor="middle" fill="white" font-size="9">注册和暴露能力</text>
+            
+            <rect x="50" y="135" width="180" height="25" rx="5" fill="#93c5fd"/>
+            <text x="140" y="152" text-anchor="middle" fill="white" font-size="9">处理客户端请求</text>
+            
+            <rect x="50" y="165" width="180" height="25" rx="5" fill="#93c5fd"/>
+            <text x="140" y="182" text-anchor="middle" fill="white" font-size="9">返回执行结果</text>
+            
+            <line x1="250" y1="115" x2="310" y2="85" stroke="#3b82f6" stroke-width="2"/>
+            <text x="280" y="90" text-anchor="middle" fill="#3b82f6" font-size="9">Tools</text>
+            <rect x="310" y="55" width="140" height="60" rx="8" fill="#3b82f6"/>
+            <text x="380" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">工具调用</text>
+            <text x="380" y="98" text-anchor="middle" fill="white" font-size="9">执行外部功能</text>
+            <text x="380" y="112" text-anchor="middle" fill="white" font-size="9">返回结果</text>
+            
+            <line x1="250" y1="135" x2="310" y2="135" stroke="#10b981" stroke-width="2"/>
+            <text x="280" y="128" text-anchor="middle" fill="#10b981" font-size="9">Resources</text>
+            <rect x="310" y="120" width="140" height="60" rx="8" fill="#10b981"/>
+            <text x="380" y="143" text-anchor="middle" fill="white" font-size="11" font-weight="bold">资源读取</text>
+            <text x="380" y="163" text-anchor="middle" fill="white" font-size="9">读取文件/数据</text>
+            <text x="380" y="177" text-anchor="middle" fill="white" font-size="9">支持订阅</text>
+            
+            <line x1="250" y1="155" x2="310" y2="185" stroke="#f59e0b" stroke-width="2"/>
+            <text x="280" y="178" text-anchor="middle" fill="#f59e0b" font-size="9">Prompts</text>
+            <rect x="530" y="55" width="140" height="125" rx="8" fill="#f59e0b"/>
+            <text x="600" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Prompt 模板</text>
+            <text x="600" y="98" text-anchor="middle" fill="white" font-size="9">可复用提示词</text>
+            <text x="600" y="118" text-anchor="middle" fill="white" font-size="9">参数化填充</text>
+            <text x="600" y="138" text-anchor="middle" fill="white" font-size="9">标准化流程</text>
+            <text x="600" y="165" text-anchor="middle" fill="white" font-size="9">统一消息格式</text>
+        </svg>
+    </div>
+
+    <h2>二、MCP Client（客户端）</h2>
+    <p>MCP Client 是 MCP 协议中的服务消费方，通常是 AI 应用（如 Claude Desktop、Cursor、IDE 插件等）。客户端的核心职责是：建立与服务器的连接、发现服务器支持的能力、调用工具、读取资源、获取 Prompt、处理返回结果。客户端通过 MCP 协议与一个或多个服务器通信，将服务器暴露的能力集成到 AI 应用的上下文中，使 LLM 能够感知和使用这些外部能力。</p>
+
+    <p>在实际应用中，一个 MCP Client 可以同时连接多个 MCP Server。例如，一个 AI 助手可以同时连接天气服务（获取天气数据）、数据库服务（查询用户信息）、文件系统服务（读写文件）等多个 Server。客户端负责管理这些连接的生命周期，包括初始化握手、能力协商、错误处理和断开连接。客户端的设计需要考虑多连接管理、并发处理、错误恢复等工程问题。</p>
+
+    <p>客户端的另一个重要职责是将工具调用的结果整合到 LLM 的上下文中。当 LLM 决定调用某个工具时，客户端需要拦截这个调用请求，通过 MCP 协议发送给对应的 Server，等待 Server 返回结果，然后将结果注入到 LLM 的对话历史中，让 LLM 基于新的信息继续生成回答。这个过程需要精确的消息管理和状态跟踪，确保对话的连贯性和一致性。</p>
+
+    <h3>2.1 客户端工作流程</h3>
+    <div class="code-file">Python（MCP Client 示例）</div>
+<pre><code class="language-python">from mcp import Client
+
+# 创建 MCP 客户端
+client = Client(name="my-app", version="1.0.0")
+
+# 连接到服务器
+client.connect("stdio", command="./weather-server")
+
+# 发现可用工具
+tools = client.list_tools()
+print(f"可用工具: {tools}")
+
+# 调用工具
+result = client.call_tool("get_weather", {"city": "北京"})
+print(f"天气: {result}")
+
+# 读取资源
+content = client.read_resource("file:///docs/guide.md")
+print(f"内容: {content}")
+
+# 获取 Prompt
+prompt = client.get_prompt("weather_report", {"city": "北京"})
+print(f"Prompt: {prompt}")
+
+# 断开连接
+client.disconnect()</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP Client 工作流程</text>
+            
+            <rect x="30" y="55" width="100" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="80" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">初始化</text>
+            
+            <line x1="130" y1="75" x2="170" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="170" y="55" width="100" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="220" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">连接 Server</text>
+            
+            <line x1="270" y1="75" x2="310" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="310" y="55" width="100" height="40" rx="8" fill="#3b82f6"/>
+            <text x="360" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">能力发现</text>
+            
+            <line x1="410" y1="75" x2="450" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="450" y="55" width="100" height="40" rx="8" fill="#10b981"/>
+            <text x="500" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">交互调用</text>
+            
+            <line x1="550" y1="75" x2="590" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="590" y="55" width="100" height="40" rx="8" fill="#ef4444"/>
+            <text x="640" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">断开连接</text>
+            
+            <rect x="30" y="115" width="720" height="50" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="138" text-anchor="middle" fill="#666" font-size="10">initialize → connect → list_tools → call_tool → read_resource → get_prompt → disconnect</text>
+            <text x="390" y="158" text-anchor="middle" fill="#666" font-size="9">客户端管理连接生命周期，Server 被动响应</text>
+        </svg>
+    </div>
+
+    <h2>三、Tools（工具）</h2>
+    <p>Tools 是 MCP 协议中最核心的能力。每个 Tool 包含名称、描述和输入参数 Schema，允许客户端发现和执行外部功能。工具的定义格式与 OpenAI Function Calling 类似，但通过 MCP 协议统一暴露，使得任何支持 MCP 的客户端都可以调用这些工具，而不需要为每个客户端单独实现集成。</p>
+
+    <p>工具的执行流程是：客户端通过 tools/list 获取可用工具列表，LLM 决定调用哪个工具，客户端通过 tools/call 发送调用请求到 Server，Server 执行工具并返回结果，客户端将结果返回给 LLM。这种流程确保了工具的调用是受控的和可预测的，避免了 LLM 直接执行不可控的操作。</p>
+
+    <p>在实际开发中，工具的设计需要特别注意安全性。Server 在接收工具调用请求时，应该验证输入参数的合法性，防止恶意输入导致的安全问题。同时，工具的执行应该有超时限制和错误处理机制，确保即使工具执行失败也不会影响 Server 的正常服务。对于涉及敏感操作的工具（如文件写入、数据库修改），还应该实施权限控制和操作审计。</p>
+
+    <h3>3.1 工具定义示例</h3>
+    <div class="code-file">Python（工具定义与验证）</div>
+<pre><code class="language-python">class MCPTool:
+    """MCP 工具定义"""
+    
+    def __init__(self, name, description, input_schema):
+        self.name = name
+        self.description = description
+        self.input_schema = input_schema
+
+    def validate_input(self, arguments):
+        """验证输入参数"""
+        required = self.input_schema.get("required", [])
+        properties = self.input_schema.get("properties", {})
+        
+        # 检查必填参数
+        for param in required:
+            if param not in arguments:
+                return False
+        
+        # 检查参数类型
+        for param, value in arguments.items():
+            if param in properties:
+                expected = properties[param].get("type")
+                if expected == "string" and not isinstance(value, str):
+                    return False
+        
+        return True
+
+# 定义天气工具
+weather_tool = MCPTool(
+    name="get_weather",
+    description="获取指定城市天气",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "city": {"type": "string", "description": "城市名称"}
+        },
+        "required": ["city"],
+    }
+)
+
+# 验证输入
+print(weather_tool.validate_input({"city": "北京"}))   # True
+print(weather_tool.validate_input({"temp": 25}))       # False</code></pre>
+
+    <h2>四、Resources（资源）</h2>
+    <p>Resources 是 MCP 协议中用于读取数据的机制。与 Tools 不同，Resources 是只读的，客户端不能修改资源内容。每个资源通过 URI 唯一标识，包含名称、描述和 MIME 类型。资源支持订阅机制：客户端可以订阅资源的变更通知，当资源内容更新时，Server 会主动通知客户端。</p>
+
+    <p>资源的典型用途包括：读取文件内容、查询数据库记录、获取 API 数据、访问文档等。在实际应用中，资源可以来自本地文件系统、远程数据库、第三方 API 等多种数据源。MCP 协议通过统一的资源接口，使得客户端可以用相同的方式读取不同类型的数据。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Resources 数据读取流程</text>
+            
+            <rect x="30" y="50" width="120" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="90" y="75" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">客户端请求</text>
+            
+            <line x1="150" y1="70" x2="190" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="50" width="120" height="40" rx="8" fill="#10b981"/>
+            <text x="250" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">资源定位</text>
+            
+            <line x1="310" y1="70" x2="350" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="50" width="120" height="40" rx="8" fill="#f59e0b"/>
+            <text x="410" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">权限检查</text>
+            
+            <line x1="470" y1="70" x2="510" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="50" width="120" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="570" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">数据读取</text>
+            
+            <line x1="630" y1="70" x2="670" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="50" width="80" height="40" rx="8" fill="#3b82f6"/>
+            <text x="710" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">返回</text>
+            
+            <rect x="150" y="105" width="480" height="25" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="123" text-anchor="middle" fill="#666" font-size="10">resources/list → 发现资源 → resources/read → 返回内容（支持分页和订阅）</text>
+        </svg>
+    </div>
+
+    <p>资源的设计考虑了效率和安全性。对于大型资源，MCP 协议支持分页读取，避免一次性传输大量数据导致性能问题。对于敏感资源，Server 可以实施访问控制，只允许授权客户端读取特定资源。此外，资源的 MIME 类型确保了客户端能够正确处理不同类型的数据内容。</p>
+
+    <h3>4.1 资源定义示例</h3>
+    <div class="code-file">Python（资源定义与读取）</div>
+<pre><code class="language-python">class MCPResource:
+    """MCP 资源定义"""
+    
+    def __init__(self, uri, name, description="", mime_type="text/plain"):
+        self.uri = uri
+        self.name = name
+        self.description = description
+        self.mime_type = mime_type
+        self.content = None
+        self.last_modified = None
+
+    def read(self):
+        """读取资源内容"""
+        return {
+            "uri": self.uri,
+            "mimeType": self.mime_type,
+            "text": self.content or "",
+        }
+
+# 定义文件资源
+guide = MCPResource(
+    uri="file:///docs/guide.md",
+    name="用户指南",
+    description="MCP 用户使用指南",
+    mime_type="text/markdown"
+)
+guide.content = "# MCP 用户指南\n欢迎使用..."
+
+# 读取资源
+data = guide.read()
+print(data["text"])</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Tools vs Resources 对比</text>
+            
+            <rect x="30" y="50" width="340" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="200" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">Tools（工具）</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 可执行操作（读/写/计算）</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 通过 tools/call 调用</text>
+            <text x="50" y="140" fill="#2563eb" font-size="10">• 返回执行结果</text>
+            
+            <rect x="410" y="50" width="340" height="90" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="580" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">Resources（资源）</text>
+            <text x="430" y="100" fill="#059669" font-size="10">• 只读数据（文件/数据库/API）</text>
+            <text x="430" y="120" fill="#059669" font-size="10">• 通过 resources/read 读取</text>
+            <text x="430" y="140" fill="#059669" font-size="10">• 支持订阅变更通知</text>
+        </svg>
+    </div>
+
+    <h2>五、Prompts（Prompt 模板）</h2>
+    <p>Prompts 是 MCP 协议中用于管理和复用提示词模板的机制。每个 Prompt 包含名称、描述和参数列表，客户端可以通过参数填充生成具体的 Prompt 内容。这在需要标准化 AI 交互流程的场景中非常有用，例如代码审查、邮件写作、数据分析等。通过 Prompt 模板，可以确保不同用户和不同场景下的 AI 交互遵循一致的格式和标准。</p>
+
+    <p>Prompt 模板的优势在于：将 Prompt 的编写和使用分离，Prompt 专家可以编写高质量的模板，开发者只需要填充参数即可使用。同时，Prompt 模板可以被多个客户端共享，确保了交互流程的一致性。在实际应用中，Prompt 模板可以存储在 Server 端，客户端通过 prompts/list 发现可用模板，通过 prompts/get 获取填充后的内容。这种设计使得 Prompt 的管理和更新变得简单，当需要修改 Prompt 时，只需要在 Server 端更新模板，所有客户端都会自动使用最新版本的 Prompt。</p>
+
+    <p>在设计 Prompt 模板时，需要注意参数的设计和使用。参数应该清晰、简洁、易于理解，避免歧义。同时，模板应该包含足够的上下文信息，确保 LLM 能够正确理解任务的要求。对于复杂的任务，可以将 Prompt 模板分解为多个子模板，每个子模板专注于一个特定的子任务，从而提高 Prompt 的可维护性和可复用性。</p>
+
+    <h3>5.1 Prompt 定义示例</h3>
+    <div class="code-file">Python（Prompt 模板定义与使用）</div>
+<pre><code class="language-python">class MCPPrompt:
+    """MCP Prompt 定义"""
+    
+    def __init__(self, name, description="", arguments=None):
+        self.name = name
+        self.description = description
+        self.arguments = arguments or []
+        self.template = None
+
+    def get(self, arguments):
+        """获取填充参数后的 Prompt"""
+        if self.template:
+            text = self.template
+            for key, value in arguments.items():
+                text = text.replace(f"{{{key}}}", str(value))
+            return {"messages": [{"role": "user", "content": text}]}
+        return {"messages": []}
+
+# 定义代码审查 Prompt
+code_review = MCPPrompt(
+    name="code_review",
+    description="代码审查 Prompt",
+    arguments=[{"name": "language", "description": "编程语言"}]
+)
+code_review.template = "请审查以下{language}代码的质量和规范"
+
+# 获取填充后的 Prompt
+prompt = code_review.get({"language": "Python"})
+print(prompt["messages"][0]["content"])</code></pre>
+
+    <h2>六、核心概念关系图</h2>
+    <p>Server、Client、Tools、Resources、Prompts 这五个核心概念共同构成了 MCP 协议的完整体系。Server 提供能力，Client 消费能力，Tools、Resources、Prompts 是 Server 暴露的三种能力类型。理解这些概念之间的关系，是深入学习 MCP 协议开发和集成的基础。</p>
+
+    <table>
+        <thead>
+            <tr><th>概念</th><th>角色</th><th>方法</th><th>类比</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Server</strong></td><td>能力提供方</td><td>注册/暴露/响应</td><td>API 服务器</td></tr>
+            <tr><td><strong>Client</strong></td><td>能力消费方</td><td>连接/发现/调用</td><td>API 客户端</td></tr>
+            <tr><td><strong>Tools</strong></td><td>可执行操作</td><td>tools/list, tools/call</td><td>函数调用</td></tr>
+            <tr><td><strong>Resources</strong></td><td>只读数据</td><td>resources/list, resources/read</td><td>文件读取</td></tr>
+            <tr><td><strong>Prompts</strong></td><td>可复用模板</td><td>prompts/list, prompts/get</td><td>模板引擎</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP 核心概念关系</text>
+            
+            <!-- Client -->
+            <rect x="30" y="50" width="160" height="60" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">MCP Client</text>
+            <text x="110" y="95" text-anchor="middle" fill="#2563eb" font-size="10">AI 应用 / IDE 插件</text>
+            
+            <!-- Connection -->
+            <line x1="190" y1="80" x2="270" y2="80" stroke="#64748b" stroke-width="2"/>
+            <text x="230" y="72" text-anchor="middle" fill="#64748b" font-size="9">MCP 协议</text>
+            <text x="230" y="88" text-anchor="middle" fill="#64748b" font-size="8">JSON-RPC 2.0</text>
+            
+            <!-- Server -->
+            <rect x="270" y="50" width="160" height="60" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="350" y="75" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">MCP Server</text>
+            <text x="350" y="95" text-anchor="middle" fill="#059669" font-size="10">数据/服务提供方</text>
+            
+            <!-- Capabilities -->
+            <line x1="430" y1="80" x2="510" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Tools -->
+            <rect x="510" y="50" width="120" height="50" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="570" y="70" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold"> Tools</text>
+            <text x="570" y="88" text-anchor="middle" fill="#b45309" font-size="9">可执行操作</text>
+            
+            <!-- Resources -->
+            <rect x="510" y="115" width="120" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="570" y="135" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold"> Resources</text>
+            <text x="570" y="153" text-anchor="middle" fill="#2563eb" font-size="9">只读数据</text>
+            
+            <!-- Prompts -->
+            <rect x="510" y="180" width="120" height="50" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="570" y="200" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold"> Prompts</text>
+            <text x="570" y="218" text-anchor="middle" fill="#7c3aed" font-size="9">Prompt 模板</text>
+            
+            <!-- Arrows -->
+            <line x1="630" y1="75" x2="670" y2="75" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="690" y="78" fill="#f59e0b" font-size="9">tools/list, tools/call</text>
+            
+            <line x1="630" y1="140" x2="670" y2="140" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="690" y="143" fill="#3b82f6" font-size="9">resources/list, resources/read</text>
+            
+            <line x1="630" y1="205" x2="670" y2="205" stroke="#8b5cf6" stroke-width="1.5"/>
+            <text x="690" y="208" fill="#8b5cf6" font-size="9">prompts/list, prompts/get</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title"> 核心理解</div>
+        <p>MCP 的五个核心概念可以概括为：Server 是能力提供方，Client 是能力消费方，Tools 是可执行操作，Resources 是只读数据，Prompts 是可复用模板。理解这五个概念的角色和关系，是深入学习 MCP 协议的基础。在下一节 9.3 中，我们将学习如何使用 Python/TypeScript SDK 开发 MCP Server。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>MCP 协议的核心概念包括 Server、Client、Tools、Resources 和 Prompts。Server 负责暴露能力，Client 负责消费能力，Tools 提供可执行操作，Resources 提供只读数据，Prompts 提供可复用的提示词模板。这五个概念共同构成了 MCP 协议的完整体系，使得 AI 应用与外部系统的集成变得标准化和高效。</p>
+
+    <p>理解 MCP 协议的核心概念和交互流程，是深入学习 MCP 开发和集成的基础。在下一节 9.3 中，我们将学习如何使用 Python 和 TypeScript SDK 开发 MCP Server，掌握实际的编码技能和最佳实践。通过学习 Server 的开发方法，你将能够为自己的数据和工具创建 MCP 服务，让它们被任何支持 MCP 的 AI 应用使用。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

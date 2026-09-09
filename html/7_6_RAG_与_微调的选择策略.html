@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7.6 RAG 与微调的选择策略 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>7.6 RAG 与微调的选择策略</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块七：高级 RAG 技术</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 RAG 和微调的核心区别和各自优势</li>
+        <li>掌握基于场景特征的技术选型方法</li>
+        <li>学会评估数据量、更新频率、精度要求等关键维度</li>
+        <li>了解 RAG + 微调混合方案的应用场景</li>
+    </ul>
+
+    <h2>一、RAG 与微调的本质区别</h2>
+    <p>RAG（检索增强生成）和模型微调是两种不同的知识注入方式。RAG 通过外部检索在运行时动态获取知识，而微调通过将知识内化到模型参数中来实现知识学习。这两种方式各有优势，适用于不同的场景需求。</p>
+
+    <p>RAG 的核心优势在于知识的即时性和可追溯性。当知识库发生变化时，只需要更新外部存储，无需重新训练模型。同时，RAG 能够提供知识来源引用，支持事实核查，这在需要高可靠性的场景中非常重要。对于企业知识库、产品文档等频繁更新的内容，RAG 是最优选择。</p>
+
+    <p>微调的核心优势在于对模型行为的深度定制。通过微调，可以改变模型的语言风格、专业知识理解和推理能力。这些能力是内化在模型参数中的，不需要额外的检索开销，因此在延迟敏感的场景中更有优势。对于代码生成、创意写作等需要特定风格和技能的场景，微调是更合适的选择。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">RAG vs 微调：知识注入方式对比</text>
+            
+            <!-- RAG 侧 -->
+            <rect x="40" y="55" width="340" height="120" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="210" y="85" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">RAG：外部知识</text>
+            <text x="60" y="110" fill="#2563eb" font-size="11">• 知识存储在外部数据库</text>
+            <text x="60" y="130" fill="#2563eb" font-size="11">• 运行时检索获取知识</text>
+            <text x="60" y="150" fill="#2563eb" font-size="11">• 知识即时更新（秒级）</text>
+            <text x="60" y="170" fill="#2563eb" font-size="11">• 提供来源引用，可追溯</text>
+            
+            <!-- 微调 侧 -->
+            <rect x="420" y="55" width="340" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="590" y="85" text-anchor="middle" fill="#92400e" font-size="14" font-weight="bold">微调：内化知识</text>
+            <text x="440" y="110" fill="#b45309" font-size="11">• 知识内化到模型参数中</text>
+            <text x="440" y="130" fill="#b45309" font-size="11">• 推理时直接使用</text>
+            <text x="440" y="150" fill="#b45309" font-size="11">• 更新需重新训练（小时级）</text>
+            <text x="440" y="170" fill="#b45309" font-size="11">• 无来源引用，不可追溯</text>
+        </svg>
+    </div>
+
+    <h2>二、关键决策维度</h2>
+    <p>在选择 RAG 或微调时，需要评估以下几个关键维度。每个维度都会影响最终的技术选型决策。理解这些维度的含义和权重，能够帮助我们在实际项目中做出更明智的选择。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>倾向 RAG</th><th>倾向微调</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>数据量</strong></td><td>大量外部知识（万级+文档）</td><td>少量专业知识（百级+样本）</td></tr>
+            <tr><td><strong>更新频率</strong></td><td>频繁更新（每天/每周）</td><td>极少更新（每季度/每年）</td></tr>
+            <tr><td><strong>精度要求</strong></td><td>需要事实核查和来源引用</td><td>关注风格和流畅度</td></tr>
+            <tr><td><strong>延迟要求</strong></td><td>可以接受额外检索延迟</td><td>需要最低延迟响应</td></tr>
+            <tr><td><strong>预算限制</strong></td><td>预算有限，无法承担训练成本</td><td>预算充足，可投入 GPU 资源</td></tr>
+        </tbody>
+    </table>
+
+    <h2>三、场景分析与推荐</h2>
+    <p>不同场景对 RAG 和微调的需求不同。以下是四个典型场景的分析和推荐：智能客服、代码助手、领域专家和创意写作。每个场景都有其独特的特征和需求，需要针对性地选择最合适的技术方案。</p>
+
+    <h3>3.1 智能客服</h3>
+    <p>智能客服需要回答客户关于产品、政策的问题。这类场景的特点是：知识库大且频繁更新，需要高精度的事实性回答。因此，RAG 是更优选择，它能够即时更新产品政策信息，并提供来源引用支持事实核查。当产品更新或政策变更时，只需要更新外部知识库，无需重新训练模型。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">智能客服场景下的 RAG 工作流</text>
+            
+            <!-- 用户提问 -->
+            <rect x="30" y="60" width="120" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">用户提问</text>
+            
+            <line x1="150" y1="80" x2="200" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 检索知识库 -->
+            <rect x="200" y="60" width="130" height="40" rx="8" fill="#3b82f6"/>
+            <text x="265" y="85" text-anchor="middle" fill="white" font-size="11">检索知识库</text>
+            
+            <line x1="330" y1="80" x2="370" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 政策文档 -->
+            <rect x="370" y="60" width="130" height="40" rx="8" fill="#10b981"/>
+            <text x="435" y="85" text-anchor="middle" fill="white" font-size="11">产品政策文档</text>
+            
+            <line x1="500" y1="80" x2="540" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- LLM 回答 -->
+            <rect x="540" y="60" width="130" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="605" y="85" text-anchor="middle" fill="white" font-size="11">LLM 生成回答</text>
+            
+            <!-- 来源引用 -->
+            <rect x="540" y="120" width="200" height="50" rx="8" fill="#f59e0b"/>
+            <text x="640" y="140" text-anchor="middle" fill="white" font-size="11" font-weight="bold">来源引用输出</text>
+            <text x="640" y="160" text-anchor="middle" fill="white" font-size="9">政策文档第 3 条</text>
+            
+            <line x1="605" y1="100" x2="640" y2="120" stroke="#f59e0b" stroke-width="1.5"/>
+        </svg>
+    </div>
+
+    <h3>3.2 代码助手</h3>
+    <p>代码助手帮助开发者编写和调试代码。这类场景需要理解编程语言和框架，但知识更新不是特别频繁。RAG 适合检索最新 API 文档，而微调适合学习编程风格。推荐以 RAG 为主，辅以轻度微调，既保证 API 信息的时效性，又保证代码生成的质量。</p>
+
+    <h3>3.3 领域专家</h3>
+    <p>在医疗、法律等专业领域，知识相对稳定但精度要求极高。微调能够让模型深入学习专业术语和推理方式，但 RAG 能提供最新法规和案例。实际应用中，建议采用混合方案，让微调模型学习专业知识体系，同时用 RAG 获取最新的法规变更和案例更新。</p>
+
+    <h3>3.4 创意写作</h3>
+    <p>创意写作关注语言风格和表达效果，不需要事实性知识。微调是更合适的选择，因为它能够改变模型的写作风格和创意能力。RAG 在这种场景下价值不大，因为创意内容不需要检索外部知识。通过微调，模型可以学习特定的写作风格和表达方式。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">场景推荐矩阵</text>
+            
+            <!-- X 轴：更新频率 -->
+            <line x1="100" y1="220" x2="700" y2="220" stroke="#64748b" stroke-width="2"/>
+            <text x="400" y="245" text-anchor="middle" fill="#64748b" font-size="12">更新频率 →</text>
+            <text x="100" y="238" text-anchor="middle" fill="#64748b" font-size="9">低频</text>
+            <text x="700" y="238" text-anchor="middle" fill="#64748b" font-size="9">高频</text>
+            
+            <!-- Y 轴：数据量 -->
+            <line x1="100" y1="220" x2="100" y2="50" stroke="#64748b" stroke-width="2"/>
+            <text x="45" y="135" text-anchor="middle" fill="#64748b" font-size="12" transform="rotate(-90, 45, 135)">数据量 →</text>
+            <text x="85" y="220" text-anchor="middle" fill="#64748b" font-size="9">小</text>
+            <text x="85" y="55" text-anchor="middle" fill="#64748b" font-size="9">大</text>
+            
+            <!-- 区域：微调 -->
+            <rect x="120" y="50" width="260" height="160" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="250" y="90" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">微调区域</text>
+            <text x="250" y="115" text-anchor="middle" fill="#b45309" font-size="11">• 创意写作</text>
+            <text x="250" y="135" text-anchor="middle" fill="#b45309" font-size="11">• 领域专家（部分）</text>
+            <text x="250" y="155" text-anchor="middle" fill="#b45309" font-size="10">数据量小，更新不频繁</text>
+            
+            <!-- 区域：RAG -->
+            <rect x="420" y="50" width="260" height="160" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="550" y="90" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">RAG 区域</text>
+            <text x="550" y="115" text-anchor="middle" fill="#2563eb" font-size="11">• 智能客服</text>
+            <text x="550" y="135" text-anchor="middle" fill="#2563eb" font-size="11">• 代码助手</text>
+            <text x="550" y="155" text-anchor="middle" fill="#2563eb" font-size="10">数据量大，更新频繁</text>
+            
+            <!-- 区域：混合 -->
+            <rect x="340" y="130" width="160" height="80" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="420" y="155" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">混合方案</text>
+            <text x="420" y="175" text-anchor="middle" fill="#059669" font-size="10">两者兼有</text>
+            <text x="420" y="195" text-anchor="middle" fill="#059669" font-size="10">RAG + 微调</text>
+        </svg>
+    </div>
+
+    <h2>四、决策引擎实现</h2>
+    <p>我们可以实现一个简单的决策引擎，根据场景特征自动推荐最优方案。决策引擎通过评分机制对 RAG 和微调分别打分，然后根据得分差异给出推荐。这种方式使得技术选型更加客观和可重复。</p>
+
+    <h3>4.1 代码实现</h3>
+    <p>决策引擎的核心是评分机制。每个维度都会给 RAG 和微调分别打分，然后比较总分差异来得出推荐结果。这种方式使得技术选型更加客观和可重复，避免了主观判断的偏差。</p>
+
+    <h3>4.2 评分规则详解</h3>
+    <p>在评分规则中，更新频率是最重要的维度（权重 3 分），因为知识更新速度直接影响方案的可行性。其次是数据量和精度要求（各 2 分），它们分别决定了方案的知识处理能力和可靠性。延迟和预算各 1-2 分，属于次要但不可忽视的因素。在实际应用中，还需要根据具体业务需求调整各维度的权重，以获得更准确的推荐结果。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">决策维度权重分配</text>
+            
+            <rect x="40" y="50" width="140" height="110" rx="8" fill="#3b82f6"/>
+            <text x="110" y="80" text-anchor="middle" fill="white" font-size="12" font-weight="bold">更新频率</text>
+            <text x="110" y="105" text-anchor="middle" fill="white" font-size="18" font-weight="bold">3 分</text>
+            <text x="110" y="135" text-anchor="middle" fill="white" font-size="9">最重要</text>
+            
+            <rect x="200" y="70" width="120" height="90" rx="8" fill="#10b981"/>
+            <text x="260" y="100" text-anchor="middle" fill="white" font-size="12" font-weight="bold">数据量</text>
+            <text x="260" y="125" text-anchor="middle" fill="white" font-size="16" font-weight="bold">2 分</text>
+            
+            <rect x="340" y="70" width="120" height="90" rx="8" fill="#f59e0b"/>
+            <text x="400" y="100" text-anchor="middle" fill="white" font-size="12" font-weight="bold">精度要求</text>
+            <text x="400" y="125" text-anchor="middle" fill="white" font-size="16" font-weight="bold">2 分</text>
+            
+            <rect x="480" y="90" width="100" height="70" rx="8" fill="#8b5cf6"/>
+            <text x="530" y="115" text-anchor="middle" fill="white" font-size="11">延迟要求</text>
+            <text x="530" y="140" text-anchor="middle" fill="white" font-size="14" font-weight="bold">1-2 分</text>
+            
+            <rect x="600" y="90" width="100" height="70" rx="8" fill="#ef4444"/>
+            <text x="650" y="115" text-anchor="middle" fill="white" font-size="11">预算限制</text>
+            <text x="650" y="140" text-anchor="middle" fill="white" font-size="14" font-weight="bold">1-2 分</text>
+        </svg>
+    </div>
+
+    <div class="code-file">07_advanced_rag/06_rag_vs_finetuning/rag_vs_finetuning.py</div>
+<pre><code class="language-python">class RagVsFinetuningAdvisor:
+    """
+    RAG 与微调选择顾问：根据场景特征推荐最优方案。
+
+    决策维度：
+    1. 数据量：小数据集适合微调，大数据集适合 RAG
+    2. 更新频率：频繁更新适合 RAG，极少更新适合微调
+    3. 精度要求：高精度场景适合 RAG（可追溯来源）
+    4. 延迟要求：低延迟场景适合微调（无检索开销）
+    5. 预算限制：低预算场景适合 RAG（无需训练成本）
+    """
+
+    def analyze(self, scenario: Scenario) -> Recommendation:
+        """分析场景并给出推荐"""
+        rag_score = 0
+        ft_score = 0
+
+        # 数据量评估
+        if scenario.data_volume == "small":
+            ft_score += 2
+        elif scenario.data_volume == "large":
+            rag_score += 2
+
+        # 更新频率评估
+        if scenario.update_frequency == "frequent":
+            rag_score += 3
+        elif scenario.update_frequency == "rare":
+            ft_score += 2
+
+        # 返回得分更高的方案</code></pre>
+
+    <h2>五、全面对比</h2>
+
+    <p>为了帮助决策，我们将 RAG 和微调在各维度上进行量化对比。以下是基于实际项目经验的评分表（5 分制）：</p>
+
+<div class="code-file">07_advanced_rag/06_rag_vs_finetuning/example_usage.py</div>
+<pre><code class="language-python"># 各维度评分（5 分制）
+dimensions = {
+    "知识更新速度": {"RAG": 5, "微调": 2},
+    "知识可追溯性": {"RAG": 5, "微调": 1},
+    "幻觉风险控制": {"RAG": 4, "微调": 2},
+    "响应延迟":     {"RAG": 3, "微调": 5},
+    "训练成本":     {"RAG": 5, "微调": 1},
+    "风格定制能力": {"RAG": 2, "微调": 5},
+}
+
+# 根据场景权重计算总分
+weights = {
+    "知识更新频繁": {"知识更新速度": 0.3, "知识可追溯性": 0.2},
+    "延迟敏感":     {"响应延迟": 0.4},
+    "预算有限":     {"训练成本": 0.3},
+}
+</code></pre>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>RAG</th><th>微调</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>知识更新</strong></td><td>即时更新（秒级）</td><td>需重新训练（小时级）</td></tr>
+            <tr><td><strong>知识来源</strong></td><td>可追溯</td><td>内化到模型</td></tr>
+            <tr><td><strong>幻觉风险</strong></td><td>低（有来源支持）</td><td>中（可能编造）</td></tr>
+            <tr><td><strong>延迟</strong></td><td>较高（检索+生成）</td><td>较低（仅生成）</td></tr>
+            <tr><td><strong>训练成本</strong></td><td>无</td><td>高（GPU 资源）</td></tr>
+            <tr><td><strong>数据隐私</strong></td><td>数据在外部存储</td><td>数据需用于训练</td></tr>
+            <tr><td><strong>最佳场景</strong></td><td>知识密集型</td><td>风格/技能型</td></tr>
+        </tbody>
+    </table>
+
+    <h2>六、RAG + 微调混合方案</h2>
+    <p>在很多实际场景中，RAG 和微调并不是互斥的选择，而是可以互补的。混合方案结合了 RAG 的知识即时性和微调的深度定制能力，能够覆盖更广泛的需求。这种方案特别适合那些既有知识更新需求，又有深度定制需求的场景。</p>
+
+    <p>混合方案的典型架构是：先用微调模型理解用户意图和领域语言风格，然后用 RAG 检索最新知识，最后用微调模型基于检索结果生成回答。这种方式既保证了回答的时效性，又保证了语言质量。在实际应用中，混合方案往往能取得最好的效果。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">RAG + 微调混合架构</text>
+            
+            <!-- 用户输入 -->
+            <rect x="30" y="60" width="120" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="85" text-anchor="middle" fill="white" font-size="12" font-weight="bold">用户输入</text>
+            
+            <line x1="150" y1="80" x2="200" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 微调模型 -->
+            <rect x="200" y="50" width="140" height="60" rx="10" fill="#8b5cf6"/>
+            <text x="270" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">微调模型</text>
+            <text x="270" y="95" text-anchor="middle" fill="white" font-size="9">理解意图+风格</text>
+            
+            <line x1="340" y1="80" x2="380" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- RAG 检索 -->
+            <rect x="380" y="50" width="140" height="60" rx="10" fill="#3b82f6"/>
+            <text x="450" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">RAG 检索</text>
+            <text x="450" y="95" text-anchor="middle" fill="white" font-size="9">获取最新知识</text>
+            
+            <line x1="520" y1="80" x2="560" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 微调生成 -->
+            <rect x="560" y="50" width="140" height="60" rx="10" fill="#10b981"/>
+            <text x="630" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">微调生成</text>
+            <text x="630" y="95" text-anchor="middle" fill="white" font-size="9">生成最终回答</text>
+            
+            <!-- 外部知识库 -->
+            <rect x="380" y="140" width="140" height="50" rx="10" fill="#f59e0b"/>
+            <text x="450" y="160" text-anchor="middle" fill="white" font-size="11">外部知识库</text>
+            <text x="450" y="178" text-anchor="middle" fill="white" font-size="9">即时更新</text>
+            
+            <line x1="450" y1="140" x2="450" y2="110" stroke="#f59e0b" stroke-width="2"/>
+            
+            <!-- 底部说明 -->
+            <rect x="100" y="220" width="580" height="35" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="238" text-anchor="middle" fill="#64748b" font-size="11">微调提供理解和风格 | RAG 提供最新知识 | 两者互补</text>
+            <text x="390" y="252" text-anchor="middle" fill="#64748b" font-size="10">用户问题 → 微调理解 → RAG 检索 → 微调生成</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 最佳实践</div>
+        <p>在实际项目中，建议先评估场景的核心需求：如果知识更新频繁，优先选择 RAG；如果需要深度定制模型行为，优先选择微调；如果两者都有需求，采用混合方案。混合方案虽然实现复杂度较高，但往往能取得最好的效果。可以先用 RAG 快速验证可行性，再根据需求逐步引入微调优化。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>RAG 和微调各有优势，适用于不同的场景。RAG 适合知识密集型、更新频繁、需要事实核查的场景；微调适合风格定制、延迟敏感、知识稳定的场景。两者并非互斥，而是可以互补的。通过系统化的评估和决策，可以做出最适合的技术选型。</p>
+
+    <p>在实际项目中，建议先用 RAG 快速上线验证可行性，再根据用户反馈和业务需求逐步引入微调优化。混合方案虽然实现复杂度较高，但往往能取得最好的效果。关键是要根据具体场景的特征，选择合适的技术方案，而不是盲目追求某一种方法。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">技术选型决策流程</text>
+            
+            <!-- 开始 -->
+            <rect x="340" y="50" width="100" height="35" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="72" text-anchor="middle" fill="white" font-size="11" font-weight="bold">开始评估</text>
+            
+            <line x1="390" y1="85" x2="390" y2="110" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 决策 1 -->
+            <polygon points="390,110 470,140 390,170 310,140" fill="#3b82f6"/>
+            <text x="390" y="145" text-anchor="middle" fill="white" font-size="10">更新频繁?</text>
+            
+            <!-- 是 → RAG -->
+            <line x1="310" y1="140" x2="180" y2="140" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="30" y="120" width="150" height="40" rx="8" fill="#10b981"/>
+            <text x="105" y="145" text-anchor="middle" fill="white" font-size="11" font-weight="bold">是 → 选择 RAG</text>
+            
+            <!-- 否 → 决策 2 -->
+            <line x1="470" y1="140" x2="550" y2="140" stroke="#64748b" stroke-width="1.5"/>
+            <polygon points="550,120 620,140 550,160 480,140" fill="#f59e0b"/>
+            <text x="550" y="145" text-anchor="middle" fill="white" font-size="10">需要定制风格?</text>
+            
+            <!-- 是 → 微调 -->
+            <line x1="620" y1="140" x2="690" y2="140" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="690" y="120" width="80" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="730" y="145" text-anchor="middle" fill="white" font-size="11" font-weight="bold">微调</text>
+            
+            <!-- 否 → 混合 -->
+            <line x1="550" y1="160" x2="550" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="480" y="190" width="140" height="30" rx="6" fill="#ef4444"/>
+            <text x="550" y="210" text-anchor="middle" fill="white" font-size="10">混合方案</text>
+        </svg>
+    </div>
+
+    <h2>八、决策工具使用示例</h2>
+    <p>我们可以通过简单的 Python 代码来使用决策工具，输入场景特征即可获得推荐结果。下面是使用决策工具的示例代码：</p>
+
+<div class="code-file">07_advanced_rag/06_rag_vs_finetuning/example_usage.py</div>
+<pre><code class="language-python"># 使用预定义场景
+from rag_vs_finetuning import simple_recommendation
+
+rec = simple_recommendation("customer_support")
+print(f"推荐: {rec.primary_approach}")
+print(f"置信度: {rec.confidence:.0%}")
+print(f"原因: {rec.reasons}")
+
+# 自定义场景
+custom_scenario = Scenario(
+    name="企业内部助手",
+    data_volume="large",
+    update_frequency="frequent",
+    accuracy_requirement="high",
+    latency_requirement="medium",
+    budget="medium",
+)
+rec = advisor.analyze(custom_scenario)</code></pre>
+
+    <p>在下一节 7.7 中，我们将学习 Corrective RAG（CRAG）与 Self-RAG，两种先进的自我纠正 RAG 技术。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

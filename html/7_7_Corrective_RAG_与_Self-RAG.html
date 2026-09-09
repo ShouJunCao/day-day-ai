@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7.7 Corrective RAG（CRAG）与 Self-RAG — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>7.7 Corrective RAG（CRAG）与 Self-RAG</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块七：高级 RAG 技术</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解传统 RAG 的幻觉问题及其成因</li>
+        <li>掌握 CRAG 的检索后纠正机制</li>
+        <li>掌握 Self-RAG 的生成后反思机制</li>
+        <li>了解两种方法的适用场景和实现差异</li>
+    </ul>
+
+    <h2>一、传统 RAG 的幻觉问题</h2>
+    <p>传统 RAG 系统的流程是线性的：检索 → 构建 Prompt → 生成。这个流程假设检索结果一定是相关和准确的，但现实中这个假设经常被打破。当检索结果不相关或信息不足时，系统仍然会基于这些低质量的信息生成回答，从而导致幻觉。</p>
+
+    <p>幻觉的根源在于 LLM 的训练机制：它被训练为生成流畅连贯的文本，而不是判断信息的真实性。当缺乏可靠的外部信息时，LLM 会倾向于编造答案。在 RAG 系统中，如果检索结果质量不佳，即使 LLM 本身能力很强，也可能生成错误的内容。</p>
+
+    <p>自我纠正 RAG 技术的核心思想是：让系统能够自我评估检索和生成的质量，并在发现问题时自动纠正。这就像人类在回答问题后检查自己的答案是否合理一样。通过引入自我评估机制，RAG 系统能够在发现问题时主动采取纠正措施，而不是盲目地输出可能错误的内容。</p>
+
+    <p>目前主流的自我纠正 RAG 技术有两种：CRAG（Corrective RAG）和 Self-RAG。它们的核心区别在于纠正的时机：CRAG 在检索之后、生成之前进行纠正，而 Self-RAG 在生成之后进行纠正。两种方法各有优势，适用于不同的场景需求。在实际应用中，选择哪种方法取决于系统的主要瓶颈是检索质量还是生成质量。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">传统 RAG vs 自我纠正 RAG</text>
+            
+            <rect x="40" y="55" width="340" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="210" y="85" text-anchor="middle" fill="#991b1b" font-size="14" font-weight="bold">传统 RAG（线性）</text>
+            <text x="60" y="110" fill="#666" font-size="11">检索 → 构建 Prompt → 生成</text>
+            <text x="60" y="130" fill="#666" font-size="11">❌ 不检查检索质量</text>
+            <text x="60" y="150" fill="#666" font-size="11">❌ 不检查生成质量</text>
+            <text x="60" y="170" fill="#666" font-size="11">❌ 无法自我纠正</text>
+            
+            <rect x="420" y="55" width="340" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="85" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">自我纠正 RAG（闭环）</text>
+            <text x="440" y="110" fill="#666" font-size="11">检索 → 评估 → 纠正 → 生成</text>
+            <text x="440" y="130" fill="#666" font-size="11">✅ 自动检查检索质量</text>
+            <text x="440" y="150" fill="#666" font-size="11">✅ 自动检查生成质量</text>
+            <text x="440" y="170" fill="#666" font-size="11">✅ 发现问题自动纠正</text>
+        </svg>
+    </div>
+
+    <h2>二、CRAG（Corrective RAG）</h2>
+    <p>CRAG 的核心思想是在检索之后、生成之前，评估检索结果的质量。如果评估结果不达标，系统会启动纠正流程，包括重写查询、联网搜索或重新检索。这种方法能够有效解决检索质量不佳导致的幻觉问题。</p>
+
+    <p>CRAG 的纠正策略有三种：当检索结果部分相关时，系统会精简或重写文档内容，保留有用信息去除噪声；当检索结果完全不相关时，系统会通过外部搜索获取新信息，扩展知识来源；当检索结果高度相关时，直接用于生成，无需额外处理。</p>
+
+    <p>在实际应用中，CRAG 的评估环节通常使用一个专门的 LLM 来判断检索结果与查询的相关性。这个评估 LLM 接收查询和检索结果作为输入，输出一个相关性评分。评分高于阈值时认为检索质量达标，低于阈值时触发纠正流程。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">CRAG 纠正流程</text>
+            
+            <!-- 检索 -->
+            <rect x="30" y="60" width="120" height="45" rx="8" fill="#3b82f6"/>
+            <text x="90" y="87" text-anchor="middle" fill="white" font-size="12" font-weight="bold">检索文档</text>
+            
+            <line x1="150" y1="82" x2="200" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 评估 -->
+            <rect x="200" y="60" width="120" height="45" rx="8" fill="#f59e0b"/>
+            <text x="260" y="87" text-anchor="middle" fill="white" font-size="12" font-weight="bold">质量评估</text>
+            
+            <!-- 分支 -->
+            <line x1="320" y1="70" x2="370" y2="40" stroke="#10b981" stroke-width="1.5"/>
+            <text x="345" y="50" text-anchor="middle" fill="#10b981" font-size="9">高度相关</text>
+            <rect x="370" y="20" width="110" height="40" rx="6" fill="#10b981"/>
+            <text x="425" y="45" text-anchor="middle" fill="white" font-size="10">直接使用</text>
+            
+            <line x1="320" y1="82" x2="370" y2="82" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="345" y="75" text-anchor="middle" fill="#f59e0b" font-size="9">部分相关</text>
+            <rect x="370" y="65" width="110" height="35" rx="6" fill="#f59e0b"/>
+            <text x="425" y="87" text-anchor="middle" fill="white" font-size="10">精简/重写</text>
+            
+            <line x1="320" y1="95" x2="370" y2="125" stroke="#ef4444" stroke-width="1.5"/>
+            <text x="345" y="115" text-anchor="middle" fill="#ef4444" font-size="9">不相关</text>
+            <rect x="370" y="110" width="110" height="35" rx="6" fill="#ef4444"/>
+            <text x="425" y="132" text-anchor="middle" fill="white" font-size="10">联网搜索</text>
+            
+            <!-- 最终汇聚到生成 -->
+            <line x1="480" y1="40" x2="600" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="480" y1="82" x2="600" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="480" y1="127" x2="600" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="600" y="100" width="140" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="670" y="125" text-anchor="middle" fill="white" font-size="12" font-weight="bold">生成回答</text>
+            
+            <!-- 循环纠正 -->
+            <path d="M 670 140 Q 670 190 260 190 Q 130 190 130 105" stroke="#64748b" stroke-width="1.5" fill="none" stroke-dasharray="4,2"/>
+            <text x="380" y="195" text-anchor="middle" fill="#64748b" font-size="10">质量不足时循环纠正</text>
+        </svg>
+    </div>
+
+    <h3>2.1 代码实现</h3>
+    <div class="code-file">07_advanced_rag/07_corrective_rag/corrective_rag.py</div>
+<pre><code class="language-python">class CorrectiveRAG:
+    """
+    Corrective RAG（CRAG）：检索后纠正。
+
+    核心思想：在生成回答之前，先评估检索结果的质量。
+    - 如果相关 -> 生成回答
+    - 如果不相关 -> 修正查询 / 联网搜索 -> 重新检索
+    """
+
+    def __init__(self, evaluator: RelevanceEvaluator):
+        self.evaluator = evaluator
+        self.max_retries = 2
+
+    def query(self, original_query: str, documents: List[str]) -> CorrectedResult:
+        steps = []
+        current_query = original_query
+        best_docs = documents
+
+        for i in range(self.max_retries + 1):
+            # 1. 评估检索质量
+            scores = [self.evaluator.evaluate(current_query, d) for d in best_docs]
+            score = max(scores) if scores else 0.0
+            steps.append(f"评估: 相关性 {score:.2f}")
+
+            # 2. 决策
+            if score >= self.evaluator.threshold:
+                steps.append("决策: 质量达标，生成回答")
+                break
+
+            # 3. 纠正
+            if i < self.max_retries:
+                current_query = self._rewrite_query(current_query, i)
+                steps.append(f"纠正: 重写查询 -> '{current_query}'")
+                best_docs = self._simulate_search(current_query)
+                steps.append(f"重检: 获得 {len(best_docs)} 个新文档")
+
+        return CorrectedResult(...)
+</code></pre>
+
+    <h2>三、Self-RAG</h2>
+    <p>Self-RAG 与 CRAG 的不同之处在于：它在生成回答之后进行反思评估，而不是在检索之后。系统会生成多个候选回答，然后对每个回答进行多维度的质量评估。这种方法能够直接检测生成质量，包括幻觉检测。</p>
+
+    <p>Self-RAG 的评估维度包括：相关性（回答是否与查询相关）、忠实度（回答是否忠实于检索结果，是否有幻觉）、有用性（回答是否对查询有实际帮助）。通过多维度评估，系统能够选择质量最高的回答。</p>
+
+    <p>在实际应用中，Self-RAG 需要训练或使用一个专门的反思模型。这个模型能够对生成的回答进行自我评估，输出各个维度的评分。虽然这种方法计算成本较高，但能够显著提升回答质量，特别是在需要高准确率的场景中。反思模型可以基于 LLM 实现，通过精心设计的 Prompt 来引导 LLM 对生成结果进行多维度评估。</p>
+
+    <h3>3.1 代码实现</h3>
+    <p>Self-RAG 的实现需要先定义一个评估器，该评估器能够对生成结果进行多维度的评分。然后系统会生成多个候选回答，并对每个回答进行评估，最后选择评分最高的回答作为最终输出。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Self-RAG 多维度评估流程</text>
+            
+            <rect x="30" y="60" width="140" height="50" rx="8" fill="#3b82f6"/>
+            <text x="100" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">候选回答 1</text>
+            <text x="100" y="97" text-anchor="middle" fill="white" font-size="9">生成...</text>
+            
+            <rect x="30" y="125" width="140" height="50" rx="8" fill="#10b981"/>
+            <text x="100" y="145" text-anchor="middle" fill="white" font-size="11" font-weight="bold">候选回答 2</text>
+            <text x="100" y="162" text-anchor="middle" fill="white" font-size="9">生成...</text>
+            
+            <rect x="30" y="190" width="140" height="50" rx="8" fill="#f59e0b"/>
+            <text x="100" y="210" text-anchor="middle" fill="white" font-size="11" font-weight="bold">候选回答 3</text>
+            <text x="100" y="227" text-anchor="middle" fill="white" font-size="9">生成...</text>
+            
+            <line x1="170" y1="85" x2="230" y2="85" stroke="#64748b" stroke-width="2"/>
+            <line x1="170" y1="150" x2="230" y2="150" stroke="#64748b" stroke-width="2"/>
+            <line x1="170" y1="215" x2="230" y2="215" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="75" width="180" height="150" rx="10" fill="#8b5cf6"/>
+            <text x="320" y="105" text-anchor="middle" fill="white" font-size="13" font-weight="bold">多维度评估</text>
+            <text x="250" y="130" fill="white" font-size="10">• 相关性 ✓</text>
+            <text x="250" y="150" fill="white" font-size="10">• 忠实度 ✓</text>
+            <text x="250" y="170" fill="white" font-size="10">• 有用性 ✓</text>
+            <text x="250" y="190" fill="white" font-size="10">• 综合评分 →</text>
+            
+            <line x1="410" y1="150" x2="470" y2="150" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="470" y="120" width="140" height="60" rx="10" fill="#10b981"/>
+            <text x="540" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">选择最高分</text>
+            <text x="540" y="165" text-anchor="middle" fill="white" font-size="10">输出最优回答</text>
+            
+            <rect x="630" y="120" width="120" height="60" rx="10" fill="#1a1a2e"/>
+            <text x="690" y="155" text-anchor="middle" fill="white" font-size="12" font-weight="bold">最终回答</text>
+            
+            <line x1="610" y1="150" x2="630" y2="150" stroke="#10b981" stroke-width="2"/>
+        </svg>
+    </div>
+
+<div class="code-file">07_advanced_rag/07_corrective_rag/corrective_rag.py</div>
+<pre><code class="language-python">class SelfRAG:
+    """
+    Self-RAG：生成后反思。
+
+    核心思想：生成候选答案后，进行评估反思。
+    评估维度：
+    - Is Relevant? (相关性)
+    - Is Supported? (忠实度/是否有幻觉)
+    - Is Useful? (有用性)
+    """
+
+    def __init__(self, evaluator: RelevanceEvaluator):
+        self.evaluator = evaluator
+        self.num_candidates = 3
+
+    def query(self, original_query: str, documents: List[str]) -> CorrectedResult:
+        steps = []
+        candidates = []
+
+        # 1. 生成多个候选
+        for i in range(self.num_candidates):
+            candidates.append(f"[候选 {i+1}] 回答 '{original_query}'...")
+            steps.append(f"生成: 候选 {i+1}")
+
+        # 2. 反思评估
+        scored = []
+        for i, ans in enumerate(candidates):
+            rel = self.evaluator.evaluate(original_query, ans)
+            sup = self._check_support(documents, ans)
+            util = min(len(ans) / 50, 1.0)
+            avg = (rel + sup + util) / 3
+
+            steps.append(f"反思: 候选 {i+1} -> "
+                        f"相关 {rel:.2f} / 忠实 {sup:.2f} / 有用 {util:.2f}")
+            scored.append({"text": ans, "score": avg})
+
+        # 3. 选择最佳回答
+        scored.sort(key=lambda x: x["score"], reverse=True)
+
+        return CorrectedResult(
+            query=original_query,
+            final_answer=scored[0]["text"],
+            steps_taken=steps,
+            confidence=scored[0]["score"],
+        )
+</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Self-RAG 反思流程</text>
+            
+            <!-- 检索 -->
+            <rect x="30" y="60" width="120" height="45" rx="8" fill="#3b82f6"/>
+            <text x="90" y="87" text-anchor="middle" fill="white" font-size="12" font-weight="bold">检索文档</text>
+            
+            <line x1="150" y1="82" x2="200" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 生成 -->
+            <rect x="200" y="60" width="120" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="260" y="87" text-anchor="middle" fill="white" font-size="12" font-weight="bold">生成多候选</text>
+            
+            <line x1="320" y1="82" x2="370" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 评估 -->
+            <rect x="370" y="45" width="130" height="75" rx="10" fill="#f59e0b"/>
+            <text x="435" y="70" text-anchor="middle" fill="white" font-size="11" font-weight="bold">反思评估</text>
+            <text x="390" y="90" text-anchor="middle" fill="white" font-size="9">相关性 ✓</text>
+            <text x="440" y="105" text-anchor="middle" fill="white" font-size="9">忠实度 ✓</text>
+            <text x="485" y="90" text-anchor="middle" fill="white" font-size="9">有用性 ✓</text>
+            
+            <line x1="500" y1="82" x2="560" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 选择 -->
+            <rect x="560" y="60" width="120" height="45" rx="8" fill="#10b981"/>
+            <text x="620" y="87" text-anchor="middle" fill="white" font-size="12" font-weight="bold">选择最佳</text>
+            
+            <line x1="680" y1="82" x2="720" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="720" y="60" width="60" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="750" y="87" text-anchor="middle" fill="white" font-size="11">输出</text>
+            
+            <!-- 底部说明 -->
+            <rect x="100" y="160" width="580" height="80" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="185" text-anchor="middle" fill="#1a1a2e" font-size="13" font-weight="bold">多维度评估示意</text>
+            
+            <rect x="120" y="200" width="160" height="30" rx="6" fill="#3b82f6"/>
+            <text x="200" y="220" text-anchor="middle" fill="white" font-size="10">相关性: 回答是否切题</text>
+            
+            <rect x="300" y="200" width="160" height="30" rx="6" fill="#10b981"/>
+            <text x="380" y="220" text-anchor="middle" fill="white" font-size="10">忠实度: 是否有幻觉</text>
+            
+            <rect x="480" y="200" width="160" height="30" rx="6" fill="#f59e0b"/>
+            <text x="480" y="220" text-anchor="middle" fill="white" font-size="10">有用性: 是否有帮助</text>
+        </svg>
+    </div>
+
+    <h2>四、CRAG vs Self-RAG 全面对比</h2>
+
+    <p>CRAG 和 Self-RAG 代表了两种不同的自我纠正思路。CRAG 聚焦于改善检索质量，通过评估和纠正检索结果来间接提升生成质量；Self-RAG 聚焦于改善生成质量，通过多维度评估直接检测和筛选高质量的生成回答。两种方法各有优势，在实际应用中可以根据具体场景选择合适的方案或结合使用。</p>
+
+    <p>从计算成本来看，CRAG 的成本主要体现在可能的多次检索上，而 Self-RAG 的成本主要体现在多次生成和评估上。对于检索质量不稳定的场景，CRAG 更加适合，因为它能够在生成前就确保检索结果的质量。对于生成质量不稳定的场景，Self-RAG 更加适合，因为它能够直接检测生成回答中的幻觉和错误。在实际部署时，还需要考虑评估模型的选择、阈值的设定、纠正流程的超时处理等工程实践问题。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>CRAG</th><th>Self-RAG</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>纠正时机</strong></td><td>检索后、生成前</td><td>生成后</td></tr>
+            <tr><td><strong>纠正方式</strong></td><td>修正查询 + 重新检索</td><td>多候选生成 + 评估选择</td></tr>
+            <tr><td><strong>评估对象</strong></td><td>检索结果质量</td><td>生成回答质量</td></tr>
+            <tr><td><strong>幻觉控制</strong></td><td>中（改善检索）</td><td>高（直接检测幻觉）</td></tr>
+            <tr><td><strong>计算成本</strong></td><td>中（可能多次检索）</td><td>高（多次生成+评估）</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>检索质量不稳定</td><td>生成质量不稳定</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">纠正时机对比</text>
+            
+            <!-- CRAG 流程 -->
+            <text x="195" y="55" text-anchor="middle" fill="#3b82f6" font-size="13" font-weight="bold">CRAG 流程</text>
+            
+            <rect x="30" y="70" width="80" height="35" rx="6" fill="#3b82f6"/>
+            <text x="70" y="92" text-anchor="middle" fill="white" font-size="10">检索</text>
+            
+            <rect x="120" y="70" width="80" height="35" rx="6" fill="#f59e0b"/>
+            <text x="160" y="92" text-anchor="middle" fill="white" font-size="10">★ 评估纠正</text>
+            
+            <rect x="210" y="70" width="80" height="35" rx="6" fill="#8b5cf6"/>
+            <text x="250" y="92" text-anchor="middle" fill="white" font-size="10">生成</text>
+            
+            <line x1="110" y1="87" x2="120" y2="87" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="200" y1="87" x2="210" y2="87" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- Self-RAG 流程 -->
+            <text x="585" y="55" text-anchor="middle" fill="#10b981" font-size="13" font-weight="bold">Self-RAG 流程</text>
+            
+            <rect x="420" y="70" width="80" height="35" rx="6" fill="#3b82f6"/>
+            <text x="460" y="92" text-anchor="middle" fill="white" font-size="10">检索</text>
+            
+            <rect x="510" y="70" width="80" height="35" rx="6" fill="#8b5cf6"/>
+            <text x="550" y="92" text-anchor="middle" fill="white" font-size="10">生成</text>
+            
+            <rect x="600" y="70" width="80" height="35" rx="6" fill="#f59e0b"/>
+            <text x="640" y="92" text-anchor="middle" fill="white" font-size="10">★ 评估纠正</text>
+            
+            <rect x="690" y="70" width="80" height="35" rx="6" fill="#10b981"/>
+            <text x="730" y="92" text-anchor="middle" fill="white" font-size="10">选择输出</text>
+            
+            <line x1="500" y1="87" x2="510" y2="87" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="590" y1="87" x2="600" y2="87" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="680" y1="87" x2="690" y2="87" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 底部对比 -->
+            <rect x="30" y="130" width="360" height="100" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="210" y="155" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">CRAG 特点</text>
+            <text x="50" y="178" fill="#666" font-size="10">• 在检索后立即评估</text>
+            <text x="50" y="198" fill="#666" font-size="10">• 纠正方式：重写查询/联网搜索</text>
+            <text x="50" y="218" fill="#666" font-size="10">• 适合检索质量不稳定的场景</text>
+            
+            <rect x="420" y="130" width="350" height="100" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="595" y="155" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">Self-RAG 特点</text>
+            <text x="440" y="178" fill="#666" font-size="10">• 在生成后评估候选回答</text>
+            <text x="440" y="198" fill="#666" font-size="10">• 纠正方式：多候选 + 评估选择</text>
+            <text x="440" y="218" fill="#666" font-size="10">• 适合生成质量不稳定的场景</text>
+        </svg>
+    </div>
+
+    <h2>五、小结</h2>
+    <p>CRAG 和 Self-RAG 代表了两种不同的自我纠正思路：CRAG 在检索后纠正，通过改善检索质量来间接改善生成质量；Self-RAG 在生成后反思，通过直接评估生成结果的质量来选择最优回答。</p>
+
+    <p>在实际应用中，两种方法可以结合使用：先用 CRAG 确保检索质量，再用 Self-RAG 确保生成质量。这种双重保障能够最大程度地减少幻觉，提高回答的准确性和可靠性。对于对准确率要求极高的场景，如医疗、金融等领域，建议同时采用两种方法。</p>
+
+    <p>CRAG 适合检索质量不稳定的场景，比如知识库覆盖不全或查询表达模糊的情况。Self-RAG 适合生成质量不稳定的场景，比如 LLM 容易编造答案或需要高准确率的场景。根据实际需求选择合适的纠正策略，能够有效提升 RAG 系统的整体质量。同时，随着评估模型的不断进步，自我纠正 RAG 的效果还会进一步提升，成为未来 RAG 系统的重要组成部分。在实际部署时，还需要考虑评估模型的选择、阈值的设定、纠正流程的超时处理等工程实践问题，这些都是确保系统稳定运行的关键因素。</p>
+
+    <p>此外，自我纠正 RAG 技术还面临着一些挑战：评估模型的准确性直接影响纠正效果，如果评估模型本身不够可靠，可能会导致错误的纠正决策。此外，多次评估和纠正会增加系统的延迟和计算成本，在实际应用中需要设置合理的超时和重试机制。随着大语言模型能力的不断提升，未来自我纠正 RAG 技术有望变得更加智能和高效，成为构建高可靠性 RAG 系统的重要基础设施。在企业级应用中，还需要考虑自我纠正流程的监控和日志记录，以便在出现问题时能够快速定位和修复。</p>
+
+    <p>在下一节 7.8 中，我们将通过实战项目，综合运用 Graph RAG、Agentic RAG 等多种高级技术，构建一个完整的企业级 RAG 系统。</p>
+
+    <h3>5.1 评估器代码实现</h3>
+<div class="code-file">07_advanced_rag/07_corrective_rag/corrective_rag.py</div>
+<pre><code class="language-python">class RelevanceEvaluator:
+    """
+    相关性评估器：评估检索结果和生成结果的质量。
+
+    评估维度：
+    - 相关性：回答是否与查询相关
+    - 忠实度：回答是否基于检索结果
+    - 有用性：回答是否对查询有实际帮助
+    """
+
+    def __init__(self, threshold: float = 0.5):
+        self.threshold = threshold
+
+    def evaluate(self, query: str, text: str) -> float:
+        """评估相关性（简化实现）"""
+        q_words = set(query.lower())
+        t_words = set(text.lower())
+        overlap = len(q_words & t_words) / max(len(q_words), 1)
+        return min(overlap * 2, 1.0)
+
+    def is_relevant(self, query: str, text: str) -> bool:
+        """判断是否相关"""
+        return self.evaluate(query, text) >= self.threshold
+</code></pre>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

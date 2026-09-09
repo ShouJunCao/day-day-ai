@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.5 检索优化技术 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.5 检索优化（Query 改写、HyDE、Multi-Query、Step-back）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 系统构建</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解检索优化在 RAG 系统中的重要性</li>
+        <li>掌握四种主流检索优化策略的原理和实现</li>
+        <li>学会根据场景选择合适的优化策略</li>
+        <li>了解各种策略的性能开销和收益权衡</li>
+    </ul>
+
+    <h2>一、为什么需要检索优化？</h2>
+    <p>在 RAG 系统中，检索质量直接决定了回答质量。然而，用户的原始查询往往不够精确，可能缺少关键信息、使用不准确的术语，或者表达方式与文档不匹配。这些问题会导致检索结果不理想，进而影响最终的回答质量。</p>
+
+    <p>检索优化的核心目标是<strong>弥补用户查询和文档库之间的表达差距</strong>。通过改写查询、生成假设性文档、多角度检索等技术手段，可以显著提升检索的召回率和准确率。</p>
+
+    <p>研究表明，简单的查询改写可以将 RAG 系统的检索准确率提升 15-30%。这对于实际应用来说是非常可观的改进。而且，这些优化技术通常不需要修改底层的数据和模型，只需要在查询阶段增加处理逻辑即可。</p>
+
+    <p>此外，检索优化还能改善用户体验。用户不需要学习专业的查询语法或术语，只需用自然语言表达问题，系统就能自动优化查询并返回准确的结果。这种"傻瓜式"的交互方式大大降低了 RAG 系统的使用门槛。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">检索优化效果对比（模拟数据）</text>
+            
+            <!-- 基准线 -->
+            <rect x="100" y="60" width="600" height="30" rx="6" fill="#f1f5f9" stroke="#64748b"/>
+            <text x="400" y="80" text-anchor="middle" fill="#1a1a2e" font-size="12">基准检索准确率: 65%</text>
+            
+            <!-- Query 改写 -->
+            <rect x="100" y="110" width="120" height="30" rx="4" fill="#3b82f6"/>
+            <text x="160" y="130" text-anchor="middle" fill="white" font-size="10">Query 改写: 78%</text>
+            
+            <!-- HyDE -->
+            <rect x="240" y="110" width="120" height="30" rx="4" fill="#10b981"/>
+            <text x="300" y="130" text-anchor="middle" fill="white" font-size="10">HyDE: 82%</text>
+            
+            <!-- Multi-Query -->
+            <rect x="380" y="110" width="120" height="30" rx="4" fill="#f59e0b"/>
+            <text x="440" y="130" text-anchor="middle" fill="white" font-size="10">Multi-Query: 85%</text>
+            
+            <!-- Step-back -->
+            <rect x="520" y="110" width="120" height="30" rx="4" fill="#8b5cf6"/>
+            <text x="580" y="130" text-anchor="middle" fill="white" font-size="10">Step-back: 88%</text>
+            
+            <!-- 说明 -->
+            <text x="400" y="170" text-anchor="middle" fill="#64748b" font-size="10">注意：实际效果因数据集和场景而异，此处为模拟数据</text>
+            <text x="400" y="185" text-anchor="middle" fill="#64748b" font-size="10">数据来源：基于公开论文和实验的平均值估算</text>
+        </svg>
+    </div>
+
+    <h2>二、Query 改写（Query Rewriting）</h2>
+    <p>Query 改写是最直接有效的检索优化策略。它使用大语言模型将用户的原始查询改写为更精确、更专业的检索查询，从而提高检索效果。</p>
+
+    <p>这种策略特别适合处理口语化和模糊的查询。用户在日常交流中往往使用简略的表达方式，而文档库中通常使用正式的、结构化的语言。Query 改写通过 LLM 的语义理解能力，在两者之间架起桥梁，使检索更加精准。
+
+    <h3>2.1 核心原理</h3>
+    <p>Query 改写的核心思想是：用户通常不会使用最专业的术语来表达查询，而文档库中可能使用更专业的术语。通过 LLM 的语义理解能力，可以将用户的自然语言查询转换为更适合检索的形式。</p>
+
+    <p>改写过程包括以下几个关键步骤：</p>
+    <ol>
+        <li><strong>意图识别</strong>：理解用户查询的真实意图</li>
+        <li><strong>术语标准化</strong>：将口语化表达转换为专业术语</li>
+        <li><strong>同义词扩展</strong>：添加相关的同义词和近义词</li>
+        <li><strong>查询结构化</strong>：将复杂查询拆分为多个子查询</li>
+    </ol>
+
+    <h3>2.2 改写示例</h3>
+    <table>
+        <thead>
+            <tr><th>原始查询</th><th>改写后查询</th><th>改写策略</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>AI 是什么？</td><td>人工智能 artificial intelligence 机器学习 定义</td><td>术语扩展</td></tr>
+            <tr><td>Transformer 原理</td><td>Transformer 架构 注意力机制 self-attention 原理</td><td>补充关键词</td></tr>
+            <tr><td>LLM 的幻觉问题</td><td>大语言模型 hallucination 幻觉 事实错误 生成偏差</td><td>同义词扩展</td></tr>
+        </tbody>
+    </table>
+
+    <h3>2.3 代码实现</h3>
+    <div class="code-file">06_rag_architecture/05_query_optimization/query_optimization.py</div>
+<pre><code class="language-python">class QueryRewriter:
+    """
+    Query 改写器：使用 LLM 优化用户查询。
+
+    原理：
+    1. 将用户的原始查询输入 LLM
+    2. LLM 生成更精确、更具体的查询
+    3. 使用改写后的查询进行检索
+    """
+
+    DEFAULT_PROMPT = """你是一个查询优化专家。请将用户的原始查询改写为更精确、更具体的检索查询。
+
+要求：
+1. 保留原始查询的核心意图
+2. 补充相关的关键词和同义词
+3. 使用更专业的术语
+4. 只输出改写后的查询，不要解释
+
+原始查询：{query}
+
+改写后的查询："""
+
+    def __init__(self, prompt_template: Optional[str] = None):
+        self.prompt_template = prompt_template or self.DEFAULT_PROMPT
+
+    def rewrite(self, query: str) -> str:
+        """改写单个查询"""
+        # 实际项目中调用 LLM API
+        # response = llm.generate(self.prompt_template.format(query=query))
+        # return response.strip()
+        return self._simulate_rewrite(query)</code></pre>
+
+    <h3>2.4 适用场景</h3>
+    <table>
+        <thead>
+            <tr><th>场景</th><th>为什么适合</th><th>预期提升</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>模糊查询</strong></td><td>用户不知道准确术语</td><td>15-25%</td></tr>
+            <tr><td><strong>口语化查询</strong></td><td>用户用口语表达专业问题</td><td>20-30%</td></tr>
+            <tr><td><strong>多语言查询</strong></td><td>用户用中文查询英文文档</td><td>25-40%</td></tr>
+        </tbody>
+    </table>
+
+    <h2>三、HyDE（假设性文档嵌入）</h2>
+    <p>HyDE（Hypothetical Document Embeddings）是一种巧妙的检索优化技术。它不是直接检索用户查询，而是先让 LLM 生成一个假设性回答文档，然后用这个假设性文档去检索真实文档。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="280" viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">HyDE 工作流程</text>
+            
+            <!-- 步骤 1 -->
+            <rect x="30" y="60" width="160" height="70" rx="8" fill="#3b82f6"/>
+            <text x="110" y="85" text-anchor="middle" fill="white" font-size="12" font-weight="bold">1. 用户查询</text>
+            <text x="110" y="105" text-anchor="middle" fill="white" font-size="10">"如何提高检索准确率？"</text>
+            
+            <!-- 箭头 -->
+            <line x1="190" y1="95" x2="250" y2="95" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 2 -->
+            <rect x="250" y="60" width="160" height="70" rx="8" fill="#10b981"/>
+            <text x="330" y="85" text-anchor="middle" fill="white" font-size="12" font-weight="bold">2. LLM 生成假设文档</text>
+            <text x="330" y="105" text-anchor="middle" fill="white" font-size="10">"提高检索准确率的方法..."</text>
+            
+            <!-- 箭头 -->
+            <line x1="410" y1="95" x2="470" y2="95" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 3 -->
+            <rect x="470" y="60" width="160" height="70" rx="8" fill="#f59e0b"/>
+            <text x="550" y="85" text-anchor="middle" fill="white" font-size="12" font-weight="bold">3. 编码假设文档</text>
+            <text x="550" y="105" text-anchor="middle" fill="white" font-size="10">Embedding(假设文档)</text>
+            
+            <!-- 箭头 -->
+            <line x1="630" y1="95" x2="690" y2="95" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 4 -->
+            <rect x="690" y="60" width="80" height="70" rx="8" fill="#8b5cf6"/>
+            <text x="730" y="90" text-anchor="middle" fill="white" font-size="12" font-weight="bold">4. 检索</text>
+            <text x="730" y="110" text-anchor="middle" fill="white" font-size="10">Top-K</text>
+            
+            <!-- 对比说明 -->
+            <rect x="100" y="170" width="280" height="90" rx="8" fill="#fef2f2" stroke="#ef4444"/>
+            <text x="240" y="195" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">直接检索的问题</text>
+            <text x="120" y="215" fill="#666" font-size="10">用户查询短且模糊</text>
+            <text x="120" y="230" fill="#666" font-size="10">文档内容丰富且具体</text>
+            <text x="120" y="245" fill="#666" font-size="10">两者在向量空间中距离远</text>
+            
+            <rect x="420" y="170" width="280" height="90" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="560" y="195" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">HyDE 的优势</text>
+            <text x="440" y="215" fill="#666" font-size="10">假设文档与真实文档格式一致</text>
+            <text x="440" y="230" fill="#666" font-size="10">两者在向量空间中距离近</text>
+            <text x="440" y="245" fill="#666" font-size="10">检索准确率显著提升</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>3.1 为什么 HyDE 有效？</h3>
+    <p>HyDE 有效的核心原因是<strong>缩小了查询和文档之间的表示差距</strong>。用户查询通常很短（几个词到一句话），而文档内容丰富（几百到几千字）。两者的 Embedding 向量在空间中的距离较远，直接检索效果不佳。</p>
+
+    <p>HyDE 通过让 LLM 生成一个假设性文档，将这个短查询扩展为一个与真实文档格式和长度相近的文本。这个假设性文档虽然不是正确答案，但它在向量空间中更接近真实的文档，从而提高了检索效果。</p>
+
+    <h3>3.2 代码实现</h3>
+<pre><code class="language-python">class HyDERetriever:
+    """
+    HyDE 检索器：假设性文档嵌入检索。
+
+    原理：
+    1. 让 LLM 根据查询生成一个假设性回答文档
+    2. 将假设性文档编码为向量
+    3. 用假设性文档的向量去检索真实文档
+    4. 真实文档与假设性文档在向量空间中更接近
+    """
+
+    def __init__(self, embedding_fn, generation_fn=None):
+        self.embedding_fn = embedding_fn
+        self.generation_fn = generation_fn
+        self.hyde_prompt = """请根据以下问题生成一个详细的回答：
+
+问题：{query}
+
+回答："""
+
+    def retrieve(self, query: str, top_k: int = 5) -> list:
+        """执行 HyDE 检索"""
+        # 步骤 1：生成假设性文档
+        hypothetical_doc = self.generation_fn(
+            self.hyde_prompt.format(query=query)
+        )
+        # 步骤 2：编码假设性文档
+        query_vector = self.embedding_fn(hypothetical_doc)
+        # 步骤 3：检索真实文档
+        return self._vector_search(query_vector, top_k)</code></pre>
+
+    <h2>四、Multi-Query（多角度查询）</h2>
+    <p>Multi-Query 策略的核心思想是：让 LLM 从不同角度为同一个问题生成多个查询，分别检索，然后合并结果。这样可以覆盖更多的相关信息，减少单一查询的偏差。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="300" viewBox="0 0 780 300" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Multi-Query 多角度检索流程</text>
+            
+            <!-- 原始查询 -->
+            <rect x="320" y="50" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">原始查询</text>
+            
+            <!-- 分叉为多个查询 -->
+            <line x1="390" y1="90" x2="180" y2="130" stroke="#64748b" stroke-width="2"/>
+            <line x1="390" y1="90" x2="390" y2="130" stroke="#64748b" stroke-width="2"/>
+            <line x1="390" y1="90" x2="600" y2="130" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 查询 1 -->
+            <rect x="100" y="130" width="160" height="40" rx="6" fill="#3b82f6"/>
+            <text x="180" y="155" text-anchor="middle" fill="white" font-size="11">查询 1: 原理角度</text>
+            
+            <!-- 查询 2 -->
+            <rect x="310" y="130" width="160" height="40" rx="6" fill="#10b981"/>
+            <text x="390" y="155" text-anchor="middle" fill="white" font-size="11">查询 2: 应用角度</text>
+            
+            <!-- 查询 3 -->
+            <rect x="520" y="130" width="160" height="40" rx="6" fill="#f59e0b"/>
+            <text x="600" y="155" text-anchor="middle" fill="white" font-size="11">查询 3: 对比角度</text>
+            
+            <!-- 箭头到检索 -->
+            <line x1="180" y1="170" x2="180" y2="200" stroke="#3b82f6" stroke-width="2"/>
+            <line x1="390" y1="170" x2="390" y2="200" stroke="#10b981" stroke-width="2"/>
+            <line x1="600" y1="170" x2="600" y2="200" stroke="#f59e0b" stroke-width="2"/>
+            
+            <!-- 检索结果 -->
+            <rect x="100" y="200" width="160" height="35" rx="6" fill="#93c5fd"/>
+            <text x="180" y="222" text-anchor="middle" fill="white" font-size="10">结果集 1 (Top-5)</text>
+            
+            <rect x="310" y="200" width="160" height="35" rx="6" fill="#6ee7b7"/>
+            <text x="390" y="222" text-anchor="middle" fill="white" font-size="10">结果集 2 (Top-5)</text>
+            
+            <rect x="520" y="200" width="160" height="35" rx="6" fill="#fde68a"/>
+            <text x="600" y="222" text-anchor="middle" fill="white" font-size="10">结果集 3 (Top-5)</text>
+            
+            <!-- 汇聚到合并 -->
+            <line x1="180" y1="235" x2="390" y2="265" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="235" x2="390" y2="265" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="600" y1="235" x2="390" y2="265" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 合并去重 -->
+            <rect x="310" y="265" width="160" height="30" rx="6" fill="#8b5cf6"/>
+            <text x="390" y="285" text-anchor="middle" fill="white" font-size="11">合并去重 → 最终结果</text>
+        </svg>
+    </div>
+
+    <h3>4.1 多角度查询生成示例</h3>
+    <p>以"深度学习"为例，Multi-Query 会生成以下不同角度的查询：</p>
+
+    <table>
+        <thead>
+            <tr><th>角度</th><th>生成的查询</th><th>检索目标</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>原理</strong></td><td>深度学习的基本原理是什么</td><td>理论基础</td></tr>
+            <tr><td><strong>应用</strong></td><td>深度学习的具体应用有哪些</td><td>实践案例</td></tr>
+            <tr><td><strong>对比</strong></td><td>深度学习和机器学习的区别</td><td>概念辨析</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 代码实现</h3>
+<pre><code class="language-python">class MultiQueryRetriever:
+    """
+    Multi-Query 检索器：多角度查询检索。
+
+    原理：
+    1. 让 LLM 从不同角度生成多个相关查询
+    2. 分别用每个查询进行检索
+    3. 合并所有检索结果，去重排序
+    4. 返回最终的综合结果
+    """
+
+    def __init__(self, num_queries: int = 3):
+        self.num_queries = num_queries
+
+    def retrieve(self, query: str, search_fn) -> list:
+        """执行 Multi-Query 检索"""
+        # 步骤 1：生成多个查询
+        queries = self._generate_queries(query)
+
+        # 步骤 2：分别检索
+        all_results = []
+        for q in queries:
+            results = search_fn(q)
+            all_results.extend(results)
+
+        # 步骤 3：去重合并
+        return self._deduplicate(all_results)</code></pre>
+
+    <h2>五、Step-back（后退一步）</h2>
+    <p>Step-back 检索是一种独特的优化策略。它不是直接检索用户的具体问题，而是先生成一个更抽象、更高层次的问题，用这个高层次问题检索一般性原理，再用原始问题检索具体实例，最后将两者结合。</p>
+
+    <h3>5.1 核心思想</h3>
+    <p>Step-back 的核心思想是<strong>先理解原理，再看实例</strong>。这对于需要背景知识的复杂问题特别有效。例如，用户问"Transformer 中的注意力机制如何实现？"，直接检索可能只找到代码片段，而先检索"什么是注意力机制"能找到原理文档，再结合代码检索就能提供更全面的回答。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Step-back 检索流程</text>
+            
+            <!-- 原始问题 -->
+            <rect x="300" y="50" width="180" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">原始问题（具体）</text>
+            
+            <!-- Step-back -->
+            <line x1="300" y1="70" x2="200" y2="110" stroke="#64748b" stroke-width="1.5"/>
+            <text x="230" y="85" fill="#64748b" font-size="9">后退一步</text>
+            
+            <!-- 高层次问题 -->
+            <rect x="80" y="110" width="240" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="200" y="135" text-anchor="middle" fill="white" font-size="12" font-weight="bold">高层次问题（抽象）</text>
+            <text x="200" y="150" text-anchor="middle" fill="white" font-size="10">"注意力机制的基本原理"</text>
+            
+            <!-- 检索原理 -->
+            <line x1="200" y1="160" x2="200" y2="190" stroke="#8b5cf6" stroke-width="2"/>
+            <rect x="120" y="190" width="160" height="35" rx="6" fill="#c4b5fd"/>
+            <text x="200" y="212" text-anchor="middle" fill="#5b21b6" font-size="10">原理文档（背景知识）</text>
+            
+            <!-- 直接检索 -->
+            <line x1="480" y1="70" x2="580" y2="110" stroke="#64748b" stroke-width="1.5"/>
+            <text x="550" y="85" fill="#64748b" font-size="9">直接检索</text>
+            
+            <!-- 原始问题检索 -->
+            <rect x="460" y="110" width="240" height="50" rx="8" fill="#3b82f6"/>
+            <text x="580" y="135" text-anchor="middle" fill="white" font-size="12" font-weight="bold">原始问题（具体）</text>
+            <text x="580" y="150" text-anchor="middle" fill="white" font-size="10">"Transformer 注意力实现"</text>
+            
+            <line x1="580" y1="160" x2="580" y2="190" stroke="#3b82f6" stroke-width="2"/>
+            <rect x="500" y="190" width="160" height="35" rx="6" fill="#93c5fd"/>
+            <text x="580" y="212" text-anchor="middle" fill="#1e3a8a" font-size="10">实例文档（具体实现）</text>
+            
+            <!-- 合并 -->
+            <line x1="280" y1="207" x2="500" y2="207" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="390" y="207" text-anchor="middle" fill="#64748b" font-size="9">合并</text>
+        </svg>
+    </div>
+
+    <h3>5.2 代码实现</h3>
+<pre><code class="language-python">class StepBackRetriever:
+    """
+    Step-back 检索器：后退一步检索。
+
+    原理：
+    1. 生成一个更抽象、更高层次的问题
+    2. 用高层次问题检索一般性原理文档
+    3. 用原始问题检索具体实例文档
+    4. 合并两种检索结果，提供全面回答
+    """
+
+    def __init__(self):
+        self.step_back_prompt = """请生成一个更高层次、更抽象的问题，
+涵盖以下具体问题的核心概念。
+
+具体问题：{query}
+
+高层次问题："""
+
+    def retrieve(self, query: str, search_fn) -> dict:
+        """执行 Step-back 检索"""
+        # 步骤 1：生成 step-back 问题
+        step_back_query = self._generate_step_back(query)
+
+        # 步骤 2：分别检索
+        principle_results = search_fn(step_back_query)  # 原理
+        specific_results = search_fn(query)              # 实例
+
+        return {
+            "original_query": query,
+            "step_back_query": step_back_query,
+            "principle_results": principle_results,
+            "specific_results": specific_results,
+        }</code></pre>
+
+    <p>Step-back 的核心思想是先理解原理再看实例。这对于需要背景知识的复杂问题特别有效。例如，用户问"Transformer 中的注意力机制如何实现？"，直接检索可能只找到代码片段，而先检索"什么是注意力机制"能找到原理文档，再结合代码检索就能提供更全面的回答。</p>
+
+    <h2>六、四种策略全面对比</h2>
+
+    <table>
+        <thead>
+            <tr><th>策略</th><th>LLM 调用</th><th>检索次数</th><th>速度</th><th>准确率提升</th><th>适用场景</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Query 改写</strong></td>
+                <td>1 次</td>
+                <td>1 次</td>
+                <td>快</td>
+                <td>15-25%</td>
+                <td>模糊查询、口语化查询</td>
+            </tr>
+            <tr>
+                <td><strong>HyDE</strong></td>
+                <td>1 次</td>
+                <td>1 次</td>
+                <td>中</td>
+                <td>15-20%</td>
+                <td>开放域问答</td>
+            </tr>
+            <tr>
+                <td><strong>Multi-Query</strong></td>
+                <td>1 次</td>
+                <td>3-5 次</td>
+                <td>慢</td>
+                <td>20-30%</td>
+                <td>复杂问题、多角度需求</td>
+            </tr>
+            <tr>
+                <td><strong>Step-back</strong></td>
+                <td>1 次</td>
+                <td>2 次</td>
+                <td>中</td>
+                <td>20-35%</td>
+                <td>需要背景知识的问题</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.1 策略选择决策树</h3>
+    <div class="diagram-container">
+        <svg width="780" height="340" viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">检索优化策略选择决策树</text>
+            
+            <!-- Q1: 查询模糊？ -->
+            <rect x="320" y="50" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">查询是否模糊？</text>
+            
+            <!-- 是 → Query 改写 -->
+            <line x1="320" y1="70" x2="180" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="220" y="90" fill="#64748b" font-size="10">是</text>
+            <rect x="80" y="120" width="200" height="40" rx="8" fill="#3b82f6"/>
+            <text x="180" y="145" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Query 改写</text>
+            
+            <!-- 否 → Q2 -->
+            <line x1="460" y1="70" x2="580" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="540" y="90" fill="#64748b" font-size="10">否</text>
+            
+            <!-- Q2: 需要背景知识？ -->
+            <rect x="520" y="120" width="160" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="600" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">需要背景知识？</text>
+            
+            <!-- 是 → Step-back -->
+            <line x1="680" y1="140" x2="680" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <text x="695" y="170" fill="#64748b" font-size="10">是</text>
+            <rect x="600" y="190" width="160" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="680" y="215" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Step-back</text>
+            
+            <!-- 否 → Q3 -->
+            <line x1="520" y1="140" x2="420" y2="190" stroke="#64748b" stroke-width="1.5"/>
+            <text x="440" y="160" fill="#64748b" font-size="10">否</text>
+            
+            <!-- Q3: 多角度覆盖？ -->
+            <rect x="320" y="190" width="180" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="410" y="215" text-anchor="middle" fill="white" font-size="12" font-weight="bold">需要多角度覆盖？</text>
+            
+            <!-- 是 → Multi-Query -->
+            <line x1="320" y1="210" x2="180" y2="260" stroke="#64748b" stroke-width="1.5"/>
+            <text x="220" y="230" fill="#64748b" font-size="10">是</text>
+            <rect x="80" y="260" width="200" height="40" rx="8" fill="#f59e0b"/>
+            <text x="180" y="285" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Multi-Query</text>
+            
+            <!-- 否 → HyDE -->
+            <line x1="500" y1="210" x2="600" y2="260" stroke="#64748b" stroke-width="1.5"/>
+            <text x="570" y="230" fill="#64748b" font-size="10">否 / 默认</text>
+            <rect x="520" y="260" width="160" height="40" rx="8" fill="#10b981"/>
+            <text x="600" y="285" text-anchor="middle" fill="white" font-size="13" font-weight="bold">HyDE</text>
+            
+            <!-- 底部建议 -->
+            <rect x="100" y="310" width="580" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="330" text-anchor="middle" fill="#64748b" font-size="11">建议：先用 Query 改写做基线，根据效果逐步添加其他策略</text>
+        </svg>
+    </div>
+
+    <h2>七、组合策略</h2>
+    <p>在实际应用中，这些策略并不是互斥的。可以根据需要组合使用，获得更好的效果。例如：</p>
+
+    <ul>
+        <li><strong>Query 改写 + HyDE</strong>：先改写查询使其更精确，再用 HyDE 生成假设文档检索</li>
+        <li><strong>Step-back + Multi-Query</strong>：在原理和实例两个层面都进行多角度检索</li>
+        <li><strong>Query 改写 + Multi-Query</strong>：先改写原始查询，再从多个角度生成相关查询</li>
+    </ul>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 性能开销警告</div>
+        <p>每种优化策略都会增加 LLM 调用次数和检索次数，从而影响响应时间和成本。Multi-Query 需要 3-5 次检索，Step-back 需要 2 次检索。在生产环境中，需要根据延迟要求和预算合理选择策略。建议先评估单策略效果，再考虑组合使用。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>本章介绍了四种主流的检索优化策略：Query 改写通过优化查询表达来提升检索效果；HyDE 通过生成假设性文档缩小查询与文档的表示差距；Multi-Query 通过多角度查询覆盖更多信息；Step-back 通过先理解原理再看实例的方式提供更全面的回答。</p>
+
+    <p>这些策略各有优劣，适用场景不同。Query 改写适合模糊查询，HyDE 适合开放域问答，Multi-Query 适合复杂问题，Step-back 适合需要背景知识的问题。在实际项目中，建议先用 Query 改写做基线测试，根据效果逐步添加其他策略，并监控性能和成本的平衡。</p>
+
+    <p>值得注意的是，这些策略的性能开销各不相同。Query 改写只需一次 LLM 调用和一次检索，开销最小；Multi-Query 需要多次检索，开销最大。在生产环境中，需要根据延迟要求和预算合理选择策略，或者在低峰时段使用更复杂的策略来换取更高的检索质量。</p>
+
+    <p>在下一节 6.6 中，我们将学习重排序技术，包括 BGE-Reranker、Cohere Rerank 和 Cross-Encoder 等方法。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

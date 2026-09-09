@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.7 上下文管理 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.7 上下文管理（压缩、过滤、Lost in the Middle）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 系统构建</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解上下文管理在 RAG 系统中的重要性</li>
+        <li>掌握上下文压缩、过滤、Lost in the Middle 处理三种技术</li>
+        <li>学会构建完整的上下文管理流水线</li>
+        <li>了解上下文长度限制对 RAG 系统的影响</li>
+    </ul>
+
+    <h2>一、为什么需要上下文管理？</h2>
+    <p>在 RAG 系统中，检索模块返回的相关文档会被拼接到 Prompt 中作为上下文。随着检索文档数量的增加，上下文长度也会不断增长。然而，LLM 对上下文的处理能力并非线性的。</p>
+
+    <p>上下文管理面临三个核心挑战。第一是 Token 限制：每个模型都有最大上下文长度限制，超出限制的文档会被截断。第二是噪声干扰：检索结果中可能包含不相关或低相关的文档，这些噪声会降低回答质量。第三是 Lost in the Middle：研究表明，当上下文过长时，LLM 容易忽略中间部分的信息，只关注开头和结尾的内容。</p>
+
+    <p>这些问题共同决定了 RAG 系统的最终效果。即使检索模块能够召回高相关文档，如果上下文管理不当，这些信息仍然无法被 LLM 有效利用。因此，上下文管理是 RAG 系统中不可或缺的一环，其重要性不亚于检索和重排序本身。</p>
+
+    <p>在实际项目中，我们经常会遇到这样的问题：检索结果明明包含了正确答案，但 LLM 生成的回答却偏离了预期。这种情况很大程度上是由上下文管理不当造成的。通过有效的过滤、压缩和重排序，可以显著提升 LLM 对上下文的利用率，进而改善最终的问答质量。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">上下文管理三大挑战</text>
+            
+            <!-- Token 限制 -->
+            <rect x="40" y="55" width="220" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="150" y="85" text-anchor="middle" fill="#991b1b" font-size="14" font-weight="bold">Token 限制</text>
+            <text x="150" y="110" text-anchor="middle" fill="#666" font-size="11">• 模型有最大上下文长度</text>
+            <text x="150" y="130" text-anchor="middle" fill="#666" font-size="11">• 超出部分被截断</text>
+            <text x="150" y="150" text-anchor="middle" fill="#666" font-size="11">• 需要压缩和筛选</text>
+            
+            <!-- 噪声干扰 -->
+            <rect x="290" y="55" width="220" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="400" y="85" text-anchor="middle" fill="#92400e" font-size="14" font-weight="bold">噪声干扰</text>
+            <text x="400" y="110" text-anchor="middle" fill="#666" font-size="11">• 检索结果含不相关文档</text>
+            <text x="400" y="130" text-anchor="middle" fill="#666" font-size="11">• 噪声降低回答质量</text>
+            <text x="400" y="150" text-anchor="middle" fill="#666" font-size="11">• 需要过滤和清洗</text>
+            
+            <!-- Lost in the Middle -->
+            <rect x="540" y="55" width="220" height="120" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="650" y="85" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">Lost in the Middle</text>
+            <text x="650" y="110" text-anchor="middle" fill="#666" font-size="11">• LLM 忽略中间内容</text>
+            <text x="650" y="130" text-anchor="middle" fill="#666" font-size="11">• 只关注开头和结尾</text>
+            <text x="650" y="150" text-anchor="middle" fill="#666" font-size="11">• 需要重排序文档</text>
+        </svg>
+    </div>
+
+    <h2>二、上下文压缩</h2>
+    <p>上下文压缩的核心思想是在不丢失关键信息的前提下，减少上下文的 Token 数量。通过压缩，可以在有限的 Token 预算内容纳更多的有效信息。</p>
+
+    <p>压缩的必要性在于：检索结果中往往包含大量冗余信息。比如多个文档可能描述了相同的事实，或者某些文档中只有个别句子与查询相关。如果不进行压缩直接拼接所有文档，不仅会浪费 Token 预算，还可能引入不必要的噪声。</p>
+
+    <h3>2.1 压缩策略</h3>
+    <table>
+        <thead>
+            <tr><th>策略</th><th>原理</th><th>优点</th><th>缺点</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>句子级压缩</strong></td>
+                <td>按句子分割，保留重要句子</td>
+                <td>实现简单，速度快</td>
+                <td>可能丢失上下文关联</td>
+            </tr>
+            <tr>
+                <td><strong>LLMLingua</strong></td>
+                <td>使用语言模型 perplexity 选择信息量高的内容</td>
+                <td>语义保持好</td>
+                <td>需要额外模型</td>
+            </tr>
+            <tr>
+                <td><strong>LLM 摘要</strong></td>
+                <td>让 LLM 对长文档生成摘要</td>
+                <td>最灵活</td>
+                <td>成本高，有幻觉风险</td>
+            </tr>
+            <tr>
+                <td><strong>关键词保留</strong></td>
+                <td>保留包含查询关键词的句子</td>
+                <td>极快，无需模型</td>
+                <td>可能遗漏语义相关信息</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>2.2 代码实现</h3>
+    <div class="code-file">06_rag_architecture/07_context_management/context_management.py</div>
+<pre><code class="language-python">class ContextCompressor:
+    """
+    上下文压缩器：使用语言模型 perplexity 或启发式方法压缩上下文。
+
+    原理：
+    1. 计算每个文档/句子的信息量
+    2. 保留高信息量内容，删除冗余部分
+    3. 在保持语义完整性的同时减少 Token 数
+    """
+
+    def __init__(self, compression_ratio: float = 0.5):
+        """
+        初始化压缩器。
+
+        参数：
+        - compression_ratio (float): 压缩比例（0.5 表示保留 50%）
+        """
+        self.compression_ratio = compression_ratio
+
+    def compress(self, context: Context) -> Context:
+        """压缩上下文"""
+        compressed_docs = []
+        for doc in context.documents:
+            sentences = self._split_sentences(doc)
+            important = self._select_important_sentences(sentences, context.query)
+            compressed_docs.append(" ".join(important))
+        return Context(documents=compressed_docs, query=context.query)
+
+    def _select_important_sentences(self, sentences, query):
+        """选择重要句子：基于与查询的关键词重叠度"""
+        query_words = set(query.replace(" ", ""))
+        scored = []
+        for sent in sentences:
+            sent_words = set(sent.replace(" ", ""))
+            overlap = len(query_words & sent_words) / max(len(query_words), 1)
+            scored.append((sent, overlap))
+
+        scored.sort(key=lambda x: x[1], reverse=True)
+        keep_count = max(1, int(len(sentences) * self.compression_ratio))
+        selected = [s for s, _ in scored[:keep_count]]
+        return [s for s in sentences if s in selected]</code></pre>
+
+    <h3>2.3 压缩效果示意</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">上下文压缩示意</text>
+            
+            <!-- 压缩前 -->
+            <rect x="30" y="50" width="300" height="130" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="180" y="75" text-anchor="middle" fill="#991b1b" font-size="13" font-weight="bold">压缩前（1200 Tokens）</text>
+            <text x="45" y="100" fill="#666" font-size="10">句1: Transformer 是一种基于自注意力的架构 ✓</text>
+            <text x="45" y="118" fill="#666" font-size="10">句2: 该架构由 Vaswani 等人在 2017 年提出</text>
+            <text x="45" y="136" fill="#666" font-size="10">句3: 多头注意力是核心组件 ✓</text>
+            <text x="45" y="154" fill="#666" font-size="10">句4: 编码器由 6 个相同层组成</text>
+            <text x="45" y="172" fill="#666" font-size="10">句5: 训练数据量约为 1M 句对</text>
+            
+            <!-- 箭头 -->
+            <line x1="330" y1="115" x2="430" y2="115" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="380" y="105" text-anchor="middle" fill="#10b981" font-size="10">压缩 50%</text>
+            
+            <!-- 压缩后 -->
+            <rect x="430" y="50" width="320" height="130" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="75" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">压缩后（600 Tokens）</text>
+            <text x="445" y="100" fill="#666" font-size="10">句1: Transformer 是一种基于自注意力的架构 ✓</text>
+            <text x="445" y="118" fill="#666" font-size="10">句3: 多头注意力是核心组件 ✓</text>
+            <text x="445" y="136" fill="#999" font-size="10">（句2、句4、句5 已删除）</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#10b981" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h2>三、上下文过滤</h2>
+    <p>上下文过滤是在将检索结果送入 Prompt 之前，基于相关性分数剔除低价值文档的过程。过滤的核心目标是去伪存真，只保留真正对回答有帮助的文档。</p>
+
+    <p>过滤策略通常基于重排序阶段产生的相关性分数。设定一个阈值，只保留分数高于阈值的文档。阈值的选择需要根据实际场景调整：阈值过高可能导致信息不足，阈值过低可能引入噪声。一般来说，0.6 是一个不错的起点，但需要根据具体任务进行评估和调整。</p>
+
+    <h3>3.1 过滤流程</h3>
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">上下文过滤流程</text>
+            
+            <!-- 输入 -->
+            <rect x="30" y="50" width="180" height="50" rx="8" fill="#3b82f6"/>
+            <text x="120" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">检索结果（10 个文档）</text>
+            <text x="120" y="90" text-anchor="middle" fill="white" font-size="10">分数: 0.9 ~ 0.2</text>
+            
+            <!-- 过滤 -->
+            <line x1="210" y1="75" x2="280" y2="75" stroke="#64748b" stroke-width="2"/>
+            <rect x="280" y="50" width="200" height="50" rx="8" fill="#f59e0b"/>
+            <text x="380" y="70" text-anchor="middle" fill="white" font-size="12" font-weight="bold">相关性阈值过滤</text>
+            <text x="380" y="90" text-anchor="middle" fill="white" font-size="10">threshold = 0.6</text>
+            
+            <!-- 通过 -->
+            <line x1="480" y1="65" x2="560" y2="65" stroke="#10b981" stroke-width="2"/>
+            <text x="520" y="58" text-anchor="middle" fill="#10b981" font-size="9">通过</text>
+            <rect x="560" y="45" width="180" height="40" rx="8" fill="#10b981"/>
+            <text x="650" y="70" text-anchor="middle" fill="white" font-size="11">保留（4 个文档）</text>
+            
+            <!-- 拒绝 -->
+            <line x1="480" y1="85" x2="560" y2="85" stroke="#ef4444" stroke-width="2"/>
+            <text x="520" y="78" text-anchor="middle" fill="#ef4444" font-size="9">拒绝</text>
+            <rect x="560" y="95" width="180" height="40" rx="8" fill="#ef4444"/>
+            <text x="650" y="120" text-anchor="middle" fill="white" font-size="11">丢弃（6 个文档）</text>
+            
+            <!-- 详细说明 -->
+            <rect x="100" y="160" width="580" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="185" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">过滤效果</text>
+            <text x="120" y="205" fill="#333" font-size="10">• 过滤前：10 个文档，平均相关性 0.55</text>
+            <text x="120" y="220" fill="#333" font-size="10">• 过滤后：4 个文档，平均相关性 0.83</text>
+        </svg>
+    </div>
+
+    <h3>3.2 代码实现</h3>
+<pre><code class="language-python">class ContextFilter:
+    """
+    上下文过滤器：基于相关性阈值过滤检索结果。
+
+    原理：
+    1. 计算每个文档与查询的相关性分数
+    2. 过滤掉低于阈值的文档
+    3. 只保留高相关性文档进入 Prompt
+    """
+
+    def __init__(self, threshold: float = 0.6):
+        """
+        初始化过滤器。
+
+        参数：
+        - threshold (float): 相关性阈值
+        """
+        self.threshold = threshold
+
+    def filter(self, context: Context, scores: List[float]) -> Context:
+        """过滤上下文"""
+        filtered_docs = []
+        for doc, score in zip(context.documents, scores):
+            if score >= self.threshold:
+                filtered_docs.append(doc)
+
+        return Context(
+            documents=filtered_docs,
+            query=context.query,
+            max_tokens=context.max_tokens,
+        )</code></pre>
+
+    <h2>四、Lost in the Middle 问题</h2>
+    <p>Lost in the Middle 是一个被多项研究证实的现象：当 LLM 处理长上下文时，位于中间部分的信息被忽略的概率显著高于开头和结尾部分。这种现象对 RAG 系统的影响尤为严重，因为检索结果通常按相关性排序，如果简单地将所有文档拼接在一起，中间的相关文档可能被 LLM 忽略。</p>
+
+    <h3>4.1 现象解释</h3>
+    <p>Liu 等人在 2023 年的论文中系统地研究了这个问题。他们发现，当上下文长度超过一定阈值后，LLM 对中间部分信息的利用率会急剧下降，形成一个 U 形的信息利用曲线。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Lost in the Middle 现象</text>
+            
+            <!-- U 形曲线 -->
+            <line x1="80" y1="200" x2="700" y2="200" stroke="#ccc" stroke-width="1"/>
+            <text x="80" y="220" fill="#999" font-size="9">位置 1（开头）</text>
+            <text x="390" y="220" fill="#999" font-size="9">位置 N/2（中间）</text>
+            <text x="680" y="220" fill="#999" font-size="9">位置 N（结尾）</text>
+            
+            <line x1="70" y1="50" x2="70" y2="200" stroke="#ccc" stroke-width="1"/>
+            <text x="35" y="130" text-anchor="middle" fill="#999" font-size="9" transform="rotate(-90,35,130)">信息利用率</text>
+            
+            <!-- 高-低-高 U 形曲线 -->
+            <path d="M 100 80 Q 250 70 390 160 Q 530 70 680 80" stroke="#ef4444" stroke-width="2.5" fill="none"/>
+            
+            <!-- 标注 -->
+            <circle cx="100" cy="80" r="5" fill="#10b981"/>
+            <text x="100" y="68" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">高</text>
+            
+            <circle cx="390" cy="160" r="5" fill="#ef4444"/>
+            <text x="390" y="180" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="bold">低</text>
+            
+            <circle cx="680" cy="80" r="5" fill="#10b981"/>
+            <text x="680" y="68" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">高</text>
+            
+            <!-- 解决方案 -->
+            <rect x="200" y="230" width="380" height="20" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="245" text-anchor="middle" fill="#64748b" font-size="10">解决方案：将最相关信息放在开头和结尾</text>
+        </svg>
+    </div>
+
+    <h3>4.2 解决策略</h3>
+    <table>
+        <thead>
+            <tr><th>策略</th><th>原理</th><th>效果</th><th>成本</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>文档重排序</strong></td>
+                <td>将最相关文档放在开头和结尾</td>
+                <td>显著提升</td>
+                <td>低（仅排序）</td>
+            </tr>
+            <tr>
+                <td><strong>分段摘要</strong></td>
+                <td>对中间部分生成摘要再拼接</td>
+                <td>中等提升</td>
+                <td>中（LLM 调用）</td>
+            </tr>
+            <tr>
+                <td><strong>分块处理</strong></td>
+                <td>将长上下文拆分为多个块分别处理</td>
+                <td>较好</td>
+                <td>高（多次推理）</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>4.3 代码实现</h3>
+<pre><code class="language-python">class LostInTheMiddleHandler:
+    """
+    Lost in the Middle 处理器：解决长上下文中部信息丢失问题。
+
+    策略：
+    - reorder: 最相关文档放首尾
+    - summarize: 分段摘要
+    - chunk: 分块处理
+    """
+
+    def _reorder(self, context, scores):
+        """重新排序：将最相关的文档放在开头和结尾"""
+        paired = list(zip(context.documents, scores))
+        paired.sort(key=lambda x: x[1], reverse=True)
+
+        reordered_docs = []
+        left, right = 0, len(paired) - 1
+        while left <= right:
+            if left == right:
+                reordered_docs.append(paired[left][0])
+            else:
+                reordered_docs.append(paired[left][0])
+                reordered_docs.append(paired[right][0])
+            left += 1
+            right -= 1
+
+        return Context(documents=reordered_docs, query=context.query)</code></pre>
+
+    <h2>五、完整上下文管理流水线</h2>
+    <p>在实际应用中，这三种技术通常是组合使用的。一个完整的上下文管理流水线包含三个步骤：先过滤去除低相关性文档，再压缩保留关键信息，最后重排序解决 Lost in the Middle 问题。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="280" viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">完整上下文管理流水线</text>
+            
+            <!-- 步骤 1 -->
+            <rect x="30" y="50" width="220" height="60" rx="10" fill="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">步骤 1：过滤</text>
+            <text x="140" y="95" text-anchor="middle" fill="white" font-size="10">去除低相关性文档</text>
+            
+            <!-- 箭头 -->
+            <line x1="250" y1="80" x2="310" y2="80" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 2 -->
+            <rect x="310" y="50" width="220" height="60" rx="10" fill="#10b981"/>
+            <text x="420" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">步骤 2：压缩</text>
+            <text x="420" y="95" text-anchor="middle" fill="white" font-size="10">保留关键信息，减少 Token</text>
+            
+            <!-- 箭头 -->
+            <line x1="530" y1="80" x2="590" y2="80" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <!-- 步骤 3 -->
+            <rect x="590" y="50" width="220" height="60" rx="10" fill="#f59e0b"/>
+            <text x="700" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">步骤 3：重排序</text>
+            <text x="700" y="95" text-anchor="middle" fill="white" font-size="10">解决 Lost in the Middle</text>
+            
+            <!-- 效果对比 -->
+            <rect x="30" y="140" width="720" height="120" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="165" text-anchor="middle" fill="#1a1a2e" font-size="13" font-weight="bold">效果对比</text>
+            
+            <text x="60" y="190" fill="#666" font-size="11">处理前：10 个文档 | 4000 Tokens | 平均相关性 0.55 | 中部信息易丢失</text>
+            <text x="60" y="210" fill="#666" font-size="11">处理后：4 个文档 | 1200 Tokens | 平均相关性 0.83 | 关键信息在首尾</text>
+            
+            <line x1="60" y1="220" x2="720" y2="220" stroke="#e2e8f0" stroke-width="1"/>
+            <text x="60" y="240" fill="#10b981" font-size="11" font-weight="bold">✓ Token 减少 70%</text>
+            <text x="280" y="240" fill="#10b981" font-size="11" font-weight="bold">✓ 相关性提升 50%</text>
+            <text x="520" y="240" fill="#10b981" font-size="11" font-weight="bold">✓ 信息利用率提升</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h3>5.1 代码实现</h3>
+<pre><code class="language-python">class ContextManager:
+    """
+    统一上下文管理调度器：组合压缩、过滤、Lost in the Middle 处理。
+    """
+
+    def __init__(self, compress=True, filter=True, handle_litm=True):
+        self.compressor = ContextCompressor() if compress else None
+        self.filter = ContextFilter() if filter else None
+        self.litm_handler = LostInTheMiddleHandler() if handle_litm else None
+
+    def process(self, context, scores=None):
+        """处理上下文：过滤 → 压缩 → 重排序"""
+        if scores is None:
+            scores = [0.5] * len(context.documents)
+
+        if self.filter:
+            context = self.filter.filter(context, scores)
+        if self.compressor:
+            context = self.compressor.compress(context)
+        if self.litm_handler:
+            context = self.litm_handler.handle(context, scores)
+
+        return context</code></pre>
+
+    <h2>六、最佳实践</h2>
+    <p>基于实际项目经验，以下是上下文管理的关键最佳实践：</p>
+    <ul>
+        <li>先过滤再压缩：先剔除低相关性文档，再压缩剩余文档，效率更高。如果先压缩再过滤，可能会浪费计算资源在即将被丢弃的文档上</li>
+        <li>阈值动态调整：根据查询类型和检索结果分布动态调整过滤阈值。对于专业领域查询，可以适当降低阈值以捕获更多相关文档</li>
+        <li>重排序必须做：无论上下文多短，都应该将最相关文档放在开头，这是解决 Lost in the Middle 问题最直接有效的方法</li>
+        <li>监控 Token 使用：建立上下文长度监控，及时告警超限情况。设置合理的上下文长度上限，避免 Token 溢出</li>
+        <li>评估效果：使用 RAGAS 等框架评估上下文管理对最终回答质量的影响。通过离线评估集量化不同配置的效果差异</li>
+    </ul>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 过度压缩的风险</div>
+        <p>过度压缩可能导致关键信息丢失。建议设置压缩上限（如保留率不低于 30%），并通过离线评估集验证压缩后对回答质量的影响。如果发现压缩导致回答质量下降，应该降低压缩比例或更换压缩策略。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>上下文管理是 RAG 系统中确保检索信息被有效利用的关键环节。上下文压缩通过减少 Token 数量提高信息密度，上下文过滤通过剔除低相关性文档去除噪声，Lost in the Middle 处理通过重排序文档确保关键信息不被忽略。</p>
+
+    <p>在实际项目中，建议构建完整的上下文管理流水线：先过滤、再压缩、最后重排序。这种组合方式能够在有限的 Token 预算内最大化有效信息量，同时确保 LLM 能够充分利用这些信息生成高质量的回答。</p>
+
+    <p>在下一节 6.8 中，我们将学习 RAG 评估体系，包括 RAGAS 框架的核心指标和评估方法。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

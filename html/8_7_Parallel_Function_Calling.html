@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.7 Parallel Function Calling（并行工具调用） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>8.7 Parallel Function Calling（并行工具调用）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块八：Function Calling</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解并行工具调用的原理和应用场景</li>
+        <li>掌握使用线程池实现并行工具调用的方法</li>
+        <li>了解各框架对并行工具调用的支持情况</li>
+        <li>能够设计高效的并行工具调用方案</li>
+    </ul>
+
+    <h2>一、什么是 Parallel Function Calling？</h2>
+    <p>Parallel Function Calling（并行工具调用）是指同时调用多个工具，而不是依次调用。当用户的问题需要多个独立工具的结果时，并行调用可以显著提高响应速度。例如，用户请求"给我一份北京天气、科技新闻、AAPL 股价的综合日报"，这个请求需要调用天气 API、新闻 API 和股票 API，这三个调用之间没有依赖关系，完全可以并行执行。</p>
+
+    <p>并行工具调用的核心价值在于减少总响应时间。假设有 4 个工具调用，每个耗时 0.5 秒，如果顺序执行需要 2 秒，而并行执行只需要 0.5 秒（最慢的那个工具的耗时），加速比达到 4 倍。在实际生产环境中，当需要调用多个外部 API 时，并行调用可以将响应时间从数秒降低到数百毫秒，显著提升用户体验。</p>
+
+    <p>在 OpenAI 框架中，Parallel Function Calling 是原生支持的：当 LLM 返回多个 tool_calls 时，系统可以同时执行这些调用，然后将所有结果一起返回给 LLM。而在不支持并行的框架（如 Anthropic 早期版本）中，需要开发者自行实现并行逻辑，在客户端层面同时发起多个工具调用。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">顺序调用 vs 并行调用</text>
+            
+            <!-- 顺序 -->
+            <text x="200" y="55" text-anchor="middle" fill="#ef4444" font-size="13" font-weight="bold">顺序调用（2.0s）</text>
+            <rect x="30" y="65" width="160" height="30" rx="5" fill="#ef4444"/>
+            <text x="110" y="85" text-anchor="middle" fill="white" font-size="10">天气 API (0.5s)</text>
+            <rect x="30" y="100" width="160" height="30" rx="5" fill="#ef4444" opacity="0.7"/>
+            <text x="110" y="120" text-anchor="middle" fill="white" font-size="10">新闻 API (0.5s)</text>
+            <rect x="30" y="135" width="160" height="30" rx="5" fill="#ef4444" opacity="0.5"/>
+            <text x="110" y="155" text-anchor="middle" fill="white" font-size="10">股票 API (0.5s)</text>
+            <rect x="30" y="170" width="160" height="30" rx="5" fill="#ef4444" opacity="0.3"/>
+            <text x="110" y="190" text-anchor="middle" fill="white" font-size="10">汇率 API (0.5s)</text>
+            
+            <!-- 并行 -->
+            <text x="600" y="55" text-anchor="middle" fill="#10b981" font-size="13" font-weight="bold">并行调用（0.5s）</text>
+            <rect x="430" y="65" width="160" height="30" rx="5" fill="#10b981"/>
+            <text x="510" y="85" text-anchor="middle" fill="white" font-size="10">天气 API (0.5s)</text>
+            <rect x="430" y="100" width="160" height="30" rx="5" fill="#10b981"/>
+            <text x="510" y="120" text-anchor="middle" fill="white" font-size="10">新闻 API (0.3s)</text>
+            <rect x="430" y="135" width="160" height="30" rx="5" fill="#10b981"/>
+            <text x="510" y="155" text-anchor="middle" fill="white" font-size="10">股票 API (0.4s)</text>
+            <rect x="430" y="170" width="160" height="30" rx="5" fill="#10b981"/>
+            <text x="510" y="190" text-anchor="middle" fill="white" font-size="10">汇率 API (0.0s)</text>
+            
+            <!-- 加速比 -->
+            <rect x="220" y="100" width="190" height="80" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="315" y="125" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">加速比: 4x</text>
+            <text x="240" y="148" fill="#666" font-size="10">顺序: 2.0s → 并行: 0.5s</text>
+            <text x="240" y="168" fill="#666" font-size="10">耗时取决于最慢的 API</text>
+        </svg>
+    </div>
+
+    <h2>二、各框架的并行支持</h2>
+    <p>不同框架对并行工具调用的支持程度差异很大。OpenAI 是最早支持并行工具调用的框架，最多支持 128 个工具同时调用；Anthropic 早期版本不支持并行调用，但新版本已经逐步支持；Qwen 兼容 OpenAI 的并行调用格式，最多支持 10 个工具并行；Gemini 支持最多 64 个并行工具调用。</p>
+
+    <p>在支持并行的框架中，LLM 可以一次性返回多个 tool_calls，开发者需要在客户端同时执行这些调用，然后将所有结果一起返回给 LLM。这个过程需要使用并发编程技术（如 Python 的 ThreadPoolExecutor 或 asyncio）来实现真正的并行执行。在不支持并行的框架中，开发者需要在客户端自行实现并行逻辑，即使 LLM 一次只返回一个工具调用请求。</p>
+
+    <table>
+        <thead>
+            <tr><th>框架</th><th>并行支持</th><th>最大并行数</th><th>实现方式</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>OpenAI</strong></td><td>✅ 原生支持</td><td>128</td><td>LLM 返回多个 tool_calls，客户端并发执行</td></tr>
+            <tr><td><strong>Anthropic</strong></td><td>❌ 早期不支持</td><td>1</td><td>需要客户端自行实现并行</td></tr>
+            <tr><td><strong>Qwen</strong></td><td>✅ 兼容 OpenAI</td><td>10</td><td>同 OpenAI 方式</td></tr>
+            <tr><td><strong>Gemini</strong></td><td>✅ 原生支持</td><td>64</td><td>LLM 返回多个 function_calls</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">并行工具调用执行流程</text>
+            
+            <rect x="30" y="55" width="140" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">用户查询</text>
+            <text x="100" y="90" text-anchor="middle" fill="white" font-size="9">多工具请求</text>
+            
+            <line x1="170" y1="77" x2="210" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="140" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">LLM 分析</text>
+            <text x="280" y="90" text-anchor="middle" fill="white" font-size="9">返回 N 个 tool_calls</text>
+            
+            <line x1="350" y1="77" x2="390" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="390" y="50" width="140" height="55" rx="8" fill="#3b82f6"/>
+            <text x="460" y="72" text-anchor="middle" fill="white" font-size="12" font-weight="bold">线程池并发</text>
+            <text x="460" y="90" text-anchor="middle" fill="white" font-size="9">ThreadPoolExecutor</text>
+            <text x="460" y="100" text-anchor="middle" fill="white" font-size="8">max_workers=5</text>
+            
+            <line x1="530" y1="77" x2="570" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="570" y="50" width="140" height="55" rx="8" fill="#10b981"/>
+            <text x="640" y="70" text-anchor="middle" fill="white" font-size="11" font-weight="bold">结果汇聚</text>
+            <text x="640" y="85" text-anchor="middle" fill="white" font-size="9">收集所有结果</text>
+            <text x="640" y="100" text-anchor="middle" fill="white" font-size="9">一起返回给 LLM</text>
+            
+            <rect x="30" y="130" width="720" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="155" text-anchor="middle" fill="#666" font-size="11">总耗时 = max(工具1耗时, 工具2耗时, ...) 而非 sum(所有耗时)</text>
+        </svg>
+    </div>
+
+    <h2>三、并行调用实现</h2>
+    <p>在 Python 中，实现并行工具调用最直接的方式是使用 concurrent.futures.ThreadPoolExecutor。线程池可以同时执行多个工具调用，每个工具调用在一个独立的线程中运行。当所有线程完成后，收集所有结果并返回。</p>
+
+    <p>实现并行调用的关键步骤包括：创建线程池并设置最大工作线程数、为每个工具调用提交一个任务到线程池、使用 as_completed 等待所有任务完成、收集所有任务的结果。需要注意的是，线程池的大小应该根据工具调用的特性来设置：对于 IO 密集型任务（如 API 调用），可以设置较大的线程数；对于 CPU 密集型任务，线程数应该接近 CPU 核心数。</p>
+
+    <h3>3.1 核心实现</h3>
+    <div class="code-file">08_function_calling/07_parallel_function_calling/parallel_function_calling.py</div>
+<pre><code class="language-python">from concurrent.futures import ThreadPoolExecutor, as_completed
+
+class ParallelToolExecutor:
+    """并行工具调用执行器"""
+
+    def __init__(self, registry, max_workers=5):
+        self.registry = registry
+        self.max_workers = max_workers
+
+    def execute_parallel(self, calls):
+        """并行执行多个工具调用"""
+        start_time = time.time()
+        results = []
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = {}
+            for call_spec in calls:
+                future = executor.submit(
+                    self._execute_single,
+                    call_spec["tool_name"],
+                    call_spec.get("arguments", {}),
+                )
+                futures[future] = call_spec
+
+            for future in as_completed(futures):
+                call_spec = futures[future]
+                tool_result = future.result()
+                results.append(tool_result)
+
+        total_time = time.time() - start_time
+        return ParallelResult(calls=results, total_time=total_time)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">线程池工作原理</text>
+            
+            <!-- 任务队列 -->
+            <rect x="30" y="50" width="160" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">任务队列</text>
+            <rect x="45" y="85" width="130" height="22" rx="4" fill="#93c5fd"/>
+            <text x="110" y="100" text-anchor="middle" fill="white" font-size="9">任务 1: 天气</text>
+            <rect x="45" y="112" width="130" height="22" rx="4" fill="#93c5fd"/>
+            <text x="110" y="127" text-anchor="middle" fill="white" font-size="9">任务 2: 新闻</text>
+            <rect x="45" y="139" width="130" height="22" rx="4" fill="#93c5fd"/>
+            <text x="110" y="154" text-anchor="middle" fill="white" font-size="9">任务 3: 股票</text>
+            
+            <!-- 线程池 -->
+            <rect x="230" y="50" width="320" height="130" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="75" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">线程池 (max_workers=3)</text>
+            
+            <rect x="245" y="85" width="90" height="80" rx="6" fill="#6ee7b7"/>
+            <text x="290" y="110" text-anchor="middle" fill="#064e3b" font-size="10">线程 1</text>
+            <text x="290" y="130" text-anchor="middle" fill="#064e3b" font-size="9">执行中...</text>
+            <text x="290" y="150" text-anchor="middle" fill="#064e3b" font-size="8">天气 API</text>
+            
+            <rect x="345" y="85" width="90" height="80" rx="6" fill="#6ee7b7"/>
+            <text x="390" y="110" text-anchor="middle" fill="#064e3b" font-size="10">线程 2</text>
+            <text x="390" y="130" text-anchor="middle" fill="#064e3b" font-size="9">执行中...</text>
+            <text x="390" y="150" text-anchor="middle" fill="#064e3b" font-size="8">新闻 API</text>
+            
+            <rect x="445" y="85" width="90" height="80" rx="6" fill="#6ee7b7"/>
+            <text x="490" y="110" text-anchor="middle" fill="#064e3b" font-size="10">线程 3</text>
+            <text x="490" y="130" text-anchor="middle" fill="#064e3b" font-size="9">执行中...</text>
+            <text x="490" y="150" text-anchor="middle" fill="#064e3b" font-size="8">股票 API</text>
+            
+            <!-- 结果 -->
+            <rect x="590" y="50" width="160" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="670" y="75" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">结果收集</text>
+            <text x="610" y="100" fill="#666" font-size="9">• 天气: ✅ 完成</text>
+            <text x="610" y="120" fill="#666" font-size="9">• 新闻: ✅ 完成</text>
+            <text x="610" y="140" fill="#666" font-size="9">• 股票: ✅ 完成</text>
+            <text x="610" y="165" fill="#f59e0b" font-size="9">→ 一起返回 LLM</text>
+        </svg>
+    </div>
+
+    <h2>四、异步实现（asyncio）</h2>
+    <p>除了使用线程池，还可以使用 asyncio 实现异步并行调用。asyncio 的优势在于它是真正的异步 IO，不需要为每个工具调用创建一个线程，因此在大量并发工具调用时更加高效。对于 IO 密集型的工具调用（如 HTTP 请求），asyncio 是更好的选择。</p>
+
+    <p>在 asyncio 实现中，使用 asyncio.gather 来同时执行多个异步任务。gather 会等待所有任务完成后返回结果列表，这与 ThreadPoolExecutor 的 as_completed 不同：gather 按提交顺序返回结果，而 as_completed 按完成顺序返回。</p>
+
+    <h3>4.1 异步实现示例</h3>
+    <p>asyncio 是 Python 内置的异步编程库，通过事件循环实现高并发。与线程池相比，asyncio 不需要为每个任务创建独立的线程，因此在大量并发任务时内存占用更小、性能更好。对于 IO 密集型的工具调用（如 HTTP 请求、数据库查询），asyncio 是更好的选择。</p>
+
+    <h4>asyncio vs ThreadPoolExecutor 对比</h4>
+    <p>ThreadPoolExecutor 为每个任务创建一个线程，线程数量受限于系统资源，适合并发数量较少的场景；asyncio 使用事件循环和协程，可以在单线程中同时处理数千个并发任务，适合高并发场景。但 asyncio 要求所有 IO 操作都是异步的，需要使用 aiohttp 等异步库而不是 requests 等同步库。</p>
+
+    <div class="code-file">Python（asyncio）</div>
+<pre><code class="language-python">import asyncio
+
+async def parallel_async(calls):
+    """异步并行执行工具调用"""
+    async def run_one(tool_name, arguments):
+        # 使用 aiohttp 等异步 HTTP 库
+        result = await async_execute(tool_name, arguments)
+        return result
+
+    # 同时执行所有任务
+    tasks = [
+        run_one(call["tool_name"], call.get("arguments", {}))
+        for call in calls
+    ]
+    results = await asyncio.gather(*tasks)
+    return results</code></pre>
+
+    <h2>五、错误处理与降级</h2>
+    <p>并行工具调用中的错误处理比顺序调用更复杂。当一个工具调用失败时，不应该影响其他工具的执行。同时，需要有一种机制来处理部分失败的情况：如果 4 个工具中有 1 个失败，系统应该使用其余 3 个成功的结果生成回答，并告知用户有一个工具调用失败。</p>
+
+    <p>降级策略包括：对于失败的单个工具，使用缓存数据或默认值替代；如果大部分工具都失败，直接返回错误信息；在超时场景中，设置每个工具调用的超时时间，超时后自动标记为失败并继续执行其他工具。</p>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>策略</th><th>处理方式</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>单个工具失败</strong></td><td>降级</td><td>使用缓存或默认值，继续其他工具</td></tr>
+            <tr><td><strong>大部分工具失败</strong></td><td>返回错误</td><td>告知用户服务不可用，建议稍后重试</td></tr>
+            <tr><td><strong>工具超时</strong></td><td>超时中断</td><td>标记超时，使用部分结果生成回答</td></tr>
+            <tr><td><strong>所有工具成功</strong></td><td>正常处理</td><td>合并所有结果生成完整回答</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">并行调用错误处理流程</text>
+            
+            <rect x="30" y="55" width="140" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">并发执行</text>
+            <text x="100" y="90" text-anchor="middle" fill="white" font-size="9">N 个工具同时</text>
+            
+            <line x1="170" y1="77" x2="210" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="45" width="140" height="65" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">结果分类</text>
+            <text x="230" y="88" fill="white" font-size="9">✅ 成功: N-1 个</text>
+            <text x="230" y="102" fill="white" font-size="9">❌ 失败: 1 个</text>
+            
+            <line x1="350" y1="65" x2="390" y2="55" stroke="#10b981" stroke-width="1.5"/>
+            <text x="370" y="50" text-anchor="middle" fill="#10b981" font-size="9">成功</text>
+            <rect x="390" y="40" width="140" height="40" rx="6" fill="#10b981"/>
+            <text x="460" y="65" text-anchor="middle" fill="white" font-size="10">使用成功结果</text>
+            
+            <line x1="350" y1="90" x2="390" y2="90" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="370" y="105" text-anchor="middle" fill="#f59e0b" font-size="9">降级</text>
+            <rect x="390" y="85" width="140" height="40" rx="6" fill="#f59e0b"/>
+            <text x="460" y="110" text-anchor="middle" fill="white" font-size="10">使用缓存/默认值</text>
+            
+            <line x1="530" y1="77" x2="570" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="570" y="55" width="140" height="45" rx="8" fill="#3b82f6"/>
+            <text x="640" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">汇聚结果</text>
+            <text x="640" y="90" text-anchor="middle" fill="white" font-size="9">生成最终回答</text>
+        </svg>
+    </div>
+
+    <h3>5.1 错误处理实现</h3>
+    <div class="code-file">08_function_calling/07_parallel_function_calling/parallel_function_calling.py</div>
+<pre><code class="language-python">def _execute_single(self, tool_name, arguments):
+    """执行单个工具调用（带超时和错误处理）"""
+    start = time.time()
+    try:
+        # 使用 future.result(timeout=...) 实现超时
+        future = executor.submit(
+            self.registry.execute, tool_name, arguments
+        )
+        result = future.result(timeout=self.timeout)
+        elapsed = time.time() - start
+        return ParallelToolCall(
+            tool_name=tool_name, arguments=arguments,
+            result=result, success=True, execution_time=elapsed,
+        )
+    except TimeoutError:
+        return ParallelToolCall(
+            tool_name=tool_name, arguments=arguments,
+            error="超时", success=False,
+            execution_time=time.time() - start,
+        )
+    except Exception as e:
+        return ParallelToolCall(
+            tool_name=tool_name, arguments=arguments,
+            error=str(e), success=False,
+            execution_time=time.time() - start,
+        )</code></pre>
+
+    <h2>六、性能优化建议</h2>
+    <p>在实现并行工具调用时，有几个关键的性能优化点需要注意。线程池大小应该根据工具调用的类型来设置：对于 IO 密集型任务（如 HTTP 请求），可以设置较大的线程数（如 10~20）；对于 CPU 密集型任务，线程数应该接近 CPU 核心数。超时设置也很重要，每个工具调用都应该有独立的超时时间，避免一个慢速工具阻塞整个流程。</p>
+
+    <p>连接池复用是另一个重要的优化点。对于需要频繁调用同一个 API 的场景，应该使用连接池来复用 HTTP 连接，而不是每次调用都创建新的连接。这可以显著减少连接建立的时间开销。此外，结果缓存也是有效的优化手段：对于相同参数的工具调用，可以缓存结果，避免重复调用。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">性能优化策略</text>
+            
+            <rect x="30" y="50" width="160" height="110" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">线程池调优</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• IO 密集: 10~20 线程</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• CPU 密集: CPU 核心数</text>
+            <text x="50" y="145" fill="#2563eb" font-size="9">max_workers 设置</text>
+            
+            <rect x="220" y="50" width="160" height="110" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="300" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">超时控制</text>
+            <text x="240" y="100" fill="#059669" font-size="10">• 每个工具独立超时</text>
+            <text x="240" y="120" fill="#059669" font-size="10">• 避免慢工具阻塞</text>
+            <text x="240" y="145" fill="#059669" font-size="9">timeout 参数</text>
+            
+            <rect x="410" y="50" width="160" height="110" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="490" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">连接池复用</text>
+            <text x="430" y="100" fill="#b45309" font-size="10">• 复用 HTTP 连接</text>
+            <text x="430" y="120" fill="#b45309" font-size="10">• 减少握手开销</text>
+            <text x="430" y="145" fill="#b45309" font-size="9">Session / ConnectionPool</text>
+            
+            <rect x="600" y="50" width="160" height="110" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="680" y="75" text-anchor="middle" fill="#5b21b6" font-size="12" font-weight="bold">结果缓存</text>
+            <text x="620" y="100" fill="#7c3aed" font-size="10">• 缓存相同参数结果</text>
+            <text x="620" y="120" fill="#7c3aed" font-size="10">• 避免重复调用</text>
+            <text x="620" y="145" fill="#7c3aed" font-size="9">TTL + 大小限制</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在实际项目中，建议将并行工具调用封装为一个独立的组件，包含线程池管理、超时控制、错误处理和结果缓存等功能。对于需要高并发的场景，推荐使用 asyncio 而不是 ThreadPoolExecutor，因为 asyncio 在大量并发时的性能更优。同时，建议为每个工具调用设置合理的超时时间，并在日志中记录每个工具的耗时，便于性能分析和优化。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>Parallel Function Calling 是提高工具调用效率的关键技术。通过并行执行多个独立的工具调用，可以将总响应时间从所有工具耗时之和降低到最慢工具的耗时。在支持并行的框架中，LLM 可以一次性返回多个 tool_calls，开发者需要在客户端使用线程池或 asyncio 实现真正的并行执行。对于 IO 密集型任务，推荐使用 asyncio 获得更好的并发性能；对于 CPU 密集型任务，使用 ThreadPoolExecutor 更加简单直接。</p>
+
+    <p>在实际项目中，并行工具调用应该与错误处理、超时控制和降级策略结合使用，确保即使部分工具调用失败，系统仍然能够返回有用的结果。同时，性能优化也是不可忽视的一环，包括线程池调优、连接池复用、结果缓存等策略。在下一节 8.8 中，我们将通过实战项目，综合运用前面学习的所有技术，构建一个完整的工具集（天气/数据库/API/文件操作）。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

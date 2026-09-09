@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.6 重排序技术 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.6 重排序技术（BGE-Reranker、Cohere、Cross-Encoder）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 系统构建</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解重排序在 RAG 系统中的作用和价值</li>
+        <li>掌握 Cross-Encoder、BGE-Reranker、Cohere Rerank 三种重排序策略</li>
+        <li>学会两阶段检索（粗排 + 精排）的完整流程</li>
+        <li>能够根据场景选择合适的重排序方案</li>
+    </ul>
+
+    <h2>一、为什么需要重排序？</h2>
+    <p>在 RAG 系统中，向量检索（使用余弦相似度）是第一步筛选，它基于 Embedding 向量的距离来评估文档相关性。然而，向量检索有一个明显的局限：查询和文档是独立编码的，两者之间没有深度交互。</p>
+
+    <p>这意味着向量检索只能捕捉到大致相关的文档，但无法精确判断哪个文档最相关。特别是在候选文档之间差异细微时，向量排序的结果往往不够准确。比如两个文档都包含"Transformer"关键词，但一个详细讲解了注意力机制原理，另一个只是简单提及，向量检索可能无法区分两者的相关性差异。</p>
+
+    <p>重排序技术通过在初筛结果上增加一层深度相关性计算，让查询和文档进行充分交互，从而得到更精确的排序结果。研究表明，在向量检索后增加重排序步骤，可以将检索准确率提升 10-25%。这个提升幅度对于实际应用来说非常可观，特别是当 RAG 系统的回答质量直接取决于检索质量时。</p>
+
+    <p>此外，重排序还能改善用户体验。用户期望检索结果按相关性从高到低排列，而纯向量检索的结果排序往往不够精确。重排序可以确保最相关的文档排在最前面，减少用户翻找结果的时间。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="220" viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">两阶段检索：粗排 + 精排</text>
+            
+            <!-- 阶段 1：向量检索 -->
+            <rect x="30" y="55" width="300" height="80" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="180" y="80" text-anchor="middle" fill="#1e40af" font-size="14" font-weight="bold">阶段 1：向量检索（粗排）</text>
+            <text x="180" y="100" text-anchor="middle" fill="#2563eb" font-size="11">Bi-Encoder 独立编码</text>
+            <text x="180" y="115" text-anchor="middle" fill="#2563eb" font-size="11">快速筛选 Top-50</text>
+            <text x="180" y="130" text-anchor="middle" fill="#666" font-size="10">速度快，精度一般</text>
+            
+            <!-- 箭头 -->
+            <line x1="330" y1="95" x2="430" y2="95" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="380" y="85" text-anchor="middle" fill="#64748b" font-size="10">50 个候选</text>
+            
+            <!-- 阶段 2：重排序 -->
+            <rect x="430" y="55" width="340" height="80" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="600" y="80" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">阶段 2：重排序（精排）</text>
+            <text x="600" y="100" text-anchor="middle" fill="#059669" font-size="11">Cross-Encoder 深度交互</text>
+            <text x="600" y="115" text-anchor="middle" fill="#059669" font-size="11">精确排序 Top-5</text>
+            <text x="600" y="130" text-anchor="middle" fill="#666" font-size="10">速度慢，精度高</text>
+            
+            <!-- 输出 -->
+            <line x1="600" y1="135" x2="600" y2="165" stroke="#10b981" stroke-width="2"/>
+            <rect x="530" y="165" width="140" height="35" rx="8" fill="#10b981"/>
+            <text x="600" y="187" text-anchor="middle" fill="white" font-size="12" font-weight="bold">最终 Top-5 结果</text>
+            
+            <!-- 说明 -->
+            <rect x="100" y="195" width="600" height="25" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="400" y="212" text-anchor="middle" fill="#64748b" font-size="10">向量检索负责召回率，重排序负责准确率 — 两者互补</text>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h2>二、Cross-Encoder 重排序</h2>
+    <p>Cross-Encoder 是重排序最经典的方法。它将查询和文档拼接为一个输入序列，通过预训练语言模型进行编码，然后输出两者的相关性分数。</p>
+
+    <p>Cross-Encoder 与向量检索使用的 Bi-Encoder 有着本质的区别。Bi-Encoder 将查询和文档分别编码为独立向量，然后计算余弦相似度；而 Cross-Encoder 将两者拼接后一起编码，允许查询和文档的 token 在注意力层中充分交互。这种深度交互使得模型能够捕捉更细粒度的语义匹配信号，但也意味着每对查询 - 文档都需要一次独立的推理，速度较慢。</p>
+
+    <h3>2.1 工作原理</h3>
+    <p>与向量检索使用的 Bi-Encoder（查询和文档独立编码）不同，Cross-Encoder 允许查询和文档的 token 在注意力层中充分交互。这种深度交互使得模型能够捕捉更细粒度的语义匹配信号。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Bi-Encoder vs Cross-Encoder 对比</text>
+            
+            <!-- Bi-Encoder -->
+            <rect x="40" y="50" width="320" height="130" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="200" y="75" text-anchor="middle" fill="#991b1b" font-size="13" font-weight="bold">Bi-Encoder（向量检索）</text>
+            
+            <rect x="60" y="90" width="100" height="30" rx="4" fill="#ef4444"/>
+            <text x="110" y="110" text-anchor="middle" fill="white" font-size="10">Encoder(查询)</text>
+            
+            <rect x="240" y="90" width="100" height="30" rx="4" fill="#ef4444"/>
+            <text x="290" y="110" text-anchor="middle" fill="white" font-size="10">Encoder(文档)</text>
+            
+            <text x="200" y="145" text-anchor="middle" fill="#666" font-size="10">独立编码 → 余弦相似度</text>
+            <text x="200" y="165" text-anchor="middle" fill="#999" font-size="9">速度快，精度一般</text>
+            
+            <!-- Cross-Encoder -->
+            <rect x="420" y="50" width="320" height="130" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="580" y="75" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">Cross-Encoder（重排序）</text>
+            
+            <rect x="470" y="90" width="220" height="30" rx="4" fill="#10b981"/>
+            <text x="580" y="110" text-anchor="middle" fill="white" font-size="10">Encoder([查询 + 文档])</text>
+            
+            <text x="580" y="145" text-anchor="middle" fill="#666" font-size="10">联合编码 → 相关性分数</text>
+            <text x="580" y="165" text-anchor="middle" fill="#999" font-size="9">速度慢，精度高</text>
+        </svg>
+    </div>
+
+    <h3>2.2 代码实现</h3>
+    <div class="code-file">06_rag_architecture/06_reranking/reranking.py</div>
+<pre><code class="language-python">class CrossEncoderReranker:
+    """
+    Cross-Encoder 重排序器：使用 Cross-Encoder 模型对检索结果重排序。
+
+    原理：
+    1. 将查询和文档拼接为 [CLS] query [SEP] doc [SEP]
+    2. 通过 Cross-Encoder 模型编码
+    3. 取 [CLS] token 输出经过分类头得到相关性分数
+    4. 按分数重新排序
+    """
+
+    def __init__(self, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        self.model_name = model_name
+        self._model = None
+        self._tokenizer = None
+
+    def rerank(self, query: str, candidates: List[Tuple[str, str]], top_k: int = 10):
+        """对候选文档进行重排序"""
+        scored = []
+        for i, (doc_id, text) in enumerate(candidates):
+            score = self._compute_similarity(query, text)
+            scored.append(RerankResult(
+                doc_id=doc_id, text=text,
+                score=score, original_rank=i + 1,
+            ))
+        scored.sort(key=lambda x: x.score, reverse=True)
+        return scored[:top_k]
+
+    def _compute_similarity(self, query: str, doc: str) -> float:
+        """计算查询和文档的相关性分数"""
+        import torch
+        if self._tokenizer is None or self._model is None:
+            self._load_model()
+        assert self._tokenizer is not None
+        assert self._model is not None
+
+        inputs = self._tokenizer(
+            query, doc, return_tensors="pt",
+            truncation=True, max_length=512,
+        )
+        with torch.no_grad():
+            outputs = self._model(**inputs)
+            return outputs.logits.squeeze().item()</code></pre>
+
+    <h3>2.3 适用场景</h3>
+    <table>
+        <thead>
+            <tr><th>场景</th><th>是否适合</th><th>原因</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>英文文档重排序</strong></td><td>✅ 非常适合</td><td>ms-marco 模型在英文上训练，效果最佳</td></tr>
+            <tr><td><strong>中文文档重排序</strong></td><td>⚠️ 一般</td><td>建议使用 BGE-Reranker 代替</td></tr>
+            <tr><td><strong>Top-50 以内精排</strong></td><td>✅ 适合</td><td>推理次数可控，延迟可接受</td></tr>
+            <tr><td><strong>Top-500 以上精排</strong></td><td>❌ 不适合</td><td>推理开销过大，需要降低候选数</td></tr>
+        </tbody>
+    </table>
+
+    <p>Cross-Encoder 模型的选择也很重要。ms-marco-MiniLM-L-6-v2 是最常用的模型，体积小（约 80MB），速度快，适合资源受限的场景。如果需要更高的精度，可以选择 ms-marco-MiniLM-L-12-v2 或更大的模型，但推理时间会相应增加。</p>
+
+    <h2>三、BGE-Reranker 重排序</h2>
+    <p>BGE-Reranker 是智源研究院（BAAI）开发的重排序模型系列。它在 Cross-Encoder 架构基础上进行了专门优化，特别是在中文重排序任务上表现优异。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">BGE-Reranker 模型家族</text>
+            
+            <!-- V1 -->
+            <rect x="40" y="50" width="220" height="80" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="150" y="75" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">BGE-Reranker V1</text>
+            <text x="150" y="95" text-anchor="middle" fill="#2563eb" font-size="11">base / large</text>
+            <text x="150" y="115" text-anchor="middle" fill="#666" font-size="10">中英文重排序</text>
+            
+            <!-- V2 -->
+            <rect x="280" y="50" width="220" height="80" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="390" y="75" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">BGE-Reranker V2</text>
+            <text x="390" y="95" text-anchor="middle" fill="#059669" font-size="11">m3 多语言版</text>
+            <text x="390" y="115" text-anchor="middle" fill="#666" font-size="10">支持 100+ 语言</text>
+            
+            <!-- 对比 -->
+            <rect x="520" y="50" width="220" height="80" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="630" y="75" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">推荐选择</text>
+            <text x="630" y="95" text-anchor="middle" fill="#d97706" font-size="11">bge-reranker-large</text>
+            <text x="630" y="115" text-anchor="middle" fill="#666" font-size="10">精度和速度平衡</text>
+            
+            <!-- 说明 -->
+            <rect x="100" y="155" width="580" height="70" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="175" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">BGE-Reranker 优势</text>
+            <text x="120" y="195" fill="#333" font-size="10">• 中文优化：在中文重排序任务上优于 Cross-Encoder</text>
+            <text x="120" y="210" fill="#333" font-size="10">• 模型体积：large 版约 1.2GB，易于部署</text>
+        </svg>
+    </div>
+
+    <h3>3.1 代码实现</h3>
+<pre><code class="language-python">class BGEReranker:
+    """
+    BGE-Reranker 重排序器：使用 BGE 系列重排序模型。
+
+    特点：
+    - 中文优化效果好
+    - 支持多语言
+    - 模型体积适中
+    """
+
+    def __init__(self, model_name: str = "BAAI/bge-reranker-large"):
+        self.model_name = model_name
+        self._model = None
+
+    def rerank(self, query: str, candidates: List[Tuple[str, str]], top_k: int = 10):
+        """对候选文档进行重排序"""
+        if not candidates:
+            return []
+
+        if self._model is None:
+            from FlagEmbedding import FlagReranker
+            self._model = FlagReranker(self.model_name, use_fp16=True)
+
+        pairs = [(query, text) for _, text in candidates]
+        scores = self._model.compute_score(pairs, normalize=True)
+
+        scored = []
+        for i, (doc_id, text) in enumerate(candidates):
+            score = scores[i] if i < len(scores) else 0.0
+            scored.append(RerankResult(
+                doc_id=doc_id, text=text,
+                score=score, original_rank=i + 1,
+            ))
+        scored.sort(key=lambda x: x.score, reverse=True)
+        return scored[:top_k]</code></pre>
+
+    <h3>3.2 模型版本选择</h3>
+    <table>
+        <thead>
+            <tr><th>模型</th><th>参数量</th><th>速度</th><th>精度</th><th>推荐场景</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>bge-reranker-base</strong></td><td>~300M</td><td>最快</td><td>良好</td><td>资源受限场景</td></tr>
+            <tr><td><strong>bge-reranker-large</strong></td><td>~560M</td><td>中等</td><td>最优</td><td>生产环境推荐</td></tr>
+            <tr><td><strong>bge-reranker-v2-m3</strong></td><td>~560M</td><td>中等</td><td>最优</td><td>多语言场景</td></tr>
+        </tbody>
+    </table>
+
+    <h2>四、Cohere Rerank</h2>
+    <p>Cohere Rerank 是由 Cohere 公司提供的云端重排序服务。它基于 LLM 的深度语义理解能力，对文档进行精确的相关性评分。</p>
+
+    <h3>4.1 核心优势</h3>
+    <p>Cohere Rerank 最大的优势是零部署成本。用户不需要在本地安装和配置任何模型，只需要调用 API 即可获得高质量的重排序结果。这对于快速原型开发和资源有限的团队来说非常有吸引力。</p>
+
+    <p>此外，Cohere 的 rerank-multilingual-v3.0 模型支持多种语言，包括中文、英文、日文、韩文等。虽然其中文效果不如专门优化的 BGE-Reranker，但对于多语言混合的场景来说，它是一个方便的一站式解决方案。</p>
+    <table>
+        <thead>
+            <tr><th>优势</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>零部署</strong></td><td>云端服务，无需本地安装模型</td></tr>
+            <tr><td><strong>多语言</strong></td><td>rerank-multilingual-v3.0 支持多种语言</td></tr>
+            <tr><td><strong>速度快</strong></td><td>云端 GPU 加速，响应时间短</td></tr>
+            <tr><td><strong>按量付费</strong></td><td>无需购买 GPU 服务器，按调用次数计费</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 代码实现</h3>
+<pre><code class="language-python">class CohereReranker:
+    """
+    Cohere Rerank 重排序器：使用 Cohere API 进行重排序。
+
+    特点：
+    - 云端服务，无需本地模型
+    - 多语言支持
+    - 按量付费
+    - 需要 API Key
+    """
+
+    def __init__(self, api_key: Optional[str] = None,
+                 model: str = "rerank-multilingual-v3.0"):
+        self.api_key = api_key or os.getenv("COHERE_API_KEY", "")
+        self.model = model
+
+    def rerank(self, query: str, candidates: List[Tuple[str, str]], top_k: int = 10):
+        """使用 Cohere API 进行重排序"""
+        if not self.api_key:
+            return self._fallback_rerank(candidates, top_k)
+
+        import cohere
+        client = cohere.Client(api_key=self.api_key)
+        documents = [text for _, text in candidates]
+        response = client.rerank(
+            model=self.model, query=query,
+            documents=documents, top_n=top_k,
+        )
+        # 处理结果...
+        return scored_candidates</code></pre>
+
+    <p>使用 Cohere Rerank 需要注意数据安全问题。由于文档内容需要上传到云端服务器，对于包含敏感信息的项目（如医疗、金融、政务），建议使用本地部署的方案。但对于公开的、非敏感的数据，Cohere 是一个非常方便的选择。</p>
+
+    <h2>五、三种策略全面对比</h2>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">重排序策略选择矩阵</text>
+            
+            <!-- X轴 -->
+            <text x="390" y="190" text-anchor="middle" fill="#6b7c93" font-size="11">部署复杂度（低 → 高）</text>
+            <line x1="60" y1="170" x2="720" y2="170" stroke="#ccc" stroke-width="1"/>
+            <text x="60" y="185" fill="#999" font-size="9">低（云端）</text>
+            <text x="710" y="185" fill="#999" font-size="9">高（本地）</text>
+            
+            <!-- Y轴 -->
+            <text x="25" y="90" text-anchor="middle" fill="#6b7c93" font-size="11" transform="rotate(-90,25,90)">中文精度（低 → 高）</text>
+            <line x1="60" y1="40" x2="60" y2="170" stroke="#ccc" stroke-width="1"/>
+            <text x="50" y="45" fill="#999" font-size="9">高</text>
+            <text x="50" y="165" fill="#999" font-size="9">低</text>
+            
+            <!-- Cohere -->
+            <rect x="80" y="60" width="120" height="45" rx="10" fill="url(#c1)"/>
+            <text x="140" y="88" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Cohere</text>
+            
+            <!-- Cross-Encoder -->
+            <rect x="560" y="110" width="140" height="45" rx="10" fill="url(#c2)"/>
+            <text x="630" y="138" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Cross-Encoder</text>
+            
+            <!-- BGE-Reranker -->
+            <rect x="400" y="50" width="150" height="45" rx="10" fill="url(#c3)"/>
+            <text x="475" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">BGE-Reranker</text>
+            
+            <defs>
+                <linearGradient id="c1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+                <linearGradient id="c2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
+                <linearGradient id="c3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+            </defs>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>Cross-Encoder</th><th>BGE-Reranker</th><th>Cohere Rerank</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>精度</strong></td><td>高（英文）</td><td>最高（中文）</td><td>高</td></tr>
+            <tr><td><strong>速度</strong></td><td>慢（本地推理）</td><td>中等（FP16 加速）</td><td>快（云端 GPU）</td></tr>
+            <tr><td><strong>部署</strong></td><td>需要本地模型</td><td>需要本地模型</td><td>无需部署</td></tr>
+            <tr><td><strong>成本</strong></td><td>GPU 硬件</td><td>GPU 硬件</td><td>按量付费</td></tr>
+            <tr><td><strong>中文效果</strong></td><td>一般</td><td>优秀</td><td>良好</td></tr>
+            <tr><td><strong>数据安全</strong></td><td>本地处理</td><td>本地处理</td><td>需上传云端</td></tr>
+        </tbody>
+    </table>
+
+    <h2>六、重排序效果示意</h2>
+    <p>下面的示意图展示了重排序前后的结果对比。可以看到，向量检索虽然能召回相关文档，但排序不够精确——不相关的 CNN 文档排在了第一位，而最相关的 Transformer 原理文档只排在第三位。</p>
+
+    <p>经过 Cross-Encoder 重排序后，最相关的文档被提升到了第一位，不相关的文档被降到了最后。这种排序质量的提升直接影响了 LLM 生成回答的质量。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">重排序前后对比</text>
+            
+            <!-- 查询 -->
+            <rect x="250" y="45" width="280" height="30" rx="6" fill="#1a1a2e"/>
+            <text x="390" y="65" text-anchor="middle" fill="white" font-size="12" font-weight="bold">查询："Transformer 的原理是什么？"</text>
+            
+            <!-- 重排序前 -->
+            <rect x="30" y="95" width="340" height="140" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="200" y="120" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">重排序前（向量检索 Top-5）</text>
+            
+            <rect x="50" y="135" width="300" height="18" rx="3" fill="#ef4444"/>
+            <text x="60" y="148" fill="white" font-size="9">1. CNN 主要用于图像处理 ✗ (0.82)</text>
+            <rect x="50" y="157" width="300" height="18" rx="3" fill="#ef4444"/>
+            <text x="60" y="170" fill="white" font-size="9">2. GPT 是基于 Transformer 的生成模型 △ (0.78)</text>
+            <rect x="50" y="179" width="300" height="18" rx="3" fill="#f59e0b"/>
+            <text x="60" y="192" fill="white" font-size="9">3. Transformer 是一种基于注意力的架构 ✓ (0.75)</text>
+            <rect x="50" y="201" width="300" height="18" rx="3" fill="#f59e0b"/>
+            <text x="60" y="214" fill="white" font-size="9">4. 注意力机制是核心组件 △ (0.72)</text>
+            <rect x="50" y="223" width="300" height="18" rx="3" fill="#10b981"/>
+            <text x="60" y="236" fill="white" font-size="9">5. BERT 是基于 Transformer 的模型 △ (0.70)</text>
+            
+            <!-- 重排序后 -->
+            <rect x="410" y="95" width="340" height="140" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="580" y="120" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">重排序后（Cross-Encoder Top-5）</text>
+            
+            <rect x="430" y="135" width="300" height="18" rx="3" fill="#10b981"/>
+            <text x="440" y="148" fill="white" font-size="9">1. Transformer 是基于注意力的架构 ✓ (0.95)</text>
+            <rect x="430" y="157" width="300" height="18" rx="3" fill="#10b981"/>
+            <text x="440" y="170" fill="white" font-size="9">2. 注意力机制是核心组件 ✓ (0.88)</text>
+            <rect x="430" y="179" width="300" height="18" rx="3" fill="#34d399"/>
+            <text x="440" y="192" fill="white" font-size="9">3. GPT 是基于 Transformer 的模型 △ (0.75)</text>
+            <rect x="430" y="201" width="300" height="18" rx="3" fill="#6ee7b7"/>
+            <text x="440" y="214" fill="white" font-size="9">4. BERT 是基于 Transformer 的模型 △ (0.60)</text>
+            <rect x="430" y="223" width="300" height="18" rx="3" fill="#a7f3d0"/>
+            <text x="440" y="236" fill="#064e3b" font-size="9">5. CNN 主要用于图像处理 ✗ (0.10)</text>
+            
+            <!-- 箭头 -->
+            <line x1="370" y1="165" x2="410" y2="165" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+            
+            <defs>
+                <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+                </marker>
+            </defs>
+        </svg>
+    </div>
+
+    <h2>七、实践建议</h2>
+    <p>选择合适的重排序策略需要考虑多个因素：语言类型、数据安全要求、预算限制、延迟要求等。以下是基于实际项目经验的建议：</p>
+    <ul>
+        <li>中文项目首选 BGE-Reranker，在中文重排序任务上效果最好，且模型开源免费</li>
+        <li>英文项目可使用 Cross-Encoder，ms-marco 系列模型成熟稳定，社区支持好</li>
+        <li>快速原型可选 Cohere Rerank，无需本地部署，按需付费，适合验证想法</li>
+        <li>初筛候选数建议 20-50，太少效果不明显，太多开销大。30 是一个不错的起点</li>
+        <li>敏感数据项目避免云端方案，使用本地部署的 BGE 或 Cross-Encoder 确保数据不流出</li>
+    </ul>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 两阶段检索调优</div>
+        <p>建议先固定重排序模型，调整初筛候选数（20/30/50/100），找到准确率和延迟的最佳平衡点。通常 30-50 个候选文档是一个不错的起点。可以使用离线评估集（标注好的查询 - 文档对）来量化不同配置的效果。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>重排序是 RAG 系统中提升检索精度的关键步骤。Cross-Encoder 通过查询和文档的深度交互提供高精度排序；BGE-Reranker 在中文重排序任务上表现最优；Cohere Rerank 提供免部署的云端方案。</p>
+
+    <p>在实际项目中，建议采用两阶段检索策略：先用向量检索快速筛选 Top-50 候选文档，再用重排序模型精确排序 Top-5。这种组合方式兼顾了速度和精度，是生产环境下的最佳实践。中文项目首选 BGE-Reranker-large 模型，它在精度和速度之间取得了良好的平衡。</p>
+
+    <p>重排序的性能开销需要认真考虑。每增加一个候选文档，就需要一次额外的模型推理。对于延迟敏感的应用，建议使用 FP16 推理或模型量化来加速。对于预算有限的项目，可以先在离线环境中评估重排序的收益，确认效果提升显著后再上线。</p>
+
+    <p>在下一节 6.7 中，我们将学习上下文管理技术，包括上下文压缩、过滤和 Lost in the Middle 等问题。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

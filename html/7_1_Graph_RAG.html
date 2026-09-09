@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7.1 Graph RAG（Microsoft GraphRAG） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>7.1 Graph RAG（Microsoft GraphRAG）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块七：高级 RAG 技术</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解传统 RAG 的局限性和 Graph RAG 的设计动机</li>
+        <li>掌握知识图谱构建的核心流程</li>
+        <li>学会社区检测和层次化摘要的方法</li>
+        <li>能够对比 Graph RAG 与传统 RAG 的优劣</li>
+    </ul>
+
+    <h2>一、传统 RAG 的局限性</h2>
+    <p>传统 RAG 系统基于向量检索来查找相关文档片段。这种方法在处理"这个文档说了什么"类型的问题时表现良好，但在面对需要综合分析的问题时存在明显的局限性。</p>
+
+    <p>主要问题包括：第一，缺乏全局理解。向量检索只能找到局部匹配的文本片段，无法理解文档之间的关联和整体结构。第二，无法回答跨文档问题。当答案需要综合多个文档的信息时，传统 RAG 只能独立检索每个片段，难以整合。第三，无法发现隐含关系。向量检索只能基于语义相似度匹配，无法发现实体之间的深层关系。</p>
+
+    <p>Microsoft 在 2024 年提出的 Graph RAG 正是为了解决这些问题。它将知识图谱与 RAG 结合，通过构建文档的知识图谱，实现全局理解和综合分析能力。这项技术的核心创新在于：不仅关注文档中的文本内容，还关注实体之间的关系结构，从而实现对数据集的整体把握。</p>
+
+    <p>从技术路线来看，Graph RAG 代表了 RAG 技术从"基于相似度匹配"向"基于结构理解"的演进方向。它不仅提升了检索质量，还为复杂分析和全局摘要提供了可能。这使得 Graph RAG 成为当前高级 RAG 技术中最受关注的方向之一。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">传统 RAG vs Graph RAG</text>
+            
+            <rect x="40" y="55" width="340" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="210" y="85" text-anchor="middle" fill="#991b1b" font-size="14" font-weight="bold">传统 RAG</text>
+            <text x="60" y="110" fill="#666" font-size="11">• 向量相似度检索（局部匹配）</text>
+            <text x="60" y="130" fill="#666" font-size="11">• Top-K 文档片段拼接</text>
+            <text x="60" y="150" fill="#666" font-size="11">• 无法发现跨文档关联</text>
+            <text x="60" y="170" fill="#666" font-size="11">• 适合简单文档问答</text>
+            
+            <rect x="420" y="55" width="340" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="85" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">Graph RAG</text>
+            <text x="440" y="110" fill="#666" font-size="11">• 知识图谱（实体+关系+社区）</text>
+            <text x="440" y="130" fill="#666" font-size="11">• 层次化社区摘要</text>
+            <text x="440" y="150" fill="#666" font-size="11">• 发现隐含的跨文档关联</text>
+            <text x="440" y="170" fill="#666" font-size="11">• 适合综合分析/摘要</text>
+        </svg>
+    </div>
+
+    <h2>二、Graph RAG 的核心架构</h2>
+    <p>Graph RAG 的核心思想是将文档转换为知识图谱，然后通过图谱的结构信息来增强检索和回答生成。整个流程分为两个阶段：索引阶段和查询阶段。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="320" viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Graph RAG 完整架构</text>
+            
+            <!-- 索引阶段 -->
+            <rect x="30" y="50" width="740" height="130" rx="10" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2"/>
+            <text x="60" y="75" fill="#0369a1" font-size="13" font-weight="bold">索引阶段（离线）</text>
+            
+            <rect x="50" y="90" width="150" height="70" rx="8" fill="#3b82f6"/>
+            <text x="125" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">1. 实体提取</text>
+            <text x="125" y="135" text-anchor="middle" fill="white" font-size="10">LLM/NER 提取实体</text>
+            <text x="125" y="150" text-anchor="middle" fill="white" font-size="10">节点=实体</text>
+            
+            <line x1="200" y1="125" x2="250" y2="125" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="250" y="90" width="150" height="70" rx="8" fill="#10b981"/>
+            <text x="325" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">2. 关系提取</text>
+            <text x="325" y="135" text-anchor="middle" fill="white" font-size="10">LLM 提取关系</text>
+            <text x="325" y="150" text-anchor="middle" fill="white" font-size="10">边=关系</text>
+            
+            <line x1="400" y1="125" x2="450" y2="125" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="450" y="90" width="150" height="70" rx="8" fill="#f59e0b"/>
+            <text x="525" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">3. 社区检测</text>
+            <text x="525" y="135" text-anchor="middle" fill="white" font-size="10">Louvain 算法</text>
+            <text x="525" y="150" text-anchor="middle" fill="white" font-size="10">发现实体集群</text>
+            
+            <line x1="600" y1="125" x2="650" y2="125" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="650" y="90" width="110" height="70" rx="8" fill="#8b5cf6"/>
+            <text x="705" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">4. 社区摘要</text>
+            <text x="705" y="135" text-anchor="middle" fill="white" font-size="10">LLM 生成摘要</text>
+            <text x="705" y="150" text-anchor="middle" fill="white" font-size="10">层次化摘要</text>
+            
+            <!-- 查询阶段 -->
+            <rect x="30" y="200" width="740" height="100" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="60" y="225" fill="#92400e" font-size="13" font-weight="bold">查询阶段（在线）</text>
+            
+            <rect x="60" y="245" width="140" height="40" rx="6" fill="#3b82f6"/>
+            <text x="130" y="270" text-anchor="middle" fill="white" font-size="11" font-weight="bold">实体匹配</text>
+            
+            <line x1="200" y1="265" x2="240" y2="265" stroke="#64748b" stroke-width="2"/>
+            <rect x="240" y="245" width="140" height="40" rx="6" fill="#10b981"/>
+            <text x="310" y="270" text-anchor="middle" fill="white" font-size="11" font-weight="bold">图谱遍历</text>
+            
+            <line x1="380" y1="265" x2="420" y2="265" stroke="#64748b" stroke-width="2"/>
+            <rect x="420" y="245" width="140" height="40" rx="6" fill="#f59e0b"/>
+            <text x="490" y="270" text-anchor="middle" fill="white" font-size="11" font-weight="bold">社区摘要检索</text>
+            
+            <line x1="560" y1="265" x2="600" y2="265" stroke="#64748b" stroke-width="2"/>
+            <rect x="600" y="245" width="160" height="40" rx="6" fill="#8b5cf6"/>
+            <text x="680" y="270" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LLM 生成回答</text>
+        </svg>
+    </div>
+
+    <h2>三、知识图谱构建</h2>
+    <p>知识图谱构建是 Graph RAG 的第一步。它从文档中提取实体和关系，构建一个以实体为节点、以关系为边的图结构。</p>
+
+    <p>实体提取可以使用命名实体识别（NER）模型，也可以使用 LLM。Microsoft 的 GraphRAG 使用 LLM 来提取实体，因为 LLM 能够更灵活地识别各种类型的实体，包括专业术语和领域概念。</p>
+
+    <p>关系提取则需要判断两个实体之间是否存在关联。最简单的方法是共现分析：如果两个实体在同一段落或同一文档中同时出现，认为它们之间存在关系。更高级的方法是使用关系抽取模型，识别具体的关系类型（如"属于"、"开发"、"使用"等）。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">实体关系提取示意</text>
+            
+            <!-- 文档文本 -->
+            <rect x="30" y="50" width="300" height="60" rx="8" fill="#f1f5f9" stroke="#64748b"/>
+            <text x="180" y="75" text-anchor="middle" fill="#1a1a2e" font-size="11">"Google 提出了 Transformer 模型"</text>
+            <text x="180" y="95" text-anchor="middle" fill="#666" font-size="10">实体: Google, Transformer</text>
+            
+            <line x1="330" y1="80" x2="390" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 提取结果 -->
+            <rect x="390" y="50" width="360" height="120" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="570" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">提取的实体与关系</text>
+            
+            <circle cx="500" cy="130" r="25" fill="#3b82f6"/>
+            <text x="500" y="135" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Google</text>
+            
+            <circle cx="640" cy="130" r="25" fill="#10b981"/>
+            <text x="640" y="135" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Transformer</text>
+            
+            <line x1="525" y1="130" x2="615" y2="130" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="570" y="120" text-anchor="middle" fill="#64748b" font-size="9">提出了</text>
+        </svg>
+    </div>
+
+    <h3>3.1 代码实现</h3>
+    <div class="code-file">07_advanced_rag/01_graph_rag/graph_rag.py</div>
+<pre><code class="language-python">class KnowledgeGraphBuilder:
+    """
+    知识图谱构建器：从文档中提取实体和关系。
+
+    原理：
+    1. 从文本中提取命名实体
+    2. 识别实体之间的关系
+    3. 构建图结构（节点=实体，边=关系）
+    4. 使用社区检测算法发现实体集群
+    """
+
+    def __init__(self):
+        self.adjacency: Dict[str, set] = defaultdict(set)
+        self.entities: Dict[str, Entity] = {}
+        self.relationships: List[Relationship] = []
+
+    def extract_entities(self, text: str) -> List[Entity]:
+        """从文本中提取实体"""
+        entities = []
+        patterns = {
+            "technology": r"(?:Transformer|BERT|GPT|RAG|LLM)",
+            "organization": r"(?:Google|OpenAI|Microsoft|Meta)",
+            "concept": r"(?:注意力机制|自注意力|预训练|微调)",
+        }
+        for entity_type, pattern in patterns.items():
+            for match in re.finditer(pattern, text):
+                name = match.group()
+                if name not in self.entities:
+                    entity = Entity(name=name, entity_type=entity_type)
+                    entities.append(entity)
+                    self.entities[name] = entity
+        return entities
+
+    def extract_relationships(self, text, entities):
+        """基于共现分析提取关系"""
+        paragraphs = re.split(r"\n\n+", text)
+        for para in paragraphs:
+            para_entities = [e for e in entities if e.name in para]
+            for i in range(len(para_entities)):
+                for j in range(i + 1, len(para_entities)):
+                    source, target = para_entities[i].name, para_entities[j].name
+                    self.adjacency[source].add(target)
+                    self.adjacency[target].add(source)
+                    self.relationships.append(Relationship(
+                        source=source, target=target,
+                        description="在文档中共同出现",
+                    ))</code></pre>
+
+    <h2>四、社区检测与层次化摘要</h2>
+    <p>社区检测是 Graph RAG 的关键创新之一。它使用 Louvain 等社区检测算法，将知识图谱中的实体划分为多个社区（集群）。每个社区包含一组紧密相关的实体。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">社区检测与层次化摘要</text>
+            
+            <!-- 原始图 -->
+            <text x="150" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">原始知识图谱</text>
+            
+            <!-- 社区 1 -->
+            <circle cx="80" cy="130" r="15" fill="#3b82f6"/>
+            <text x="80" y="134" text-anchor="middle" fill="white" font-size="7">T</text>
+            <circle cx="120" cy="110" r="12" fill="#3b82f6"/>
+            <text x="120" y="114" text-anchor="middle" fill="white" font-size="7">G</text>
+            <circle cx="130" cy="150" r="12" fill="#3b82f6"/>
+            <text x="130" y="154" text-anchor="middle" fill="white" font-size="7">B</text>
+            <line x1="80" y1="130" x2="120" y2="110" stroke="#3b82f6" stroke-width="1"/>
+            <line x1="80" y1="130" x2="130" y2="150" stroke="#3b82f6" stroke-width="1"/>
+            
+            <!-- 社区 2 -->
+            <circle cx="280" cy="120" r="15" fill="#10b981"/>
+            <text x="280" y="124" text-anchor="middle" fill="white" font-size="7">GP</text>
+            <circle cx="320" cy="145" r="12" fill="#10b981"/>
+            <text x="320" y="149" text-anchor="middle" fill="white" font-size="7">O</text>
+            <line x1="280" y1="120" x2="320" y2="145" stroke="#10b981" stroke-width="1"/>
+            
+            <!-- 社区 3 -->
+            <circle cx="450" cy="130" r="15" fill="#f59e0b"/>
+            <text x="450" y="134" text-anchor="middle" fill="white" font-size="7">R</text>
+            <circle cx="490" cy="110" r="12" fill="#f59e0b"/>
+            <text x="490" y="114" text-anchor="middle" fill="white" font-size="7">M</text>
+            <line x1="450" y1="130" x2="490" y2="110" stroke="#f59e0b" stroke-width="1"/>
+            
+            <!-- 社区间连接 -->
+            <line x1="130" y1="150" x2="280" y2="120" stroke="#64748b" stroke-width="0.5" stroke-dasharray="3,3"/>
+            
+            <!-- 右侧：层次化摘要 -->
+            <text x="620" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">层次化摘要</text>
+            
+            <rect x="560" y="75" width="160" height="30" rx="6" fill="#8b5cf6"/>
+            <text x="640" y="95" text-anchor="middle" fill="white" font-size="10">Level 0: 所有社区摘要</text>
+            
+            <line x1="640" y1="105" x2="640" y2="125" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="570" y="125" width="60" height="25" rx="4" fill="#3b82f6"/>
+            <text x="600" y="142" text-anchor="middle" fill="white" font-size="8">社区 1</text>
+            
+            <rect x="640" y="125" width="60" height="25" rx="4" fill="#10b981"/>
+            <text x="670" y="142" text-anchor="middle" fill="white" font-size="8">社区 2</text>
+            
+            <rect x="710" y="125" width="60" height="25" rx="4" fill="#f59e0b"/>
+            <text x="740" y="142" text-anchor="middle" fill="white" font-size="8">社区 3</text>
+        </svg>
+    </div>
+
+    <h3>4.1 社区检测算法</h3>
+    <p>Louvain 算法是一种贪婪优化算法，通过最大化模块度（Modularity）来发现图中的社区结构。模块度衡量的是社区内部连接密度与随机期望连接密度之间的差异。模块度越高，社区划分质量越好。</p>
+
+    <h3>4.2 层次化摘要</h3>
+    <p>Graph RAG 的创新之处在于为每个社区生成摘要。它使用 LLM 为每个社区生成一段简洁的描述，概括该社区中所有实体的核心信息。然后，这些社区摘要又被组织为更高层次的摘要，形成一个层次化的知识结构。</p>
+
+    <p>这种层次化摘要的优势在于：当用户提出一个高层次的问题（如"这份数据集主要说了什么"）时，系统可以使用顶层摘要来回答；当用户提出具体的问题时，系统可以定位到相关社区，使用更细粒度的信息来回答。</p>
+
+    <h3>4.3 代码实现</h3>
+<pre><code class="language-python">class KnowledgeGraphBuilder:
+    def detect_communities(self) -> List[Community]:
+        """使用 Louvain 算法进行社区划分"""
+        if len(self.adjacency) == 0:
+            return []
+
+        try:
+            from community import best_partition
+            import networkx as nx
+            temp_g = nx.Graph()
+            for node, neighbors in self.adjacency.items():
+                for nb in neighbors:
+                    temp_g.add_edge(node, nb)
+            partition = best_partition(temp_g)
+
+            community_map = {}
+            for node, comm_id in partition.items():
+                community_map.setdefault(comm_id, []).append(node)
+
+            communities = []
+            for comm_id, members in community_map.items():
+                community = Community(
+                    community_id=comm_id,
+                    entities=members,
+                    summary=f"社区 {comm_id}: 包含 {len(members)} 个实体",
+                )
+                communities.append(community)
+            return communities
+
+        except ImportError:
+            return [Community(
+                community_id=0,
+                entities=list(self.adjacency.keys()),
+                summary="默认社区",
+            )]</code></pre>
+
+    <h2>五、Graph RAG 查询</h2>
+    <p>Graph RAG 的查询流程与传统 RAG 有本质不同。它不是在文档片段中搜索相似内容，而是在知识图谱中定位相关实体，然后通过图谱遍历找到关联信息，最后结合社区摘要生成回答。</p>
+
+    <h3>5.1 查询步骤</h3>
+    <ol>
+        <li><strong>实体匹配</strong>：从用户问题中提取与知识图谱中实体匹配的关键词</li>
+        <li><strong>图谱遍历</strong>：从匹配到的实体出发，遍历其邻居节点，收集相关信息</li>
+        <li><strong>社区检索</strong>：找到包含这些实体的社区，获取社区摘要</li>
+        <li><strong>上下文构建</strong>：将实体描述、关系信息和社区摘要组合为上下文</li>
+        <li><strong>LLM 生成</strong>：将上下文和问题发送给 LLM 生成回答</li>
+    </ol>
+
+    <div class="diagram-container">
+        <svg width="780" height="260" viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Graph RAG 查询流程示例</text>
+            
+            <!-- 用户问题 -->
+            <rect x="30" y="50" width="140" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">用户问题</text>
+            <text x="100" y="90" text-anchor="middle" fill="white" font-size="9">"X 和 Y 的关系?"</text>
+            
+            <line x1="170" y1="75" x2="210" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 实体匹配 -->
+            <rect x="210" y="50" width="140" height="50" rx="8" fill="#3b82f6"/>
+            <text x="280" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">实体匹配</text>
+            <text x="280" y="90" text-anchor="middle" fill="white" font-size="9">找到 X, Y 节点</text>
+            
+            <line x1="350" y1="75" x2="390" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 图谱遍历 -->
+            <rect x="390" y="50" width="140" height="50" rx="8" fill="#10b981"/>
+            <text x="460" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">图谱遍历</text>
+            <text x="460" y="90" text-anchor="middle" fill="white" font-size="9">发现 X → Z → Y</text>
+            
+            <line x1="530" y1="75" x2="570" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 社区摘要 -->
+            <rect x="570" y="50" width="140" height="50" rx="8" fill="#f59e0b"/>
+            <text x="640" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">社区摘要</text>
+            <text x="640" y="90" text-anchor="middle" fill="white" font-size="9">获取社区描述</text>
+            
+            <!-- 下方：路径示意 -->
+            <rect x="210" y="130" width="500" height="110" rx="10" fill="#f0f9ff" stroke="#0ea5e9"/>
+            <text x="460" y="155" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="bold">图谱中的路径发现</text>
+            
+            <circle cx="300" cy="200" r="20" fill="#3b82f6"/>
+            <text x="300" y="205" text-anchor="middle" fill="white" font-size="9" font-weight="bold">X</text>
+            
+            <circle cx="460" cy="200" r="20" fill="#8b5cf6"/>
+            <text x="460" y="205" text-anchor="middle" fill="white" font-size="9" font-weight="bold">Z</text>
+            
+            <circle cx="620" cy="200" r="20" fill="#10b981"/>
+            <text x="620" y="205" text-anchor="middle" fill="white" font-size="9" font-weight="bold">Y</text>
+            
+            <line x1="320" y1="200" x2="440" y2="200" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)"/>
+            <line x1="480" y1="200" x2="600" y2="200" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow)"/>
+            
+            <text x="380" y="190" text-anchor="middle" fill="#ef4444" font-size="8">关系 1</text>
+            <text x="540" y="190" text-anchor="middle" fill="#ef4444" font-size="8">关系 2</text>
+            
+            <text x="460" y="230" text-anchor="middle" fill="#666" font-size="10">发现 X 和 Y 通过 Z 间接关联</text>
+        </svg>
+    </div>
+
+    <h3>5.2 代码实现</h3>
+<pre><code class="language-python">class GraphRAGQueryEngine:
+    """Graph RAG 查询引擎：基于知识图谱的增强检索"""
+
+    def __init__(self, graph_builder, llm_fn=None):
+        self.adjacency = graph_builder.adjacency
+        self.entities = graph_builder.entities
+        self.communities = graph_builder.communities
+
+    def query(self, question: str) -> GraphRAGResult:
+        # 1. 实体匹配
+        query_entities = self._find_relevant_entities(question)
+        # 2. 图谱遍历
+        neighbors = self._find_neighbors(query_entities)
+        # 3. 社区检索
+        related = self._find_related_communities(query_entities)
+        # 4. 上下文构建
+        context = self._build_context(query_entities, neighbors, related)
+        # 5. LLM 生成
+        answer = self.llm_fn(question, context)
+        return GraphRAGResult(answer=answer, entities_used=query_entities)</code></pre>
+
+    <h2>六、Graph RAG vs 传统 RAG 全面对比</h2>
+
+    <p>Graph RAG 与传统 RAG 在技术路线和适用场景上有本质区别。传统 RAG 关注的是"如何在文档中找到相关内容"，而 Graph RAG 关注的是"如何理解文档集合的整体结构和关联"。两种技术并非互斥关系，而是互补关系。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>传统 RAG</th><th>Graph RAG</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>检索方式</strong></td>
+                <td>向量相似度</td>
+                <td>图谱遍历 + 向量</td>
+            </tr>
+            <tr>
+                <td><strong>上下文构建</strong></td>
+                <td>Top-K 文档片段</td>
+                <td>实体 + 关系 + 社区摘要</td>
+            </tr>
+            <tr>
+                <td><strong>全局理解</strong></td>
+                <td>弱（局部匹配）</td>
+                <td>强（全局结构）</td>
+            </tr>
+            <tr>
+                <td><strong>复杂查询</strong></td>
+                <td>一般</td>
+                <td>优秀</td>
+            </tr>
+            <tr>
+                <td><strong>计算开销</strong></td>
+                <td>低</td>
+                <td>高（图谱构建 + LLM 摘要）</td>
+            </tr>
+            <tr>
+                <td><strong>适用场景</strong></td>
+                <td>文档问答</td>
+                <td>综合分析/摘要/跨文档推理</td>
+            </tr>
+            <tr>
+                <td><strong>数据更新</strong></td>
+                <td>增量索引</td>
+                <td>需要重建图谱</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>七、Graph RAG 的适用场景</h2>
+    <p>Graph RAG 并非在所有场景下都优于传统 RAG。它的优势主要体现在需要全局理解和综合分析的场景中。在实际项目中，应该根据具体的业务需求和技术条件来选择合适的方案。</p>
+
+    <ul>
+        <li><strong>文档摘要</strong>：当需要回答"这份数据集主要说了什么"时，Graph RAG 可以通过社区摘要提供全面的概述</li>
+        <li><strong>跨文档推理</strong>：当答案需要综合多个文档的信息时，Graph RAG 可以通过图谱遍历发现跨文档关联</li>
+        <li><strong>主题发现</strong>：当需要发现文档集合中的主要主题和子主题时，社区检测可以自动发现主题集群</li>
+        <li><strong>实体关系查询</strong>：当需要回答"X 和 Y 之间有什么关系"时，Graph RAG 可以直接在图谱中找到路径</li>
+    </ul>
+
+    <div class="note note-warn">
+        <div class="note-title">⚠️ 成本考虑</div>
+        <p>Graph RAG 的构建成本显著高于传统 RAG。实体提取、关系提取和社区摘要都需要调用 LLM，对于大规模文档集合来说，这可能是一笔不小的开销。建议先评估业务需求，只有在传统 RAG 无法满足全局理解需求时，才考虑使用 Graph RAG。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>Graph RAG 是 Microsoft 提出的一种将知识图谱与 RAG 结合的高级检索技术。它通过构建知识图谱、进行社区检测和层次化摘要，实现了传统 RAG 无法提供的全局理解和综合分析能力。</p>
+
+    <p>Graph RAG 的核心创新在于：使用知识图谱来表示文档的结构信息，使用社区检测来发现文档中的主题集群，使用层次化摘要来提供不同粒度的理解。这使得 Graph RAG 在文档摘要、跨文档推理和主题发现等场景下表现优异。</p>
+
+    <p>然而，Graph RAG 的构建成本较高，需要调用 LLM 进行实体提取、关系提取和社区摘要。在实际应用中，应该根据业务需求权衡收益和成本，选择合适的方案。对于大多数常规文档问答场景，传统 RAG 已经足够；只有当需要全局理解能力时，才值得投入 Graph RAG 的额外成本。</p>
+
+    <p>总的来说，Graph RAG 代表了 RAG 技术从"基于相似度匹配"向"基于结构理解"的重要演进方向，值得持续关注和研究。在实际项目中，可以先用传统 RAG 快速上线，再根据用户反馈和业务需求决定是否引入 Graph RAG 来增强全局理解能力。</p>
+
+    <p>在下一节 7.2 中，我们将学习 Agentic RAG，一种将 Agent 技术与 RAG 结合的新型架构。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

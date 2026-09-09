@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.1 MCP 协议概述与设计理念 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.1 MCP 协议概述与设计理念</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 MCP 协议的核心概念和设计动机</li>
+        <li>掌握 MCP 协议的三层架构（Transport / Protocol / Capabilities）</li>
+        <li>了解 MCP 的生命周期（Initialize → 能力协商 → 交互 → 关闭）</li>
+        <li>掌握 JSON-RPC 2.0 消息格式和三大能力（Tools / Resources / Prompts）</li>
+    </ul>
+
+    <h2>一、什么是 MCP 协议？</h2>
+    <p>MCP（Model Context Protocol）是 Anthropic 于 2024 年 11 月提出的开放协议，旨在标准化 AI 应用与外部数据源和工具的集成方式。在 MCP 出现之前，每个 AI 应用都需要为不同的数据源和工具编写专用的集成代码，导致大量的重复工作和集成成本。MCP 通过统一的协议层，解决了 AI 应用与外部系统之间的"最后一公里"连接问题。</p>
+
+    <p>MCP 的核心设计理念是：用统一的协议替代点对点的集成。就像 USB-C 接口统一了各种设备的物理连接方式一样，MCP 试图统一 AI 应用与外部系统之间的软件连接方式。通过 MCP，开发者只需要编写一次 MCP 服务器（暴露数据源或工具），就可以被任何支持 MCP 的 AI 客户端使用，无需为每个 AI 应用单独编写集成代码。</p>
+
+    <p>MCP 协议基于 JSON-RPC 2.0，支持三种传输层：stdio（标准输入输出，适合本地进程间通信）、SSE（Server-Sent Events，适合远程通信）和 HTTP（适合 Web 服务）。协议定义了三种核心能力：Tools（工具调用）、Resources（资源读取）和 Prompts（模板提示词），涵盖了 AI 应用与外部系统交互的主要场景。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="240" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP 协议三层架构</text>
+            
+            <!-- 应用层 -->
+            <rect x="30" y="50" width="360" height="50" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="210" y="72" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">应用层（AI 客户端）</text>
+            <text x="210" y="90" text-anchor="middle" fill="#2563eb" font-size="10">Claude Desktop / Cursor / IDE 插件</text>
+            
+            <line x1="210" y1="100" x2="210" y2="125" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 协议层 -->
+            <rect x="30" y="125" width="360" height="50" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="210" y="147" text-anchor="middle" fill="#5b21b6" font-size="13" font-weight="bold">协议层（MCP）</text>
+            <text x="210" y="165" text-anchor="middle" fill="#7c3aed" font-size="10">JSON-RPC 2.0 over stdio / SSE / HTTP</text>
+            
+            <line x1="210" y1="175" x2="210" y2="200" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 数据层 -->
+            <rect x="30" y="200" width="360" height="35" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="210" y="223" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">数据层（MCP 服务器）</text>
+            
+            <!-- 右侧：三大能力 -->
+            <rect x="430" y="50" width="340" height="190" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="600" y="75" text-anchor="middle" fill="#1a1a2e" font-size="13" font-weight="bold">三大核心能力</text>
+            
+            <rect x="450" y="90" width="140" height="55" rx="8" fill="#3b82f6"/>
+            <text x="520" y="112" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🔧 Tools</text>
+            <text x="465" y="135" fill="white" font-size="9">调用外部工具（API/函数）</text>
+            
+            <rect x="610" y="90" width="140" height="55" rx="8" fill="#10b981"/>
+            <text x="680" y="112" text-anchor="middle" fill="white" font-size="12" font-weight="bold">📄 Resources</text>
+            <text x="625" y="135" fill="white" font-size="9">读取文件/数据库/文档</text>
+            
+            <rect x="530" y="165" width="140" height="55" rx="8" fill="#f59e0b"/>
+            <text x="600" y="187" text-anchor="middle" fill="white" font-size="12" font-weight="bold">💬 Prompts</text>
+            <text x="545" y="210" fill="white" font-size="9">可复用的 Prompt 模板</text>
+        </svg>
+    </div>
+
+    <h2>二、为什么需要 MCP 协议？</h2>
+    <p>在 MCP 出现之前，AI 应用与外部系统的集成存在严重的碎片化问题。每个 AI 应用（如 Claude、ChatGPT、Cursor）都需要为每个数据源（如 GitHub、Google Drive、Slack）编写专用的集成代码。如果有 N 个 AI 应用和 M 个数据源，就需要编写 N×M 个集成适配器。这种点对点的集成模式导致了大量的重复工作、维护成本高、生态系统碎片化等问题。</p>
+
+    <p>MCP 通过引入统一的协议层，将集成复杂度从 N×M 降低到 N+M。每个数据源只需要实现一次 MCP 服务器，就可以被所有支持 MCP 的 AI 客户端使用。同样，每个 AI 客户端只需要实现一次 MCP 客户端，就可以连接所有 MCP 服务器。这种统一的方式大幅降低了集成成本，促进了生态系统的健康发展。</p>
+
+    <p>此外，MCP 协议的设计考虑了安全性、可扩展性和互操作性。它支持能力协商（客户端和服务器在初始化时交换各自支持的能力），支持订阅机制（客户端可以订阅资源变更通知），支持版本兼容性检查，确保不同版本的客户端和服务器能够正确协作。</p>
+
+    <table>
+        <thead>
+            <tr><th>对比维度</th><th>MCP 之前</th><th>MCP 之后</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>集成复杂度</strong></td><td>N×M（每个应用×每个数据源）</td><td>N+M（协议层统一）</td></tr>
+            <tr><td><strong>维护成本</strong></td><td>每个集成需要单独维护</td><td>只需维护 MCP 服务器</td></tr>
+            <tr><td><strong>生态系统</strong></td><td>碎片化，各自为战</td><td>统一标准，互操作性强</td></tr>
+            <tr><td><strong>安全性</strong></td><td>每个集成独立实现安全</td><td>统一的安全模型和权限控制</td></tr>
+            <tr><td><strong>发现机制</strong></td><td>手动配置每个集成</td><td>自动发现工具、资源和 Prompts</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">N×M 集成 vs N+M 协议</text>
+            
+            <!-- N×M -->
+            <text x="200" y="55" text-anchor="middle" fill="#ef4444" font-size="12" font-weight="bold">之前: N×M 集成（混乱）</text>
+            <rect x="40" y="70" width="80" height="35" rx="6" fill="#3b82f6"/>
+            <text x="80" y="92" text-anchor="middle" fill="white" font-size="10">AI 应用 A</text>
+            <rect x="40" y="115" width="80" height="35" rx="6" fill="#8b5cf6"/>
+            <text x="80" y="137" text-anchor="middle" fill="white" font-size="10">AI 应用 B</text>
+            <rect x="40" y="160" width="80" height="35" rx="6" fill="#f59e0b"/>
+            <text x="80" y="182" text-anchor="middle" fill="white" font-size="10">AI 应用 C</text>
+            
+            <rect x="300" y="70" width="80" height="35" rx="6" fill="#10b981"/>
+            <text x="340" y="92" text-anchor="middle" fill="white" font-size="10">数据源 1</text>
+            <rect x="300" y="115" width="80" height="35" rx="6" fill="#ef4444"/>
+            <text x="340" y="137" text-anchor="middle" fill="white" font-size="10">数据源 2</text>
+            <rect x="300" y="160" width="80" height="35" rx="6" fill="#0ea5e9"/>
+            <text x="340" y="182" text-anchor="middle" fill="white" font-size="10">数据源 3</text>
+            
+            <line x1="120" y1="85" x2="300" y2="85" stroke="#ef4444" stroke-width="0.8" stroke-dasharray="3,2"/>
+            <line x1="120" y1="130" x2="300" y2="130" stroke="#ef4444" stroke-width="0.8" stroke-dasharray="3,2"/>
+            <line x1="120" y1="175" x2="300" y2="175" stroke="#ef4444" stroke-width="0.8" stroke-dasharray="3,2"/>
+            <line x1="120" y1="85" x2="300" y2="130" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="2,3"/>
+            <line x1="120" y1="130" x2="300" y2="85" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="2,3"/>
+            <text x="210" y="145" text-anchor="middle" fill="#ef4444" font-size="9">3×3=9 个集成</text>
+            
+            <!-- N+M -->
+            <text x="580" y="55" text-anchor="middle" fill="#10b981" font-size="12" font-weight="bold">之后: N+M 协议（统一）</text>
+            <rect x="440" y="70" width="80" height="120" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="480" y="100" text-anchor="middle" fill="#1e40af" font-size="10">AI 应用 A</text>
+            <text x="480" y="120" text-anchor="middle" fill="#1e40af" font-size="10">AI 应用 B</text>
+            <text x="480" y="140" text-anchor="middle" fill="#1e40af" font-size="10">AI 应用 C</text>
+            <text x="480" y="165" text-anchor="middle" fill="#1e40af" font-size="9">MCP 客户端</text>
+            
+            <rect x="600" y="70" width="80" height="120" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="640" y="100" text-anchor="middle" fill="#065f46" font-size="10">数据源 1</text>
+            <text x="640" y="120" text-anchor="middle" fill="#065f46" font-size="10">数据源 2</text>
+            <text x="640" y="140" text-anchor="middle" fill="#065f46" font-size="10">数据源 3</text>
+            <text x="640" y="165" text-anchor="middle" fill="#065f46" font-size="9">MCP 服务器</text>
+            
+            <line x1="520" y1="130" x2="600" y2="130" stroke="#10b981" stroke-width="3"/>
+            <text x="560" y="122" text-anchor="middle" fill="#10b981" font-size="9">MCP 协议</text>
+            <text x="560" y="138" text-anchor="middle" fill="#10b981" font-size="9">3+3=6 个实现</text>
+        </svg>
+    </div>
+
+    <h2>三、MCP 协议生命周期</h2>
+    <p>MCP 协议的生命周期包含四个阶段：初始化（Initialize）、能力协商、交互和关闭。在初始化阶段，客户端向服务器发送 initialize 请求，包含客户端信息和协议版本。服务器回复其能力（支持的 Tools、Resources、Prompts）和服务器信息。随后客户端发送 initialized 通知，确认握手完成。在能力协商阶段，客户端可以通过 tools/list、resources/list、prompts/list 等方法获取服务器提供的能力列表。在交互阶段，客户端可以调用工具（tools/call）、读取资源（resources/read）和获取 Prompt（prompts/get）。最后，在关闭阶段，任何一方都可以断开连接。</p>
+
+    <p>这种生命周期设计确保了客户端和服务器在开始正式交互之前，已经就协议版本和支持的能力达成了一致。能力协商机制使得不同版本的客户端和服务器可以互操作：即使客户端不支持某个能力，也不会影响其他能力的正常使用。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="300" viewBox="0 0 780 300" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP 协议生命周期</text>
+            
+            <!-- 客户端 -->
+            <rect x="30" y="50" width="100" height="230" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="80" y="75" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">客户端</text>
+            
+            <!-- 服务器 -->
+            <rect x="650" y="50" width="100" height="230" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="700" y="75" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">服务器</text>
+            
+            <!-- 阶段标签 -->
+            <rect x="150" y="50" width="480" height="40" rx="5" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="75" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">阶段 1: Initialize（初始化握手）</text>
+            
+            <rect x="150" y="100" width="480" height="40" rx="5" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="390" y="125" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">阶段 2: 能力协商（List 能力）</text>
+            
+            <rect x="150" y="150" width="480" height="40" rx="5" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="175" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">阶段 3: 交互（Call / Read / Get）</text>
+            
+            <rect x="150" y="200" width="480" height="40" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="225" text-anchor="middle" fill="#64748b" font-size="11" font-weight="bold">阶段 4: 关闭</text>
+            
+            <!-- 消息流 -->
+            <line x1="130" y1="65" x2="650" y2="65" stroke="#3b82f6" stroke-width="1.5"/>
+            <polygon points="650,60 660,65 650,70" fill="#3b82f6"/>
+            <text x="390" y="58" text-anchor="middle" fill="#3b82f6" font-size="9">initialize 请求</text>
+            
+            <line x1="650" y1="85" x2="130" y2="85" stroke="#10b981" stroke-width="1.5"/>
+            <polygon points="130,80 120,85 130,90" fill="#10b981"/>
+            <text x="390" y="95" text-anchor="middle" fill="#10b981" font-size="9">capabilities 响应</text>
+            
+            <line x1="130" y1="115" x2="650" y2="115" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <text x="390" y="110" text-anchor="middle" fill="#8b5cf6" font-size="9">tools/list → 能力列表</text>
+            
+            <line x1="130" y1="165" x2="650" y2="165" stroke="#10b981" stroke-width="1.5"/>
+            <polygon points="650,160 660,165 650,170" fill="#10b981"/>
+            <text x="390" y="160" text-anchor="middle" fill="#10b981" font-size="9">tools/call → 执行工具</text>
+            
+            <line x1="130" y1="215" x2="650" y2="215" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <text x="390" y="208" text-anchor="middle" fill="#ef4444" font-size="9">断开连接</text>
+        </svg>
+    </div>
+
+    <h2>四、JSON-RPC 2.0 消息格式</h2>
+    <p>MCP 协议基于 JSON-RPC 2.0，这是一种轻量级的远程过程调用协议。JSON-RPC 2.0 定义了三种消息类型：请求（Request）、响应（Response）和通知（Notification）。请求包含方法名和参数，期望收到响应；响应包含请求的结果或错误信息；通知是单向消息，不需要响应。</p>
+
+    <p>在 MCP 中，客户端通过发送请求来调用服务器的方法（如 initialize、tools/list、tools/call），服务器通过响应返回结果或错误。客户端还可以通过发送通知来告知服务器某些事件（如 initialized 通知）。JSON-RPC 2.0 的消息格式简洁明了，易于实现和调试，是 MCP 协议选择它作为底层协议的重要原因。</p>
+
+    <h3>4.1 JSON-RPC 消息结构</h3>
+    <p>JSON-RPC 2.0 定义了三种消息类型：请求（Request）包含方法名和参数，期望收到响应；响应（Response）包含请求的结果或错误信息；通知（Notification）是单向消息，不需要响应。在 MCP 中，客户端通过发送请求来调用服务器的方法，服务器通过响应返回结果或错误，客户端还可以通过发送通知来告知服务器某些事件。</p>
+
+    <h4>请求消息</h4>
+    <div class="code-file">JSON-RPC 请求格式</div>
+<pre><code class="language-json">{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+        "protocolVersion": "2024-11-05",
+        "capabilities": {},
+        "clientInfo": {"name": "demo-client", "version": "1.0.0"}
+    }
+}</code></pre>
+
+    <h4>响应和通知消息</h4>
+    <div class="code-file">JSON-RPC 响应与通知格式</div>
+<pre><code class="language-json">// 响应消息（成功）
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "protocolVersion": "2024-11-05",
+        "capabilities": {"tools": {"listChanged": true}},
+        "serverInfo": {"name": "demo-server", "version": "1.0.0"}
+    }
+}
+
+// 响应消息（错误）
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "error": {"code": -32601, "message": "Method not found"}
+}
+
+// 通知消息（不需要响应）
+{"jsonrpc": "2.0", "method": "notifications/initialized"}</code></pre>
+
+    <h3>4.2 Python 实现示例</h3>
+    <div class="code-file">Python（MCP 消息构建）</div>
+<pre><code class="language-python">class MCPMessage:
+    """MCP JSON-RPC 消息"""
+    def __init__(self, method=None, params=None, id=None):
+        self.jsonrpc = "2.0"
+        self.id = id
+        self.method = method
+        self.params = params
+
+    def to_dict(self):
+        data = {"jsonrpc": "2.0"}
+        if self.id is not None:
+            data["id"] = self.id
+        if self.method:
+            data["method"] = self.method
+            if self.params:
+                data["params"] = self.params
+        return data</code></pre>
+
+    <h2>五、三大核心能力</h2>
+    <p>MCP 协议定义了三种核心能力，分别对应 AI 应用与外部系统交互的三种主要场景。这三种能力通过统一的 JSON-RPC 2.0 协议暴露，客户端可以在能力协商阶段发现服务器支持哪些能力，然后在交互阶段按需调用。</p>
+
+    <p><strong>Tools（工具调用）</strong>：允许 AI 客户端调用服务器提供的工具。每个工具包含名称、描述和输入参数 Schema。客户端通过 tools/list 获取可用工具列表，通过 tools/call 执行工具调用并获取结果。这是最常用的能力，对应 Function Calling 的场景。</p>
+
+    <p><strong>Resources（资源读取）</strong>：允许 AI 客户端读取服务器提供的资源（如文件、数据库记录、API 数据等）。每个资源通过 URI 标识，客户端通过 resources/list 获取资源列表，通过 resources/read 读取资源内容。资源还支持订阅机制，当资源内容变更时，服务器可以主动通知客户端。</p>
+
+    <p><strong>Prompts（Prompt 模板）</strong>：允许 AI 客户端获取服务器提供的可复用 Prompt 模板。每个 Prompt 包含名称、描述和参数列表。客户端通过 prompts/list 获取可用 Prompt 列表，通过 prompts/get 获取填充参数后的 Prompt 内容。这在需要标准化 AI 交互流程的场景中非常有用。</p>
+
+    <table>
+        <thead>
+            <tr><th>能力</th><th>方法</th><th>用途</th><th>类比</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Tools</strong></td><td>tools/list, tools/call</td><td>调用外部工具（API/函数）</td><td>Function Calling</td></tr>
+            <tr><td><strong>Resources</strong></td><td>resources/list, resources/read</td><td>读取文件/数据库/文档内容</td><td>文件读取</td></tr>
+            <tr><td><strong>Prompts</strong></td><td>prompts/list, prompts/get</td><td>获取可复用的 Prompt 模板</td><td>模板引擎</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP 三大能力使用场景</text>
+            
+            <rect x="30" y="50" width="220" height="110" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">🔧 Tools</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 天气查询 API</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 数据库操作</text>
+            <text x="50" y="140" fill="#2563eb" font-size="10">• 邮件发送</text>
+            <text x="50" y="160" fill="#2563eb" font-size="10">• 代码执行</text>
+            
+            <rect x="280" y="50" width="220" height="110" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">📄 Resources</text>
+            <text x="300" y="100" fill="#059669" font-size="10">• 文档文件读取</text>
+            <text x="300" y="120" fill="#059669" font-size="10">• 数据库记录查询</text>
+            <text x="300" y="140" fill="#059669" font-size="10">• Git 仓库内容</text>
+            <text x="300" y="160" fill="#059669" font-size="10">• 配置文件读取</text>
+            
+            <rect x="530" y="50" width="220" height="110" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="640" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">💬 Prompts</text>
+            <text x="550" y="100" fill="#b45309" font-size="10">• 代码审查模板</text>
+            <text x="550" y="120" fill="#b45309" font-size="10">• 邮件写作模板</text>
+            <text x="550" y="140" fill="#b45309" font-size="10">• 数据分析模板</text>
+            <text x="550" y="160" fill="#b45309" font-size="10">• 翻译模板</text>
+        </svg>
+    </div>
+
+    <h2>六、MCP 与 Function Calling 的关系</h2>
+    <p>MCP 和 Function Calling 解决的是不同层面的问题。Function Calling 是 LLM 提供商（如 OpenAI、Anthropic）提供的一种能力，允许模型在生成回答时调用外部工具。它关注的是模型如何"知道"有哪些工具可用以及如何"决定"调用哪个工具。而 MCP 是一个更高层的协议，它关注的是如何标准化 AI 应用与外部系统之间的连接方式。</p>
+
+    <p>可以把 MCP 看作是 Function Calling 的"基础设施层"。Function Calling 定义了模型与工具之间的交互方式，但没有规定工具如何被发现、如何被注册、如何被管理。MCP 则提供了完整的工具生命周期管理：工具注册、发现、调用、结果返回。在实际应用中，MCP 服务器可以通过 MCP 协议暴露工具，AI 客户端通过 MCP 协议获取工具列表并调用，然后利用 Function Calling 能力让模型决定何时调用哪个工具。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP + Function Calling 协作架构</text>
+            
+            <rect x="30" y="55" width="180" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="120" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">LLM 模型</text>
+            <text x="120" y="92" text-anchor="middle" fill="white" font-size="9">Function Calling</text>
+            
+            <line x1="210" y1="80" x2="270" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="270" y="55" width="180" height="50" rx="8" fill="#3b82f6"/>
+            <text x="360" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">AI 客户端</text>
+            <text x="360" y="92" text-anchor="middle" fill="white" font-size="9">MCP Client + 决策</text>
+            
+            <line x1="450" y1="80" x2="510" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="180" height="50" rx="8" fill="#10b981"/>
+            <text x="600" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">MCP 服务器</text>
+            <text x="600" y="92" text-anchor="middle" fill="white" font-size="9">Tools + Resources</text>
+            
+            <rect x="30" y="130" width="720" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="148" text-anchor="middle" fill="#666" font-size="10">LLM 决定调用哪个工具 → Client 通过 MCP 协议发现并调用 → Server 执行并返回结果</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 核心理解</div>
+        <p>MCP 是"连接协议"（如何连接 AI 与外部系统），Function Calling 是"调用机制"（模型如何决定调用哪个工具）。两者互补而非竞争。在实际项目中，MCP 负责暴露和管理工具，Function Calling 负责让模型智能地选择和使用这些工具。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>MCP（Model Context Protocol）是 Anthropic 提出的开放协议，通过统一的 JSON-RPC 2.0 协议层，解决了 AI 应用与外部系统之间的碎片化集成问题。它将集成复杂度从 N×M 降低到 N+M，促进了生态系统的健康发展。MCP 定义了三种核心能力：Tools（工具调用）、Resources（资源读取）和 Prompts（Prompt 模板），涵盖了 AI 应用与外部系统交互的主要场景。</p>
+
+    <p>理解 MCP 协议的三层架构（Transport / Protocol / Capabilities）和生命周期（Initialize → 能力协商 → 交互 → 关闭），是学习后续 MCP 实现和应用的基础。在下一节 9.2 中，我们将深入学习 MCP 客户端的实现，掌握如何编写一个完整的 MCP 客户端来连接 MCP 服务器。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

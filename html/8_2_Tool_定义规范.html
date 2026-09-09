@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.2 Tool 定义规范（JSON Schema、参数描述） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>8.2 Tool 定义规范（JSON Schema、参数描述）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块八：Function Calling</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>掌握 JSON Schema 在工具定义中的应用</li>
+        <li>学会编写高质量的参数描述</li>
+        <li>理解 enum、required、default 等关键约束的作用</li>
+        <li>能够设计符合规范的完整工具定义</li>
+    </ul>
+
+    <h2>一、JSON Schema 在工具定义中的作用</h2>
+    <p>在 Function Calling 中，JSON Schema 是描述工具接口格式的标准方式。它定义了工具的名称、功能描述和参数结构，是 LLM 理解如何调用工具的关键。一个规范的 JSON Schema 定义应该包含工具名称、功能描述、参数类型、参数描述、必填项等信息。</p>
+
+    <p>JSON Schema 的核心价值在于提供了一种结构化的方式来描述工具的输入格式。通过这种结构化的描述，LLM 能够准确地理解每个参数的含义、类型和约束条件，从而生成正确的工具调用请求。如果没有 JSON Schema，LLM 只能通过自然语言描述来理解工具接口，这容易导致参数类型错误或遗漏必填参数等问题。</p>
+
+    <p>在实际应用中，OpenAI、Anthropic 等主流 LLM 提供商都使用 JSON Schema 作为工具定义的标准格式。虽然具体实现细节可能有所不同，但核心结构基本一致：一个包含 type、function.name、function.description、function.parameters 的嵌套对象。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="240" viewBox="0 0 800 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">JSON Schema 结构层次</text>
+            
+            <rect x="30" y="55" width="740" height="50" rx="10" fill="#1a1a2e"/>
+            <text x="400" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="bold">顶层对象</text>
+            <text x="400" y="92" text-anchor="middle" fill="white" font-size="9">{"type": "function", "function": {...}}</text>
+            
+            <line x1="400" y1="105" x2="400" y2="125" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="60" y="125" width="220" height="45" rx="8" fill="#3b82f6"/>
+            <text x="170" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">function.name</text>
+            <text x="170" y="160" text-anchor="middle" fill="white" font-size="9">工具名称标识</text>
+            
+            <rect x="300" y="125" width="220" height="45" rx="8" fill="#10b981"/>
+            <text x="410" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">function.description</text>
+            <text x="410" y="160" text-anchor="middle" fill="white" font-size="9">工具功能描述</text>
+            
+            <rect x="540" y="125" width="220" height="45" rx="8" fill="#f59e0b"/>
+            <text x="650" y="145" text-anchor="middle" fill="white" font-size="12" font-weight="bold">function.parameters</text>
+            <text x="650" y="160" text-anchor="middle" fill="white" font-size="9">参数结构定义</text>
+            
+            <line x1="650" y1="170" x2="650" y2="195" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="540" y="195" width="220" height="40" rx="6" fill="#8b5cf6"/>
+            <text x="650" y="212" text-anchor="middle" fill="white" font-size="11">properties / required</text>
+            <text x="650" y="227" text-anchor="middle" fill="white" font-size="9">参数列表与必填项</text>
+        </svg>
+    </div>
+
+    <h2>二、参数类型与约束</h2>
+    <p>JSON Schema 支持多种数据类型：string（字符串）、integer（整数）、number（数字）、boolean（布尔值）、array（数组）、object（对象）。在工具定义中，正确选择参数类型至关重要，因为它直接影响 LLM 生成的参数值格式。</p>
+
+    <p>除了基本类型，JSON Schema 还提供了丰富的约束机制：enum（枚举）限制参数只能从预定义的值中选择；required（必填）指定哪些参数是必需的；default（默认值）为可选参数提供默认值；minimum/maximum（最小/最大值）限制数值范围；pattern（正则表达式）限制字符串格式。</p>
+
+    <p>合理使用这些约束能够显著提高 LLM 的工具调用准确率。例如，对于性别参数，使用 enum 约束 ["male", "female", "other"] 比使用 string 类型更好，因为 LLM 不会生成无效的值。对于可选参数，提供默认值可以减少 LLM 生成不完整参数组合的可能性。</p>
+
+    <table>
+        <thead>
+            <tr><th>约束类型</th><th>作用</th><th>示例</th><th>推荐场景</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>enum</strong></td><td>限制可选值</td><td>["low", "medium", "high"]</td><td>枚举型参数（优先级、状态等）</td></tr>
+            <tr><td><strong>required</strong></td><td>标记必填项</td><td>["city"]</td><td>不可缺少的核心参数</td></tr>
+            <tr><td><strong>default</strong></td><td>设置默认值</td><td>"celsius"</td><td>有合理默认值的可选参数</td></tr>
+            <tr><td><strong>minimum/max</strong></td><td>数值范围限制</td><td>minimum: 1, maximum: 100</td><td>数量、分数等数值参数</td></tr>
+            <tr><td><strong>pattern</strong></td><td>字符串格式校验</td><td>"^[0-9]{11}$"</td><td>手机号、邮箱等格式要求</td></tr>
+            <tr><td><strong>minItems/maxItems</strong></td><td>数组长度限制</td><td>minItems: 1, maxItems: 10</td><td>列表型参数</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">参数约束效果示意</text>
+            
+            <!-- 无约束 -->
+            <rect x="30" y="50" width="220" height="130" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+            <text x="140" y="75" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">无约束（不推荐）</text>
+            <text x="50" y="100" fill="#666" font-size="10">"priority": "string"</text>
+            <text x="50" y="120" fill="#ef4444" font-size="9">❌ LLM 可能生成: "urgent", "紧急", "1"</text>
+            <text x="50" y="140" fill="#ef4444" font-size="9">❌ 格式不统一，难以处理</text>
+            <text x="50" y="165" fill="#ef4444" font-size="9">❌ 需要额外的输入验证</text>
+            
+            <!-- 有约束 -->
+            <rect x="280" y="50" width="220" height="130" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">有约束（推荐）</text>
+            <text x="300" y="100" fill="#666" font-size="10">"priority": {"enum": ["low", "normal", "high"]}</text>
+            <text x="300" y="120" fill="#10b981" font-size="9">✅ LLM 只能从三个值中选择</text>
+            <text x="300" y="140" fill="#10b981" font-size="9">✅ 格式统一，易于处理</text>
+            <text x="300" y="165" fill="#10b981" font-size="9">✅ 无需额外的输入验证</text>
+            
+            <!-- 对比 -->
+            <rect x="530" y="50" width="220" height="130" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="640" y="75" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">约束类型选择指南</text>
+            <text x="550" y="100" fill="#666" font-size="10">• 有限选项 → enum</text>
+            <text x="550" y="120" fill="#666" font-size="10">• 必填参数 → required</text>
+            <text x="550" y="140" fill="#666" font-size="10">• 合理默认值 → default</text>
+            <text x="550" y="165" fill="#666" font-size="10">• 数值范围 → min/max</text>
+        </svg>
+    </div>
+
+    <h2>三、高质量参数描述编写</h2>
+    <p>参数描述是工具定义中最容易被忽视但最重要的部分。一个好的参数描述应该包含三要素：参数含义（这个参数代表什么）、格式要求（参数应该是什么格式）、示例值（举一个具体的例子）。这样的描述能够帮助 LLM 准确理解参数的用途和格式要求，从而生成正确的参数值。</p>
+
+    <p>参数描述的常见问题包括：过于简短（如只写"城市名称"而不说明格式要求）、缺少示例（LLM 不知道该用什么格式）、术语不一致（与工具其他部分的术语不匹配）、使用歧义词汇（如"时间"没有说明格式是"2024-01-15"还是"2024/01/15"还是时间戳）。这些问题会导致 LLM 生成不正确的参数值，从而影响工具调用的成功率。</p>
+
+    <p>在实际项目中，建议为每个工具定义建立参数描述模板，确保所有参数描述都遵循统一的格式和风格。对于复杂参数，可以在描述中包含格式示例和常见错误提示，帮助 LLM 更好地理解和生成正确的参数值。例如，对于日期参数，应该明确说明格式是"YYYY-MM-DD"并给出具体示例"2024-01-15"，避免 LLM 生成"2024年1月15日"或"01/15/2024"等不一致的格式。</p>
+
+    <h3>3.1 参数描述示例对比</h3>
+    <div class="code-file">08_function_calling/02_tool_definition_spec/tool_definition_spec.py</div>
+<pre><code class="language-python"># ❌ 差的参数描述（过于简短，缺少格式信息）
+{
+    "city": {
+        "type": "string",
+        "description": "城市"  # 太短，没有说明格式
+    }
+}
+
+# ✅ 好的参数描述（包含含义、格式、示例）
+{
+    "city": {
+        "type": "string",
+        "description": "城市名称，如'北京'、'上海'、'广州'，使用中文全称"
+    }
+}
+
+# ✅ 更好的参数描述（带枚举约束）
+{
+    "unit": {
+        "type": "string",
+        "description": "温度单位",
+        "enum": ["celsius", "fahrenheit"],
+        "default": "celsius"
+    }
+}</code></pre>
+
+    <h3>3.2 工具定义构建器</h3>
+    <p>为了简化工具定义的创建过程，我们可以实现一个构建器模式，通过链式调用来逐步构建完整的工具定义。这种方式比手动编写 JSON 更直观，也更容易保证定义的规范性。</p>
+
+<div class="code-file">08_function_calling/02_tool_definition_spec/tool_definition_spec.py</div>
+<pre><code class="language-python">class ToolSchemaBuilder:
+    """
+    工具 Schema 构建器：通过链式调用构建工具定义。
+    """
+
+    def __init__(self, name: str, description: str):
+        self.schema = ToolSchema(name=name, description=description)
+
+    def add_param(self, name: str, type: str, description: str,
+                  required: bool = False, enum: List[str] = None,
+                  default: Any = None) -> 'ToolSchemaBuilder':
+        """添加参数"""
+        self.schema.parameters.append(ParamDef(
+            name=name, type=type, description=description,
+            required=required, enum=enum, default=default,
+        ))
+        return self
+
+    def build(self) -> ToolSchema:
+        """构建并返回 Schema"""
+        return self.schema
+
+
+# 使用示例
+tool = ToolSchemaBuilder("send_email", "发送邮件到指定收件人") \
+    .add_param("to", "string", "收件人邮箱地址", required=True) \
+    .add_param("subject", "string", "邮件主题", required=True) \
+    .add_param("body", "string", "邮件正文内容", required=True) \
+    .add_param("priority", "string", "优先级", required=False,
+               enum=["low", "normal", "high"], default="normal") \
+    .build()</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">参数描述质量对比</text>
+            
+            <rect x="30" y="50" width="340" height="110" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+            <text x="200" y="75" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="bold">低质量描述</text>
+            <text x="50" y="100" fill="#666" font-size="10">"city": "城市" — 含义模糊</text>
+            <text x="50" y="120" fill="#666" font-size="10">"date": "日期" — 格式不明</text>
+            <text x="50" y="145" fill="#ef4444" font-size="9">⚠️ LLM 可能生成: "BJ", "beijing", "北京市"</text>
+            
+            <rect x="410" y="50" width="340" height="110" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="580" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">高质量描述</text>
+            <text x="430" y="100" fill="#666" font-size="10">"city": "城市名称，如'北京'、'上海'"</text>
+            <text x="430" y="120" fill="#666" font-size="10">"date": "日期，格式 YYYY-MM-DD，如'2024-01-15'"</text>
+            <text x="430" y="145" fill="#10b981" font-size="9">✅ LLM 生成: "北京", "2024-01-15"</text>
+        </svg>
+    </div>
+
+    <h2>四、Schema 验证</h2>
+    <p>在将工具定义发送给 LLM 之前，对其进行验证是一个好习惯。验证可以确保工具名称符合命名规范、描述不为空、参数类型有效、没有重复参数等。通过验证，我们可以在早期发现并修复定义错误，避免 LLM 因为不规范的定义而产生误解。</p>
+
+    <p>验证器应该检查以下方面：工具名称是否以字母或下划线开头且只包含字母数字下划线；工具描述是否为空或过长；参数数量是否合理（建议不超过 20 个）；每个参数的类型是否在支持的类型集合中；参数描述是否为空；参数名称是否有重复。</p>
+
+    <h3>4.1 验证器实现</h3>
+    <div class="code-file">08_function_calling/02_tool_definition_spec/tool_definition_spec.py</div>
+<pre><code class="language-python">class SchemaValidator:
+    """工具定义验证器：检查工具定义是否符合规范"""
+
+    VALID_TYPES = {"string", "integer", "number", "boolean", "array", "object"}
+    MAX_DESCRIPTION_LENGTH = 200
+    MAX_PARAMS = 20
+
+    def validate(self, schema: ToolSchema) -> List[str]:
+        """验证工具定义，返回错误列表"""
+        errors = []
+
+        # 1. 名称检查
+        if not schema.name:
+            errors.append("工具名称不能为空")
+        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', schema.name):
+            errors.append(f"工具名称 '{schema.name}' 不符合命名规范")
+
+        # 2. 描述检查
+        if not schema.description:
+            errors.append(f"工具 '{schema.name}' 缺少描述")
+        elif len(schema.description) > self.MAX_DESCRIPTION_LENGTH:
+            errors.append(f"工具描述过长（>{self.MAX_DESCRIPTION_LENGTH}字）")
+
+        # 3. 参数检查
+        seen_names = set()
+        for p in schema.parameters:
+            if p.name in seen_names:
+                errors.append(f"参数 '{p.name}' 重复定义")
+            seen_names.add(p.name)
+            if p.type not in self.VALID_TYPES:
+                errors.append(f"参数 '{p.name}' 类型 '{p.type}' 无效")
+            if not p.description:
+                errors.append(f"参数 '{p.name}' 缺少描述")
+
+        return errors</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">工具定义验证流程</text>
+            
+            <rect x="30" y="50" width="140" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">工具定义</text>
+            
+            <line x1="170" y1="72" x2="210" y2="72" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="50" width="120" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="270" y="75" text-anchor="middle" fill="white" font-size="11">名称验证</text>
+            
+            <line x1="330" y1="72" x2="370" y2="72" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="370" y="50" width="120" height="45" rx="8" fill="#3b82f6"/>
+            <text x="430" y="75" text-anchor="middle" fill="white" font-size="11">描述验证</text>
+            
+            <line x1="490" y1="72" x2="530" y2="72" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="530" y="50" width="120" height="45" rx="8" fill="#10b981"/>
+            <text x="590" y="75" text-anchor="middle" fill="white" font-size="11">参数验证</text>
+            
+            <line x1="650" y1="72" x2="690" y2="72" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="690" y="50" width="60" height="45" rx="8" fill="#10b981"/>
+            <text x="720" y="75" text-anchor="middle" fill="white" font-size="10">通过</text>
+            
+            <line x1="430" y1="95" x2="430" y2="120" stroke="#64748b" stroke-width="2"/>
+            <rect x="370" y="120" width="120" height="40" rx="6" fill="#fef2f2" stroke="#ef4444"/>
+            <text x="430" y="145" text-anchor="middle" fill="#991b1b" font-size="10">发现错误</text>
+        </svg>
+    </div>
+
+    <h2>五、最佳实践总结</h2>
+    <p>编写高质量的工具定义是 Function Calling 成功的关键。以下是经过实践验证的最佳实践：工具名称应该使用动词加名词的格式（如 get_weather、search_knowledge），使 LLM 能够直观理解工具的功能；工具描述应该简洁明了地说明工具的功能和使用场景，避免过于冗长；参数描述应该包含含义、格式要求和示例值，确保 LLM 能够准确理解。</p>
+
+    <p>在约束使用方面，对于有限选项的参数一定要使用 enum 约束，避免 LLM 生成无效值；必填参数必须明确标记为 required，避免 LLM 遗漏关键参数；对于有合理默认值的可选参数，提供 default 值可以减少 LLM 的决策负担。此外，建议在开发过程中使用验证器对所有工具定义进行检查，确保定义质量。</p>
+
+    <p>对于复杂参数类型，如 array 和 object，建议在参数描述中提供具体的 JSON 示例。例如，对于 tags 参数（array 类型），描述可以是"标签列表，如 ['AI', 'RAG', 'LLM']，每个标签不超过 20 个字符"。对于配置参数（object 类型），描述可以是"配置对象，如 {'timeout': 30, 'retry': 3}，timeout 为超时秒数，retry 为重试次数"。</p>
+
+    <table>
+        <thead>
+            <tr><th>最佳实践</th><th>具体做法</th><th>收益</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>工具命名</strong></td><td>动词+名词格式，如 get_weather</td><td>LLM 直观理解功能</td></tr>
+            <tr><td><strong>工具描述</strong></td><td>简洁说明功能和使用场景</td><td>LLM 准确判断调用时机</td></tr>
+            <tr><td><strong>参数描述</strong></td><td>含义 + 格式 + 示例</td><td>LLM 生成正确参数值</td></tr>
+            <tr><td><strong>枚举约束</strong></td><td>有限选项使用 enum</td><td>避免无效参数值</td></tr>
+            <tr><td><strong>必填标记</strong></td><td>核心参数标记 required</td><td>避免遗漏关键参数</td></tr>
+            <tr><td><strong>验证器</strong></td><td>开发中使用验证器检查</td><td>早期发现定义错误</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在实际项目中，建议为每个工具定义建立模板和验证流程。可以先使用 ToolSchemaBuilder 构建工具定义，然后通过 SchemaValidator 验证，最后转换为 OpenAI 格式发送给 LLM。这种标准化的流程能够确保工具定义的质量一致性，减少因定义错误导致的工具调用失败。</p>
+    </div>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">工具定义开发工作流</text>
+            
+            <rect x="30" y="55" width="130" height="55" rx="8" fill="#3b82f6"/>
+            <text x="95" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">1. 构建器</text>
+            <text x="95" y="97" text-anchor="middle" fill="white" font-size="9">创建工具定义</text>
+            
+            <line x1="160" y1="82" x2="190" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="55" width="130" height="55" rx="8" fill="#8b5cf6"/>
+            <text x="255" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">2. 验证器</text>
+            <text x="255" y="97" text-anchor="middle" fill="white" font-size="9">检查规范性</text>
+            
+            <line x1="320" y1="82" x2="350" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="55" width="130" height="55" rx="8" fill="#f59e0b"/>
+            <text x="415" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">3. 转换</text>
+            <text x="415" y="97" text-anchor="middle" fill="white" font-size="9">OpenAI 格式</text>
+            
+            <line x1="480" y1="82" x2="510" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="130" height="55" rx="8" fill="#10b981"/>
+            <text x="575" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">4. 注册</text>
+            <text x="575" y="97" text-anchor="middle" fill="white" font-size="9">ToolRegistry</text>
+            
+            <line x1="640" y1="82" x2="670" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="55" rx="8" fill="#1a1a2e"/>
+            <text x="710" y="85" text-anchor="middle" fill="white" font-size="10">LLM 调用</text>
+            
+            <rect x="100" y="135" width="580" height="35" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="157" text-anchor="middle" fill="#666" font-size="11">构建 → 验证 → 转换 → 注册 → LLM 调用（标准化流程确保定义质量）</text>
+        </svg>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>Tool 定义规范是 Function Calling 的核心基础。通过 JSON Schema 描述工具的接口格式，通过高质量的参数描述帮助 LLM 理解工具的使用方式，通过约束机制确保参数值的正确性。掌握这些规范对于构建可靠的 Function Calling 系统至关重要。</p>
+
+    <p>在实际项目中，建议将工具定义管理纳入开发流程的规范化管理中。每次新增工具时，都应该使用构建器创建、验证器检查、标准化输出，确保工具定义的质量一致性。这种工程化的方法能够显著减少因定义错误导致的工具调用失败。</p>
+
+    <p>在下一节 8.3 中，我们将学习单工具调用与多工具编排，掌握如何在实际场景中组合使用多个工具完成复杂任务。同时，我们还将学习工具调用的顺序控制、参数传递和结果合并等高级技巧。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.3 单工具调用与多工具编排 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>8.3 单工具调用与多工具编排</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块八：Function Calling</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>掌握单工具调用的执行流程和结果处理</li>
+        <li>理解四种多工具编排模式及其适用场景</li>
+        <li>学会实现顺序、并行、链式、条件编排</li>
+        <li>能够设计复杂的多工具编排方案</li>
+    </ul>
+
+    <h2>一、单工具调用</h2>
+    <p>单工具调用是 Function Calling 的基础单元。当 LLM 识别出需要调用工具时，它会返回一个结构化的工具调用请求，包含工具名称和参数。系统执行该调用后，将结果返回给 LLM。这个过程看似简单，但在实际实现中需要考虑多个方面。</p>
+
+    <p>单工具调用的核心步骤包括：解析 LLM 返回的工具调用请求（提取工具名称和参数）、验证参数是否符合工具的 Schema 定义、执行工具调用并获取结果、将结果格式化为 LLM 可理解的消息格式返回。每一个步骤都需要仔细处理，确保数据格式正确且错误能够被妥善处理。</p>
+
+    <p>在实际应用中，单工具调用是最常见的场景。例如，用户询问"北京今天天气怎么样"，LLM 返回一个调用 get_weather 工具的请求，系统执行调用后返回"晴，25°C"。这个过程只需要调用一个工具，逻辑简单清晰。但当任务需要多个工具协同完成时，就需要引入多工具编排。</p>
+
+    <h3>1.1 核心实现</h3>
+    <div class="code-file">08_function_calling/03_tool_orchestration/tool_orchestration.py</div>
+<pre><code class="language-python">class SingleToolCaller:
+    """单工具调用：执行单个工具调用并返回结果"""
+
+    def __init__(self, registry: SimpleToolRegistry):
+        self.registry = registry
+
+    def call(self, tool_name: str, arguments: Dict[str, Any]) -> ToolCall:
+        """执行单个工具调用"""
+        result = self.registry.execute(tool_name, arguments)
+        success = not result.startswith("错误:")
+        return ToolCall(
+            tool_name=tool_name,
+            arguments=arguments,
+            result=result,
+            success=success,
+            error="" if success else result,
+        )</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">单工具调用流程</text>
+            
+            <rect x="30" y="55" width="140" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">LLM 请求</text>
+            <text x="100" y="92" text-anchor="middle" fill="white" font-size="9">工具名 + 参数</text>
+            
+            <line x1="170" y1="80" x2="210" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="140" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">参数验证</text>
+            <text x="280" y="92" text-anchor="middle" fill="white" font-size="9">Schema 检查</text>
+            
+            <line x1="350" y1="80" x2="390" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="390" y="55" width="140" height="50" rx="8" fill="#3b82f6"/>
+            <text x="460" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">工具执行</text>
+            <text x="460" y="92" text-anchor="middle" fill="white" font-size="9">调用 API/函数</text>
+            
+            <line x1="530" y1="80" x2="570" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="570" y="55" width="140" height="50" rx="8" fill="#10b981"/>
+            <text x="640" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">结果返回</text>
+            <text x="640" y="92" text-anchor="middle" fill="white" font-size="9">格式化为消息</text>
+        </svg>
+    </div>
+
+    <h2>二、多工具编排模式</h2>
+    <p>在实际应用中，很多任务需要多个工具协同完成。例如，生成一份包含天气、交通、新闻的综合日报，需要调用多个不同的工具。多工具编排就是管理这些工具调用顺序和依赖关系的机制。通过合理的编排，我们可以将复杂的任务分解为多个简单的工具调用步骤，每个步骤只关注自己的职责，最终组合成完整的解决方案。</p>
+
+    <p>我们定义了四种基本的编排模式：顺序模式（Sequential）按预定顺序依次执行每个步骤，适合有明确依赖关系的多步任务；并行模式（Parallel）同时执行所有步骤，适合相互独立的多路查询；链式模式（Chained）将前一步的输出作为下一步的输入，适合数据流水线处理；条件模式（Conditional）根据前一步的结果动态选择后续步骤，适合分支决策场景。</p>
+
+    <p>选择合适的编排模式取决于任务的特点：如果各步骤之间有严格的前后依赖关系，使用顺序模式；如果各步骤相互独立且希望提高执行效率，使用并行模式；如果数据需要在步骤之间流动转换，使用链式模式；如果执行路径需要根据中间结果动态决定，使用条件模式。在实际项目中，这些模式可以组合使用，例如先并行查询多个数据源，然后将结果汇总后进行条件判断，最后根据不同的判断结果执行不同的后续操作。</p>
+
+    <table>
+        <thead>
+            <tr><th>编排模式</th><th>执行方式</th><th>步骤依赖</th><th>典型场景</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>顺序 Sequential</strong></td><td>依次执行</td><td>前一步完成后执行下一步</td><td>查询天气 → 格式化 → 通知</td></tr>
+            <tr><td><strong>并行 Parallel</strong></td><td>同时执行</td><td>步骤之间无依赖</td><td>同时查询多个城市天气</td></tr>
+            <tr><td><strong>链式 Chained</strong></td><td>输出传下一步</td><td>上一步输出作为下一步输入</td><td>获取数据 → 转换 → 存储</td></tr>
+            <tr><td><strong>条件 Conditional</strong></td><td>按条件选择</td><td>根据中间结果选择路径</td><td>库存充足则发货，不足则补货</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="800" height="260" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">四种编排模式示意</text>
+            
+            <!-- 顺序 -->
+            <text x="130" y="55" text-anchor="middle" fill="#3b82f6" font-size="12" font-weight="bold">顺序 Sequential</text>
+            <rect x="40" y="65" width="60" height="28" rx="5" fill="#3b82f6"/>
+            <text x="70" y="84" text-anchor="middle" fill="white" font-size="9">步骤 A</text>
+            <line x1="100" y1="79" x2="115" y2="79" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="115" y="65" width="60" height="28" rx="5" fill="#3b82f6"/>
+            <text x="145" y="84" text-anchor="middle" fill="white" font-size="9">步骤 B</text>
+            <line x1="175" y1="79" x2="190" y2="79" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="190" y="65" width="60" height="28" rx="5" fill="#3b82f6"/>
+            <text x="220" y="84" text-anchor="middle" fill="white" font-size="9">步骤 C</text>
+            
+            <!-- 并行 -->
+            <text x="390" y="55" text-anchor="middle" fill="#10b981" font-size="12" font-weight="bold">并行 Parallel</text>
+            <rect x="310" y="65" width="60" height="28" rx="5" fill="#10b981"/>
+            <text x="340" y="84" text-anchor="middle" fill="white" font-size="9">步骤 A</text>
+            <rect x="310" y="100" width="60" height="28" rx="5" fill="#10b981"/>
+            <text x="340" y="119" text-anchor="middle" fill="white" font-size="9">步骤 B</text>
+            <rect x="310" y="135" width="60" height="28" rx="5" fill="#10b981"/>
+            <text x="340" y="154" text-anchor="middle" fill="white" font-size="9">步骤 C</text>
+            <line x1="370" y1="79" x2="460" y2="110" stroke="#64748b" stroke-width="1"/>
+            <line x1="370" y1="114" x2="460" y2="110" stroke="#64748b" stroke-width="1"/>
+            <line x1="370" y1="149" x2="460" y2="110" stroke="#64748b" stroke-width="1"/>
+            <rect x="460" y="100" width="60" height="28" rx="5" fill="#10b981"/>
+            <text x="490" y="119" text-anchor="middle" fill="white" font-size="9">汇聚</text>
+            
+            <!-- 链式 -->
+            <text x="130" y="185" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="bold">链式 Chained</text>
+            <rect x="40" y="195" width="80" height="35" rx="6" fill="#f59e0b"/>
+            <text x="80" y="208" text-anchor="middle" fill="white" font-size="9">获取数据</text>
+            <text x="80" y="222" text-anchor="middle" fill="white" font-size="8">输出 →</text>
+            <line x1="120" y1="212" x2="145" y2="212" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="145" y="195" width="80" height="35" rx="6" fill="#f59e0b"/>
+            <text x="185" y="208" text-anchor="middle" fill="white" font-size="9">转换格式</text>
+            <text x="185" y="222" text-anchor="middle" fill="white" font-size="8">输出 →</text>
+            <line x1="225" y1="212" x2="250" y2="212" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="250" y="195" width="80" height="35" rx="6" fill="#f59e0b"/>
+            <text x="290" y="208" text-anchor="middle" fill="white" font-size="9">发送通知</text>
+            <text x="290" y="222" text-anchor="middle" fill="white" font-size="8">最终输出</text>
+            
+            <!-- 条件 -->
+            <text x="570" y="185" text-anchor="middle" fill="#8b5cf6" font-size="12" font-weight="bold">条件 Conditional</text>
+            <rect x="470" y="195" width="80" height="35" rx="6" fill="#8b5cf6"/>
+            <text x="510" y="217" text-anchor="middle" fill="white" font-size="9">检查库存</text>
+            <line x1="550" y1="205" x2="590" y2="195" stroke="#10b981" stroke-width="1.5"/>
+            <text x="570" y="190" text-anchor="middle" fill="#10b981" font-size="8">充足</text>
+            <rect x="590" y="185" width="80" height="28" rx="5" fill="#10b981"/>
+            <text x="630" y="203" text-anchor="middle" fill="white" font-size="9">直接发货</text>
+            <line x1="550" y1="220" x2="590" y2="235" stroke="#ef4444" stroke-width="1.5"/>
+            <text x="570" y="235" text-anchor="middle" fill="#ef4444" font-size="8">不足</text>
+            <rect x="590" y="225" width="80" height="28" rx="5" fill="#ef4444"/>
+            <text x="630" y="243" text-anchor="middle" fill="white" font-size="9">补货采购</text>
+        </svg>
+    </div>
+
+    <h2>三、顺序编排</h2>
+    <p>顺序编排是最简单的多工具编排模式。它按照预定的顺序依次执行每个步骤，每一步等待前一步完成后才开始执行。如果某一步执行失败，后续步骤将不再执行。这种模式适合有明确依赖关系的多步任务，例如先查询天气数据，然后将数据格式化为可读文本，最后将格式化后的文本发送给用户。</p>
+
+    <h3>3.1 核心实现</h3>
+    <div class="code-file">08_function_calling/03_tool_orchestration/tool_orchestration.py</div>
+<pre><code class="language-python">def _run_sequential(self, steps, context):
+    """顺序执行：步骤依次执行"""
+    results = {}
+    for i, step in enumerate(steps):
+        tool_name = step["tool"]
+        args = self._resolve_args(step.get("args", {}), context, results)
+        call = self.caller.call(tool_name, args)
+        results[f"step_{i+1}"] = {
+            "tool": tool_name,
+            "args": args,
+            "result": call.result,
+            "success": call.success,
+        }
+        if not call.success:
+            results[f"step_{i+1}"]["error"] = call.error
+            break  # 失败时停止
+    return results</code></pre>
+
+    <h2>四、并行编排</h2>
+    <p>并行编排同时执行所有步骤，适合相互独立的多路查询。例如，同时查询北京、上海、广州三个城市的天气，这三个查询之间没有依赖关系，可以并行执行以提高效率。在实际生产环境中，并行编排通常使用线程池或异步 IO 实现，而不是简化版的顺序模拟。</p>
+
+    <p>并行编排的关键在于确保各步骤之间没有依赖关系。如果某个步骤需要另一个步骤的结果作为输入，就不能使用并行模式。此外，并行编排的结果汇总需要将所有步骤的结果合并返回，便于后续处理。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">并行查询示意</text>
+            
+            <rect x="300" y="45" width="180" height="35" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="67" text-anchor="middle" fill="white" font-size="12" font-weight="bold">用户请求</text>
+            
+            <line x1="390" y1="80" x2="390" y2="100" stroke="#64748b" stroke-width="2"/>
+            <line x1="390" y1="100" x2="130" y2="100" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="100" x2="390" y2="100" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="100" x2="650" y2="100" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="50" y="100" width="160" height="40" rx="6" fill="#10b981"/>
+            <text x="130" y="125" text-anchor="middle" fill="white" font-size="11">get_weather(北京)</text>
+            
+            <rect x="280" y="100" width="160" height="40" rx="6" fill="#10b981"/>
+            <text x="360" y="125" text-anchor="middle" fill="white" font-size="11">get_weather(上海)</text>
+            
+            <rect x="510" y="100" width="160" height="40" rx="6" fill="#10b981"/>
+            <text x="590" y="125" text-anchor="middle" fill="white" font-size="11">get_weather(广州)</text>
+            
+            <line x1="130" y1="140" x2="390" y2="140" stroke="#64748b" stroke-width="1"/>
+            <line x1="360" y1="140" x2="390" y2="140" stroke="#64748b" stroke-width="1"/>
+            <line x1="590" y1="140" x2="390" y2="140" stroke="#64748b" stroke-width="1"/>
+            
+            <text x="390" y="155" text-anchor="middle" fill="#64748b" font-size="9">同时执行，结果汇聚</text>
+        </svg>
+    </div>
+
+    <h2>五、链式编排</h2>
+    <p>链式编排将前一步的输出作为下一步的输入，形成一条数据处理流水线。这种模式适合数据需要多次转换的场景，例如先获取原始天气数据（JSON 格式），然后将其格式化为可读文本，最后将文本发送给用户通知。</p>
+
+    <p>在链式编排中，每一步的输出格式需要与下一步的输入格式兼容。如果格式不匹配，需要在步骤之间添加转换逻辑。参数解析器支持 ${step_N} 语法来引用前一步的结果，使得数据传递更加灵活。</p>
+
+    <h3>5.1 核心实现</h3>
+    <div class="code-file">08_function_calling/03_tool_orchestration/tool_orchestration.py</div>
+<pre><code class="language-python">def _run_chained(self, steps, context):
+    """链式传递：前一步输出作为下一步输入"""
+    results = {}
+    chain_input = {}
+
+    for i, step in enumerate(steps):
+        tool_name = step["tool"]
+        args = self._resolve_args(step.get("args", {}), context, results)
+        # 使用显式声明的参数，不自动合并
+
+        call = self.caller.call(tool_name, args)
+        results[f"step_{i+1}"] = {
+            "tool": tool_name,
+            "args": args,
+            "result": call.result,
+            "success": call.success,
+        }
+
+        if call.success:
+            try:
+                parsed = json.loads(call.result)
+                if isinstance(parsed, dict):
+                    chain_input = parsed
+                else:
+                    chain_input = {"output": call.result}
+            except (json.JSONDecodeError, TypeError):
+                chain_input = {"output": str(call.result)}
+
+        if not call.success:
+            results[f"step_{i+1}"]["error"] = call.error
+            break
+
+    return results</code></pre>
+
+    <h2>六、条件编排</h2>
+    <p>条件编排根据前一步的结果动态选择后续执行路径。这种模式适合需要根据中间结果做出决策的场景。例如，在电商系统中，先检查库存，如果库存充足则直接发货，如果库存不足则触发补货流程。条件编排使得系统能够根据不同的情况采取不同的处理策略。</p>
+
+    <p>条件编排的实现依赖于条件评估器，它根据预设的条件表达式和当前上下文来决定是否执行某个步骤。在我们的简化实现中，条件评估通过检查上下文中指定键的值是否匹配来实现。在实际生产环境中，可以使用更复杂的条件表达式引擎。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">条件分支流程</text>
+            
+            <rect x="300" y="45" width="180" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="70" text-anchor="middle" fill="white" font-size="12" font-weight="bold">检查条件</text>
+            
+            <line x1="390" y1="85" x2="150" y2="120" stroke="#10b981" stroke-width="2"/>
+            <text x="250" y="95" text-anchor="middle" fill="#10b981" font-size="10">条件满足</text>
+            
+            <line x1="390" y1="85" x2="630" y2="120" stroke="#ef4444" stroke-width="2"/>
+            <text x="530" y="95" text-anchor="middle" fill="#ef4444" font-size="10">条件不满足</text>
+            
+            <rect x="70" y="120" width="160" height="40" rx="8" fill="#10b981"/>
+            <text x="150" y="145" text-anchor="middle" fill="white" font-size="11">执行路径 A</text>
+            
+            <rect x="550" y="120" width="160" height="40" rx="8" fill="#ef4444"/>
+            <text x="630" y="145" text-anchor="middle" fill="white" font-size="11">执行路径 B</text>
+        </svg>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>单工具调用是 Function Calling 的基础单元，多工具编排则是将多个工具调用组合起来完成复杂任务的机制。通过顺序、并行、链式、条件四种基本编排模式，我们可以灵活应对各种复杂的工具调用场景。</p>
+
+    <p>在实际项目中，编排模式的选择取决于任务的特点：有明确依赖关系的多步任务使用顺序模式，相互独立的多路查询使用并行模式，数据需要逐步转换的场景使用链式模式，需要根据中间结果动态决策的场景使用条件模式。理解这些模式的特点和适用场景，是设计高效可靠工具调用方案的关键。</p>
+
+    <p>在下一节 8.4 中，我们将学习工具调用的错误处理、重试与超时机制，掌握如何在工具调用失败时进行优雅降级和自动重试，确保系统的稳定性和可靠性。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

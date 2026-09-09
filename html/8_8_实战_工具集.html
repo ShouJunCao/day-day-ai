@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8.8 实战：天气/数据库/API/文件操作工具集 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>8.8 实战：天气/数据库/API/文件操作工具集</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块八：Function Calling</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>综合运用 Function Calling 所有技术构建完整工具集</li>
+        <li>掌握天气查询、数据库操作、API 调用、文件操作的实现</li>
+        <li>学会使用缓存、并行执行、错误处理等工程实践</li>
+        <li>能够独立设计和实现企业级工具调用系统</li>
+    </ul>
+
+    <h2>一、工具集整体架构</h2>
+    <p>在本节实战中，我们将综合运用前面八章学习的所有技术，构建一个包含天气查询、数据库操作、API 调用、文件操作四大模块的完整工具集。这个工具集不仅实现了基本的功能调用，还包含了缓存优化、并行执行、错误处理、安全沙箱等工程实践，是一个可以直接用于生产环境的工具调用系统。</p>
+
+    <p>工具集采用模块化设计，每个工具都是独立的类，具有清晰的接口和职责。WeatherTool 负责天气查询和缓存，DatabaseTool 负责 SQLite 数据库操作，APITool 负责 HTTP API 调用模拟，FileTool 负责安全的文件读写操作。PracticalToolkit 作为协调器，负责将工具调用分发到具体的工具类，并支持并行执行。</p>
+
+    <p>这种设计的优势在于：每个工具可以独立测试和维护，新增工具只需要添加新的工具类并注册到分发器中；所有工具共享统一的错误处理和结果格式；并行执行器可以同时调用多个工具，显著提高响应速度。在实际项目中，可以将模拟的工具替换为真实的 API 调用，而核心架构保持不变。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="260" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">工具集整体架构</text>
+            
+            <!-- 协调器 -->
+            <rect x="250" y="50" width="300" height="50" rx="10" fill="#1a1a2e"/>
+            <text x="400" y="72" text-anchor="middle" fill="white" font-size="14" font-weight="bold">PracticalToolkit</text>
+            <text x="400" y="90" text-anchor="middle" fill="white" font-size="10">工具分发 + 并行执行</text>
+            
+            <!-- 分发线 -->
+            <line x1="300" y1="100" x2="100" y2="140" stroke="#64748b" stroke-width="2"/>
+            <line x1="350" y1="100" x2="300" y2="140" stroke="#64748b" stroke-width="2"/>
+            <line x1="450" y1="100" x2="500" y2="140" stroke="#64748b" stroke-width="2"/>
+            <line x1="500" y1="100" x2="700" y2="140" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 四个工具 -->
+            <rect x="30" y="140" width="140" height="90" rx="10" fill="#3b82f6"/>
+            <text x="100" y="165" text-anchor="middle" fill="white" font-size="12" font-weight="bold">WeatherTool</text>
+            <text x="50" y="185" fill="white" font-size="9">• 天气查询</text>
+            <text x="50" y="200" fill="white" font-size="9">• 天气预报</text>
+            <text x="50" y="215" fill="white" font-size="9">• 结果缓存</text>
+            
+            <rect x="210" y="140" width="140" height="90" rx="10" fill="#10b981"/>
+            <text x="280" y="165" text-anchor="middle" fill="white" font-size="12" font-weight="bold">DatabaseTool</text>
+            <text x="230" y="185" fill="white" font-size="9">• SQL 查询</text>
+            <text x="230" y="200" fill="white" font-size="9">• 用户管理</text>
+            <text x="230" y="215" fill="white" font-size="9">• 订单查询</text>
+            
+            <rect x="410" y="140" width="140" height="90" rx="10" fill="#f59e0b"/>
+            <text x="480" y="165" text-anchor="middle" fill="white" font-size="12" font-weight="bold">APITool</text>
+            <text x="430" y="185" fill="white" font-size="9">• 搜索 API</text>
+            <text x="430" y="200" fill="white" font-size="9">• 新闻 API</text>
+            <text x="430" y="215" fill="white" font-size="9">• 结果分页</text>
+            
+            <rect x="600" y="140" width="140" height="90" rx="10" fill="#8b5cf6"/>
+            <text x="670" y="165" text-anchor="middle" fill="white" font-size="12" font-weight="bold">FileTool</text>
+            <text x="620" y="185" fill="white" font-size="9">• 文件读写</text>
+            <text x="620" y="200" fill="white" font-size="9">• 目录列出</text>
+            <text x="620" y="215" fill="white" font-size="9">• 路径安全</text>
+            
+            <!-- 底部：工程实践 -->
+            <rect x="50" y="245" width="700" height="10" rx="5" fill="#e2e8f0"/>
+            <text x="400" y="258" text-anchor="middle" fill="#666" font-size="9">工程实践：缓存优化 | 并行执行 | 错误处理 | 安全沙箱 | 超时控制 | 日志记录</text>
+        </svg>
+    </div>
+
+    <h2>二、天气工具</h2>
+    <p>天气工具实现了天气查询和预报功能。它包含一个结果缓存机制，对于相同城市的重复查询，如果缓存未过期，直接返回缓存结果而不是重新调用 API。缓存过期时间默认为 5 分钟，可以根据实际需求调整。这种缓存策略可以显著减少 API 调用次数，降低延迟和成本。在实际生产环境中，天气数据通常每分钟更新一次，但用户的查询频率远高于数据更新频率，因此缓存命中率通常可以达到 80% 以上。</p>
+
+    <p>天气工具的核心设计原则是：查询结果必须包含完整的天气信息（温度、湿度、风力等），并且返回格式统一的 JSON 数据。这样其他工具或系统可以方便地解析和使用天气数据。对于未知城市，返回默认值而不是报错，确保系统的容错性。</p>
+
+    <h3>2.1 核心实现</h3>
+    <div class="code-file">08_function_calling/08_practical_toolkit/practical_toolkit.py</div>
+<pre><code class="language-python">class WeatherTool:
+    """天气查询工具"""
+
+    def __init__(self, api_key="demo_key"):
+        self.api_key = api_key
+        self._cache = {}
+        self._cache_ttl = 300  # 5 分钟缓存
+
+    def get_weather(self, city):
+        """获取指定城市天气"""
+        now = time.time()
+        if city in self._cache:
+            cached_time, cached_data = self._cache[city]
+            if now - cached_time < self._cache_ttl:
+                return cached_data
+
+        # 模拟 API 调用
+        weather_data = {
+            "北京": {"weather": "晴", "temp": 25, "humidity": 45},
+            "上海": {"weather": "多云", "temp": 28, "humidity": 65},
+        }
+        data = weather_data.get(city, {})
+        result = json.dumps({"city": city, **data}, ensure_ascii=False)
+        self._cache[city] = (now, result)
+        return result</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">天气查询缓存流程</text>
+            
+            <rect x="30" y="50" width="140" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12">查询: 北京</text>
+            
+            <line x1="170" y1="72" x2="210" y2="72" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="50" width="120" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="270" y="75" text-anchor="middle" fill="white" font-size="11">检查缓存</text>
+            
+            <line x1="330" y1="65" x2="370" y2="55" stroke="#10b981" stroke-width="1.5"/>
+            <text x="350" y="50" text-anchor="middle" fill="#10b981" font-size="9">命中</text>
+            <rect x="370" y="40" width="100" height="30" rx="5" fill="#10b981"/>
+            <text x="420" y="60" text-anchor="middle" fill="white" font-size="9">返回缓存</text>
+            
+            <line x1="330" y1="80" x2="370" y2="95" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="350" y="100" text-anchor="middle" fill="#f59e0b" font-size="9">未命中</text>
+            <rect x="370" y="85" width="100" height="30" rx="5" fill="#f59e0b"/>
+            <text x="420" y="105" text-anchor="middle" fill="white" font-size="9">调用 API</text>
+            
+            <line x1="470" y1="100" x2="510" y2="100" stroke="#64748b" stroke-width="2"/>
+            <rect x="510" y="85" width="120" height="30" rx="5" fill="#3b82f6"/>
+            <text x="570" y="105" text-anchor="middle" fill="white" font-size="9">写入缓存(TTL=5min)</text>
+            
+            <rect x="660" y="50" width="100" height="65" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="710" y="72" text-anchor="middle" fill="#1a1a2e" font-size="10" font-weight="bold">缓存效果</text>
+            <text x="675" y="92" fill="#666" font-size="9">命中率: ~80%</text>
+            <text x="675" y="107" fill="#666" font-size="9">延迟: 0ms</text>
+        </svg>
+    </div>
+
+    <h2>三、数据库工具</h2>
+    <p>数据库工具使用 SQLite 实现了一个轻量级的数据库操作接口。它提供了用户管理和订单查询功能，通过 SQL 查询可以灵活地获取数据。为了保证安全，查询操作只允许 SELECT 语句，防止恶意的数据修改操作。插入和更新操作通过专门的方法实现，使用参数化查询防止 SQL 注入攻击。</p>
+
+    <h3>3.1 核心实现</h3>
+    <div class="code-file">08_function_calling/08_practical_toolkit/practical_toolkit.py</div>
+<pre><code class="language-python">class DatabaseTool:
+    """数据库操作工具（SQLite）"""
+
+    def query(self, sql):
+        """执行查询（只允许 SELECT）"""
+        if not sql.strip().upper().startswith("SELECT"):
+            return json.dumps({"error": "只允许 SELECT 查询"})
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(sql)
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+            return json.dumps({
+                "columns": columns,
+                "rows": [dict(zip(columns, row)) for row in rows],
+            }, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"error": str(e)})</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">数据库操作安全机制</text>
+            
+            <rect x="30" y="55" width="160" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="75" text-anchor="middle" fill="white" font-size="12">SQL 查询输入</text>
+            <text x="110" y="92" text-anchor="middle" fill="white" font-size="9">SELECT * FROM users</text>
+            
+            <line x1="190" y1="80" x2="230" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="55" width="140" height="50" rx="8" fill="#f59e0b"/>
+            <text x="300" y="75" text-anchor="middle" fill="white" font-size="12">SQL 检查</text>
+            <text x="300" y="92" text-anchor="middle" fill="white" font-size="9">只允许 SELECT</text>
+            
+            <line x1="370" y1="80" x2="410" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="410" y="55" width="140" height="50" rx="8" fill="#10b981"/>
+            <text x="480" y="75" text-anchor="middle" fill="white" font-size="12">参数化查询</text>
+            <text x="480" y="92" text-anchor="middle" fill="white" font-size="9">防止 SQL 注入</text>
+            
+            <line x1="550" y1="80" x2="590" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="590" y="55" width="140" height="50" rx="8" fill="#3b82f6"/>
+            <text x="660" y="75" text-anchor="middle" fill="white" font-size="12">JSON 格式化</text>
+            <text x="660" y="92" text-anchor="middle" fill="white" font-size="9">统一返回格式</text>
+            
+            <rect x="30" y="125" width="720" height="25" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="143" text-anchor="middle" fill="#666" font-size="10">安全检查 → 参数化执行 → 格式化为 JSON → 返回结果</text>
+        </svg>
+    </div>
+
+    <h2>四、API 工具</h2>
+    <p>API 工具模拟了 HTTP API 调用的场景，包括搜索 API 和新闻 API。在实际生产环境中，这些模拟调用会被替换为真实的 HTTP 请求，使用 requests 或 aiohttp 等库发起网络请求。API 工具的设计考虑了分页、分类过滤等常见需求，返回格式统一的 JSON 数据，便于后续处理和展示。</p>
+
+    <p>搜索 API 模拟了搜索引擎的返回格式，包含查询关键词、结果列表和相关度评分。新闻 API 支持按分类（科技、财经等）获取新闻，并支持限制返回数量。在实际项目中，这些 API 调用需要处理网络超时、重试、认证等工程问题，可以结合 8.4 节学习的错误处理机制来实现。</p>
+
+    <h3>4.1 核心实现</h3>
+    <div class="code-file">08_function_calling/08_practical_toolkit/practical_toolkit.py</div>
+<pre><code class="language-python">class APITool:
+    """HTTP API 调用工具（模拟）"""
+
+    def search(self, query, limit=5):
+        """模拟搜索 API"""
+        results = [
+            {"title": f"关于 '{query}' 的文章 {i}",
+             "url": f"https://example.com/{i}",
+             "score": round(0.9 - i * 0.1, 2)}
+            for i in range(limit)
+        ]
+        return json.dumps({"query": query, "results": results}, ensure_ascii=False)</code></pre>
+
+    <h2>五、文件操作工具</h2>
+    <p>文件操作工具提供了安全的文件读写功能。为了防止路径遍历攻击，所有文件路径都会被规范化并检查是否在允许的基础目录内。读取文件时限制返回内容长度，防止大文件导致内存溢出。写入文件时自动创建缺失的目录结构，确保操作的成功率。</p>
+
+    <h3>5.1 安全实现</h3>
+    <div class="code-file">08_function_calling/08_practical_toolkit/practical_toolkit.py</div>
+<pre><code class="language-python">def read_file(self, filepath):
+    """读取文件内容（带安全检查）"""
+    # 防止路径遍历攻击
+    real_path = os.path.realpath(
+        os.path.join(self.base_dir, filepath.lstrip("/"))
+    )
+    if not real_path.startswith(self.base_dir):
+        return json.dumps({"error": "路径遍历攻击被阻止"})
+
+    with open(real_path, "r") as f:
+        content = f.read()
+    return json.dumps({
+        "filepath": real_path,
+        "size": len(content),
+        "content": content[:1000],  # 限制长度
+    }, ensure_ascii=False)</code></pre>
+
+    <h2>六、并行工具集执行器</h2>
+    <p>PracticalToolkit 作为工具集的协调器，负责将工具调用分发到具体的工具类。它支持并行和顺序两种执行模式：并行模式使用 ThreadPoolExecutor 同时执行多个工具调用，适合独立的查询任务；顺序模式依次执行每个工具调用，适合有依赖关系的任务。通过并行执行，可以将多个工具调用的总耗时降低到最慢工具的耗时，显著提高用户体验。</p>
+
+    <p>在实际应用中，并行执行的优势尤为明显。当用户请求需要同时查询天气、新闻、股票等多个数据源时，如果顺序执行，总耗时是所有工具耗时之和；而并行执行时，总耗时取决于最慢的那个工具。例如，四个工具各耗时 0.5 秒，顺序执行需要 2 秒，并行执行只需要 0.5 秒，加速比达到 4 倍。这种性能提升对于响应时间敏感的应用场景（如实时客服、交互式查询）尤为重要。</p>
+
+    <h3>6.1 核心实现</h3>
+    <div class="code-file">08_function_calling/08_practical_toolkit/practical_toolkit.py</div>
+<pre><code class="language-python">class PracticalToolkit:
+    """实战工具集：整合天气、数据库、API、文件操作"""
+
+    def execute(self, tool_calls, parallel=True):
+        """执行工具调用列表"""
+        start_time = time.time()
+
+        if parallel and len(tool_calls) > 1:
+            results = self._execute_parallel(tool_calls)
+        else:
+            results = self._execute_sequential(tool_calls)
+
+        total_time = time.time() - start_time
+        success_count = sum(1 for r in results if r.success)
+        summary = f"执行 {len(tool_calls)} 个工具调用，{success_count} 个成功"
+        return ToolkitResult(results=results, total_time=total_time, summary=summary)
+
+    def _execute_parallel(self, tool_calls):
+        """并行执行"""
+        results = []
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {
+                executor.submit(self._dispatch, call): call
+                for call in tool_calls
+            }
+            for future in as_completed(futures):
+                results.append(future.result())
+        return results</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">工具集执行流程</text>
+            
+            <rect x="30" y="55" width="140" height="45" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">工具调用列表</text>
+            <text x="100" y="90" text-anchor="middle" fill="white" font-size="9">N 个调用请求</text>
+            
+            <line x1="170" y1="77" x2="210" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="120" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="270" y="75" text-anchor="middle" fill="white" font-size="11">模式选择</text>
+            <text x="270" y="90" text-anchor="middle" fill="white" font-size="9">并行/顺序</text>
+            
+            <line x1="330" y1="65" x2="370" y2="55" stroke="#3b82f6" stroke-width="1.5"/>
+            <text x="350" y="50" text-anchor="middle" fill="#3b82f6" font-size="9">并行</text>
+            <rect x="370" y="40" width="120" height="30" rx="5" fill="#3b82f6"/>
+            <text x="430" y="60" text-anchor="middle" fill="white" font-size="10">ThreadPoolExecutor</text>
+            
+            <line x1="330" y1="80" x2="370" y2="95" stroke="#10b981" stroke-width="1.5"/>
+            <text x="350" y="100" text-anchor="middle" fill="#10b981" font-size="9">顺序</text>
+            <rect x="370" y="85" width="120" height="30" rx="5" fill="#10b981"/>
+            <text x="430" y="105" text-anchor="middle" fill="white" font-size="10">依次执行</text>
+            
+            <line x1="490" y1="77" x2="530" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="530" y="55" width="120" height="45" rx="8" fill="#f59e0b"/>
+            <text x="590" y="75" text-anchor="middle" fill="white" font-size="11">结果汇聚</text>
+            <text x="590" y="90" text-anchor="middle" fill="white" font-size="9">统计成功/失败</text>
+            
+            <line x1="650" y1="77" x2="690" y2="77" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="690" y="55" width="70" height="45" rx="8" fill="#10b981"/>
+            <text x="725" y="80" text-anchor="middle" fill="white" font-size="10">返回</text>
+            
+            <!-- 底部场景 -->
+            <rect x="30" y="130" width="720" height="75" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="155" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">典型使用场景</text>
+            <text x="50" y="178" fill="#666" font-size="10">场景 1: 天气 + 新闻 + 搜索（并行查询）</text>
+            <text x="50" y="196" fill="#666" font-size="10">场景 2: 数据库查询（SQL 查询 + 订单统计）</text>
+            <text x="400" y="178" fill="#666" font-size="10">场景 3: 文件操作（写入报告 + 读取验证）</text>
+            <text x="400" y="196" fill="#666" font-size="10">场景 4: 综合对比（并行 vs 顺序性能对比）</text>
+        </svg>
+    </div>
+
+    <h2>七、实战场景演示</h2>
+    <p>工具集支持多种使用场景：场景一通过并行调用天气、新闻和搜索 API，快速获取综合信息；场景二通过数据库工具查询用户和订单数据，验证 SQL 操作的正确性；场景三通过文件工具写入和读取报告，验证文件操作的安全性；场景四通过对比并行和顺序执行的耗时，验证并行调用的加速效果。</p>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>调用工具</th><th>执行模式</th><th>目的</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>场景 1</strong></td><td>天气 + 新闻 + 搜索</td><td>并行</td><td>验证并行查询加速效果</td></tr>
+            <tr><td><strong>场景 2</strong></td><td>数据库查询 + 订单</td><td>并行</td><td>验证数据库操作正确性</td></tr>
+            <tr><td><strong>场景 3</strong></td><td>文件写入 + 读取</td><td>顺序</td><td>验证文件操作安全性</td></tr>
+            <tr><td><strong>场景 4</strong></td><td>4 个工具</td><td>并行 vs 顺序</td><td>对比性能差异</td></tr>
+        </tbody>
+    </table>
+
+    <h2>八、小结</h2>
+    <p>本节实战综合运用前面八章学习的所有技术，构建了一个完整的工具调用系统。天气工具展示了缓存优化的实现，数据库工具展示了安全查询的设计，API 工具展示了模拟 API 调用的方法，文件工具展示了路径安全的重要性。工具集执行器通过线程池实现了并行调用，显著提高了多工具查询的响应速度。这些技术在实际生产环境中可以直接应用，只需要将模拟工具替换为真实的 API 调用即可。</p>
+
+    <p>通过这个实战项目，你不仅学会了如何实现单个工具调用，还掌握了如何将多个工具整合为一个完整的系统。工具集的模块化设计使得新增工具变得简单，只需要实现统一的接口并注册到分发器中即可。同时，错误处理和超时控制确保了系统的稳定性，即使在部分工具调用失败的情况下，系统仍然能够返回有用的结果。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">模块八 Function Calling 知识体系</text>
+            
+            <rect x="30" y="50" width="100" height="90" rx="8" fill="#3b82f6"/>
+            <text x="80" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.1 原理</text>
+            <text x="80" y="95" text-anchor="middle" fill="white" font-size="9">完整流程</text>
+            <text x="80" y="110" text-anchor="middle" fill="white" font-size="9">数据结构</text>
+            <text x="80" y="125" text-anchor="middle" fill="white" font-size="9">消息流转</text>
+            
+            <rect x="140" y="50" width="100" height="90" rx="8" fill="#8b5cf6"/>
+            <text x="190" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.2 定义规范</text>
+            <text x="190" y="95" text-anchor="middle" fill="white" font-size="9">JSON Schema</text>
+            <text x="190" y="110" text-anchor="middle" fill="white" font-size="9">参数约束</text>
+            <text x="190" y="125" text-anchor="middle" fill="white" font-size="9">格式转换</text>
+            
+            <rect x="250" y="50" width="100" height="90" rx="8" fill="#f59e0b"/>
+            <text x="300" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.3 工具编排</text>
+            <text x="300" y="95" text-anchor="middle" fill="white" font-size="9">顺序/并行</text>
+            <text x="300" y="110" text-anchor="middle" fill="white" font-size="9">链式/条件</text>
+            <text x="300" y="125" text-anchor="middle" fill="white" font-size="9">编排模式</text>
+            
+            <rect x="360" y="50" width="100" height="90" rx="8" fill="#ef4444"/>
+            <text x="410" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.4 错误处理</text>
+            <text x="410" y="95" text-anchor="middle" fill="white" font-size="9">重试/降级</text>
+            <text x="410" y="110" text-anchor="middle" fill="white" font-size="9">超时/日志</text>
+            <text x="410" y="125" text-anchor="middle" fill="white" font-size="9">指数退避</text>
+            
+            <rect x="470" y="50" width="100" height="90" rx="8" fill="#10b981"/>
+            <text x="520" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.5 安全沙箱</text>
+            <text x="520" y="95" text-anchor="middle" fill="white" font-size="9">RBAC 权限</text>
+            <text x="520" y="110" text-anchor="middle" fill="white" font-size="9">Docker/E2B</text>
+            <text x="520" y="125" text-anchor="middle" fill="white" font-size="9">命令白名单</text>
+            
+            <rect x="580" y="50" width="100" height="90" rx="8" fill="#0ea5e9"/>
+            <text x="630" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.6 框架对比</text>
+            <text x="630" y="95" text-anchor="middle" fill="white" font-size="9">OpenAI</text>
+            <text x="630" y="110" text-anchor="middle" fill="white" font-size="9">Qwen/Gemini</text>
+            <text x="630" y="125" text-anchor="middle" fill="white" font-size="9">跨框架兼容</text>
+            
+            <rect x="690" y="50" width="70" height="90" rx="8" fill="#6366f1"/>
+            <text x="725" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">8.7 并行</text>
+            <text x="725" y="95" text-anchor="middle" fill="white" font-size="9">线程池</text>
+            <text x="725" y="110" text-anchor="middle" fill="white" font-size="9">asyncio</text>
+            <text x="725" y="125" text-anchor="middle" fill="white" font-size="9">加速比</text>
+        </svg>
+    </div>
+
+    <p>至此，模块八 Function Calling 全部讲解完毕。从基础的工具定义、格式转换，到高级的并行调用、错误处理、安全沙箱，再到综合实战工具集，你已經掌握了构建企业级 Function Calling 系统的全部核心技能。祝你在 AI 应用开发道路上不断精进！</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

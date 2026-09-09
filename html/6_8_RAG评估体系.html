@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>6.8 RAG 评估体系 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>6.8 RAG 评估体系（RAGAS 框架）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块六：RAG 系统构建</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 RAG 系统评估的必要性和挑战</li>
+        <li>掌握 RAGAS 框架的五大核心评估指标</li>
+        <li>学会构建评估数据集和执行自动化评估</li>
+        <li>能够根据评估结果定位问题并优化系统</li>
+    </ul>
+
+    <h2>一、为什么需要 RAG 评估？</h2>
+    <p>RAG 系统是一个复杂的流水线，包含文档解析、分块、Embedding、检索、重排序、上下文管理和 LLM 生成等多个环节。每个环节都可能引入质量问题，而这些问题的根源往往不容易直接定位。</p>
+
+    <p>传统的问答评估方法（如人工检查回答质量）效率低、成本高，且难以量化每个环节的贡献。RAGAS（RAG Assessment）框架提供了一套自动化的评估体系，能够分别评估检索和生成两个阶段的质量。</p>
+
+    <p>RAGAS 的核心价值在于：<strong>将 RAG 系统的评估拆解为多个独立指标</strong>，每个指标对应系统的一个环节。当某个指标得分较低时，可以直接定位到对应环节进行优化，而不是盲目地调整整个系统。</p>
+
+    <div class="diagram-container">
+        <svg width="800" height="200" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="400" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">RAG 评估 vs 传统评估</text>
+            
+            <!-- 传统评估 -->
+            <rect x="40" y="55" width="340" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+            <text x="210" y="85" text-anchor="middle" fill="#991b1b" font-size="14" font-weight="bold">传统评估</text>
+            <text x="60" y="110" fill="#666" font-size="11">• 人工检查回答质量</text>
+            <text x="60" y="130" fill="#666" font-size="11">• 整体评估，无法定位问题环节</text>
+            <text x="60" y="150" fill="#666" font-size="11">• 成本高，效率低，难以规模化</text>
+            
+            <!-- RAGAS 评估 -->
+            <rect x="420" y="55" width="340" height="120" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+            <text x="590" y="85" text-anchor="middle" fill="#065f46" font-size="14" font-weight="bold">RAGAS 评估</text>
+            <text x="440" y="110" fill="#666" font-size="11">• 自动化评估，5 个独立指标</text>
+            <text x="440" y="130" fill="#666" font-size="11">• 每个指标对应系统一个环节</text>
+            <text x="440" y="150" fill="#666" font-size="11">• 低成本，高效率，可规模化</text>
+        </svg>
+    </div>
+
+    <h2>二、RAGAS 框架概览</h2>
+    <p>RAGAS 框架定义了五个核心评估指标，分别覆盖检索阶段和生成阶段的质量：</p>
+
+    <p>这五个指标并非独立存在，而是相互关联的。例如，如果检索阶段的上下文精确度和召回率都很低，那么生成阶段的忠实度和正确性也很难达标。因此，评估时应该先关注检索阶段的指标，确保检索质量，再优化生成阶段。</p>
+
+    <table>
+        <thead>
+            <tr><th>指标</th><th>评估对象</th><th>对应环节</th><th>理想值</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>上下文精确度</strong></td>
+                <td>检索到的上下文是否相关</td>
+                <td>检索 + 重排序</td>
+                <td>> 0.8</td>
+            </tr>
+            <tr>
+                <td><strong>上下文召回率</strong></td>
+                <td>上下文是否覆盖真实答案信息</td>
+                <td>检索</td>
+                <td>> 0.8</td>
+            </tr>
+            <tr>
+                <td><strong>答案忠实度</strong></td>
+                <td>回答是否基于上下文（无编造）</td>
+                <td>LLM 生成</td>
+                <td>> 0.9</td>
+            </tr>
+            <tr>
+                <td><strong>答案相关性</strong></td>
+                <td>回答是否直接回答问题</td>
+                <td>LLM 生成</td>
+                <td>> 0.8</td>
+            </tr>
+            <tr>
+                <td><strong>答案正确性</strong></td>
+                <td>回答与真实答案的一致程度</td>
+                <td>整体质量</td>
+                <td>> 0.8</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="280" viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">RAGAS 五维评估框架</text>
+            
+            <!-- 检索阶段 -->
+            <rect x="30" y="50" width="350" height="200" rx="10" fill="#f0f9ff" stroke="#0ea5e9" stroke-width="2"/>
+            <text x="205" y="75" text-anchor="middle" fill="#0369a1" font-size="14" font-weight="bold">检索阶段评估</text>
+            
+            <rect x="50" y="90" width="140" height="60" rx="8" fill="#3b82f6"/>
+            <text x="120" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">上下文精确度</text>
+            <text x="120" y="135" text-anchor="middle" fill="white" font-size="10">Context Precision</text>
+            
+            <rect x="210" y="90" width="140" height="60" rx="8" fill="#60a5fa"/>
+            <text x="280" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">上下文召回率</text>
+            <text x="280" y="135" text-anchor="middle" fill="white" font-size="10">Context Recall</text>
+            
+            <rect x="50" y="165" width="300" height="60" rx="8" fill="#bae6fd"/>
+            <text x="200" y="190" text-anchor="middle" fill="#0c4a6e" font-size="12" font-weight="bold">检索质量 = 精确度 × 召回率</text>
+            <text x="200" y="210" text-anchor="middle" fill="#0369a1" font-size="10">高精确度 + 高召回率 = 高质量检索</text>
+            
+            <!-- 生成阶段 -->
+            <rect x="400" y="50" width="350" height="200" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <text x="575" y="75" text-anchor="middle" fill="#92400e" font-size="14" font-weight="bold">生成阶段评估</text>
+            
+            <rect x="420" y="90" width="140" height="60" rx="8" fill="#f59e0b"/>
+            <text x="490" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">答案忠实度</text>
+            <text x="490" y="135" text-anchor="middle" fill="white" font-size="10">Faithfulness</text>
+            
+            <rect x="580" y="90" width="140" height="60" rx="8" fill="#fbbf24"/>
+            <text x="650" y="115" text-anchor="middle" fill="white" font-size="12" font-weight="bold">答案相关性</text>
+            <text x="650" y="135" text-anchor="middle" fill="white" font-size="10">Answer Relevancy</text>
+            
+            <rect x="500" y="165" width="150" height="60" rx="8" fill="#fde68a"/>
+            <text x="575" y="190" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">答案正确性</text>
+            <text x="575" y="210" text-anchor="middle" fill="#d97706" font-size="10">Answer Correctness</text>
+        </svg>
+    </div>
+
+    <h2>三、上下文精确度（Context Precision）</h2>
+    <p>上下文精确度评估的是：在检索到的所有文档中，有多少比例是真正相关的。这个指标反映了检索系统和重排序系统的综合效果。</p>
+
+    <p>计算方式：对每个检索到的文档，判断其是否包含回答所需的信息。精确度 = 相关文档数 / 总检索文档数。分数越高，说明检索结果越精确，噪声越少。</p>
+
+    <p>如果上下文精确度低，说明检索系统返回了太多不相关的文档。可能的原因包括：分块粒度过粗、Embedding 模型不合适、检索策略不够精确等。优化方向：改进分块策略、使用更好的 Embedding 模型、增加重排序步骤。</p>
+
+    <h3>3.1 代码实现</h3>
+    <div class="code-file">06_rag_architecture/08_rag_evaluation/rag_evaluation.py</div>
+<pre><code class="language-python">class ContextPrecision:
+    """
+    上下文精确度：评估检索到的上下文是否相关。
+
+    原理：
+    1. 对每个检索到的文档，判断其是否包含回答所需信息
+    2. 计算相关文档占所有检索文档的比例
+    3. 分数越高，说明检索到的上下文越精确
+    """
+
+    def compute(self, questions, contexts, ground_truths):
+        """计算上下文精确度"""
+        scores = []
+        for q, ctx_list, gt in zip(questions, contexts, ground_truths):
+            if not ctx_list:
+                scores.append(0.0)
+                continue
+
+            precision_sum = 0.0
+            relevant_count = 0
+            for i, ctx in enumerate(ctx_list):
+                is_relevant = self._is_relevant(q, ctx, gt)
+                if is_relevant:
+                    relevant_count += 1
+                    precision_sum += relevant_count / (i + 1)
+
+            precision = precision_sum / len(ctx_list)
+            scores.append(precision)
+
+        return sum(scores) / len(scores)</code></pre>
+
+    <h3>3.2 精确度与召回率的关系</h3>
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">精确度 vs 召回率的权衡</text>
+            
+            <!-- 维恩图：高精确低召回 -->
+            <text x="160" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">高精确 + 低召回</text>
+            <circle cx="130" cy="130" r="40" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <circle cx="190" cy="130" r="40" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="130" y="125" text-anchor="middle" fill="#1e40af" font-size="10">检索到</text>
+            <text x="130" y="140" text-anchor="middle" fill="#1e40af" font-size="10">少但准</text>
+            <text x="190" y="135" text-anchor="middle" fill="#991b1b" font-size="9">遗漏</text>
+            <text x="160" y="195" text-anchor="middle" fill="#666" font-size="10">P=0.9 R=0.3</text>
+            
+            <!-- 均衡 -->
+            <text x="390" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">均衡（理想）</text>
+            <circle cx="360" cy="130" r="40" fill="#d1fae5" stroke="#10b981" stroke-width="2"/>
+            <circle cx="420" cy="130" r="40" fill="#d1fae5" stroke="#10b981" stroke-width="2"/>
+            <text x="390" y="130" text-anchor="middle" fill="#065f46" font-size="10">高重叠</text>
+            <text x="390" y="195" text-anchor="middle" fill="#666" font-size="10">P=0.8 R=0.8</text>
+            
+            <!-- 高召回低精确 -->
+            <text x="620" y="60" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">低精确 + 高召回</text>
+            <circle cx="590" cy="130" r="40" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="650" cy="130" r="55" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="620" y="125" text-anchor="middle" fill="#92400e" font-size="10">检索到</text>
+            <text x="620" y="140" text-anchor="middle" fill="#92400e" font-size="10">多但杂</text>
+            <text x="650" y="135" text-anchor="middle" fill="#d97706" font-size="9">噪声</text>
+            <text x="620" y="195" text-anchor="middle" fill="#666" font-size="10">P=0.3 R=0.9</text>
+        </svg>
+    </div>
+
+    <h2>四、上下文召回率（Context Recall）</h2>
+    <p>上下文召回率评估的是：检索到的上下文是否覆盖了真实答案中的所有关键信息。即使检索到的文档都是相关的，如果遗漏了某些关键信息，召回率也会较低。</p>
+
+    <p>计算方式：从真实答案中提取关键信息（主张），检查这些信息是否能在检索到的上下文中找到。召回率 = 被覆盖的信息量 / 总信息量。</p>
+
+    <p>如果上下文召回率低，说明检索系统遗漏了重要信息。可能的原因包括：查询改写不足、分块策略导致信息丢失、向量检索无法覆盖某些语义等。优化方向：使用 Query 改写、Multi-Query 等检索优化技术。</p>
+
+    <h3>4.1 代码实现</h3>
+<pre><code class="language-python">class ContextRecall:
+    """
+    上下文召回率：评估检索到的上下文是否覆盖了真实答案的所有信息。
+
+    原理：
+    1. 从真实答案中提取关键主张（claims）
+    2. 检查每个主张是否能在检索到的上下文中找到支持
+    3. 召回率 = 被支持的主张数 / 总主张数
+    """
+
+    def compute(self, contexts, ground_truths):
+        """计算上下文召回率"""
+        scores = []
+        for ctx_list, gt in zip(contexts, ground_truths):
+            if not ctx_list:
+                scores.append(0.0)
+                continue
+
+            combined_ctx = " ".join(ctx_list)
+            # 基于关键词覆盖度计算
+            gt_words = set(gt.replace(" ", ""))
+            ctx_words = set(combined_ctx.replace(" ", ""))
+            recall = len(gt_words & ctx_words) / max(len(gt_words), 1)
+            scores.append(min(recall, 1.0))
+
+        return sum(scores) / len(scores)</code></pre>
+
+    <h2>五、答案忠实度（Faithfulness）</h2>
+    <p>答案忠实度评估的是：LLM 生成的回答是否完全基于检索到的上下文，而不是凭空编造信息。这是 RAG 系统最关键的指标之一，因为"幻觉"是 LLM 最严重的问题。</p>
+
+    <p>计算方式：从回答中提取所有主张（claims），检查每个主张是否能在检索到的上下文中找到支持。忠实度 = 被支持的主张数 / 总主张数。</p>
+
+    <p>如果忠实度低，说明 LLM 在回答中编造了上下文里没有的信息。可能的原因包括：Prompt 设计不当（没有明确要求基于上下文回答）、LLM 本身的幻觉倾向、上下文信息不足以支撑完整回答等。优化方向：改进 Prompt 设计、使用更小的 Temperature、增加上下文压缩以减少噪声干扰。</p>
+
+    <h3>5.1 代码实现</h3>
+<pre><code class="language-python">class Faithfulness:
+    """
+    答案忠实度：评估 LLM 生成的回答是否基于检索到的上下文。
+
+    原理：
+    1. 从回答中提取主张（claims）
+    2. 检查每个主张是否能在上下文中找到支持
+    3. 忠实度 = 被支持的主张数 / 总主张数
+    """
+
+    def compute(self, contexts, answers):
+        """计算答案忠实度"""
+        scores = []
+        for ctx_list, answer in zip(contexts, answers):
+            if not ctx_list:
+                scores.append(0.0)
+                continue
+
+            combined_ctx = " ".join(ctx_list)
+            answer_words = set(answer.replace(" ", ""))
+            ctx_words = set(combined_ctx.replace(" ", ""))
+            faithfulness = len(answer_words & ctx_words) / max(len(answer_words), 1)
+            scores.append(min(faithfulness, 1.0))
+
+        return sum(scores) / len(scores)</code></pre>
+
+    <h2>六、答案相关性与正确性</h2>
+
+    <h3>6.1 答案相关性（Answer Relevancy）</h3>
+    <p>答案相关性评估的是：生成的回答是否直接回答了用户的问题。一个相关性高的回答应该紧扣问题，不跑题、不冗余。</p>
+
+    <p>计算方法：评估回答中的关键信息与问题的相关程度。一种常用方法是让 LLM 从回答生成"反向问题"，然后检查这些反向问题是否与原问题一致。</p>
+
+    <h3>6.2 答案正确性（Answer Correctness）</h3>
+    <p>答案正确性评估的是：生成的回答与真实答案的一致程度。它综合了忠实度和相关性，是 RAG 系统的最终质量指标。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">答案正确性 = 忠实度 + 相关性</text>
+            
+            <rect x="80" y="50" width="180" height="100" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="170" y="80" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">忠实度</text>
+            <text x="170" y="105" text-anchor="middle" fill="#2563eb" font-size="11">回答基于上下文</text>
+            <text x="170" y="125" text-anchor="middle" fill="#2563eb" font-size="11">不编造信息</text>
+            <text x="170" y="145" text-anchor="middle" fill="#666" font-size="10">权重: 0.5</text>
+            
+            <text x="300" y="105" text-anchor="middle" fill="#64748b" font-size="20" font-weight="bold">+</text>
+            
+            <rect x="340" y="50" width="180" height="100" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="430" y="80" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">相关性</text>
+            <text x="430" y="105" text-anchor="middle" fill="#059669" font-size="11">回答直接回答问题</text>
+            <text x="430" y="125" text-anchor="middle" fill="#059669" font-size="11">不跑题不冗余</text>
+            <text x="430" y="145" text-anchor="middle" fill="#666" font-size="10">权重: 0.5</text>
+            
+            <text x="560" y="105" text-anchor="middle" fill="#64748b" font-size="20" font-weight="bold">=</text>
+            
+            <rect x="600" y="50" width="160" height="100" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="680" y="80" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">正确性</text>
+            <text x="680" y="105" text-anchor="middle" fill="#d97706" font-size="11">回答准确完整</text>
+            <text x="680" y="125" text-anchor="middle" fill="#d97706" font-size="11">与真实答案一致</text>
+            <text x="680" y="145" text-anchor="middle" fill="#666" font-size="10">最终指标</text>
+        </svg>
+    </div>
+
+    <h3>6.3 代码实现</h3>
+<pre><code class="language-python">class AnswerRelevancy:
+    """答案相关性：评估回答是否直接回答了问题"""
+
+    def compute(self, questions, answers):
+        """计算答案相关性"""
+        scores = []
+        for q, a in zip(questions, answers):
+            q_words = set(q.replace(" ", ""))
+            a_words = set(a.replace(" ", ""))
+            overlap = len(q_words & a_words) / max(len(q_words), 1)
+            scores.append(min(overlap * 2, 1.0))
+        return sum(scores) / len(scores)
+
+
+class AnswerCorrectness:
+    """答案正确性：评估回答与真实答案的一致程度"""
+
+    def compute(self, answers, ground_truths):
+        """计算答案正确性"""
+        scores = []
+        for answer, gt in zip(answers, ground_truths):
+            a_words = set(answer.replace(" ", ""))
+            gt_words = set(gt.replace(" ", ""))
+            similarity = len(a_words & gt_words) / max(len(a_words | gt_words), 1)
+            scores.append(min(similarity * 2, 1.0))
+        return sum(scores) / len(scores)</code></pre>
+
+    <h2>七、完整 RAGAS 评估流程</h2>
+    <p>RAGAS 评估器的核心是 RAGAS 类，它组合了五个独立的评估指标，对 RAG 系统进行全面的自动化评估。</p>
+
+    <h3>7.1 评估数据准备</h3>
+    <p>执行 RAGAS 评估需要准备四类数据：问题列表、每个问题对应的检索上下文、真实答案（Ground Truth）、LLM 生成的回答。这些数据可以通过离线测试集或线上日志收集获得。</p>
+
+    <h3>7.2 代码实现</h3>
+<pre><code class="language-python">class RAGAS:
+    """
+    RAGAS 评估器：综合评估 RAG 系统的质量。
+
+    核心指标：
+    - context_precision: 上下文精确度
+    - context_recall: 上下文召回率
+    - faithfulness: 答案忠实度
+    - answer_relevancy: 答案相关性
+    - answer_correctness: 答案正确性
+    """
+
+    def evaluate(self, evaluation_data: RAGEvaluation) -> Dict[str, float]:
+        """执行全面评估"""
+        results = {}
+
+        results["context_precision"] = self.context_precision.compute(
+            evaluation_data.questions,
+            evaluation_data.contexts,
+            evaluation_data.ground_truths,
+        )
+
+        results["context_recall"] = self.context_recall.compute(
+            evaluation_data.contexts,
+            evaluation_data.ground_truths,
+        )
+
+        results["faithfulness"] = self.faithfulness.compute(
+            evaluation_data.contexts,
+            evaluation_data.answers,
+        )
+
+        results["answer_relevancy"] = self.answer_relevancy.compute(
+            evaluation_data.questions,
+            evaluation_data.answers,
+        )
+
+        results["answer_correctness"] = self.answer_correctness.compute(
+            evaluation_data.answers,
+            evaluation_data.ground_truths,
+        )
+
+        # 综合分数（五指标等权平均）
+        results["overall_score"] = (
+            results["context_precision"] * 0.2 +
+            results["context_recall"] * 0.2 +
+            results["faithfulness"] * 0.2 +
+            results["answer_relevancy"] * 0.2 +
+            results["answer_correctness"] * 0.2
+        )
+
+        return results</code></pre>
+
+    <h2>八、评估结果解读</h2>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">RAG 评估问题诊断树</text>
+            
+            <rect x="320" y="50" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="75" text-anchor="middle" fill="white" font-size="12" font-weight="bold">哪个指标低？</text>
+            
+            <line x1="320" y1="70" x2="120" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="180" y="90" fill="#64748b" font-size="10">精确度低</text>
+            <rect x="40" y="120" width="160" height="40" rx="8" fill="#3b82f6"/>
+            <text x="120" y="145" text-anchor="middle" fill="white" font-size="11" font-weight="bold">优化检索和重排序</text>
+            
+            <line x1="390" y1="90" x2="390" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="400" y="110" fill="#64748b" font-size="10">召回率低</text>
+            <rect x="310" y="120" width="160" height="40" rx="8" fill="#10b981"/>
+            <text x="390" y="145" text-anchor="middle" fill="white" font-size="11" font-weight="bold">增加查询改写</text>
+            
+            <line x1="460" y1="70" x2="660" y2="120" stroke="#64748b" stroke-width="1.5"/>
+            <text x="590" y="90" fill="#64748b" font-size="10">忠实度低</text>
+            <rect x="580" y="120" width="160" height="40" rx="8" fill="#f59e0b"/>
+            <text x="660" y="145" text-anchor="middle" fill="white" font-size="11" font-weight="bold">改进 Prompt 设计</text>
+            
+            <rect x="100" y="180" width="580" height="50" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="200" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">每个指标对应具体的优化方向</text>
+            <text x="120" y="220" fill="#666" font-size="10">精确度低 → 改进检索 | 召回率低 → 查询优化 | 忠实度低 → Prompt 优化</text>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>指标组合</th><th>可能问题</th><th>优化方向</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>精确度低 + 召回率正常</td>
+                <td>检索结果含噪声</td>
+                <td>改进分块、增加重排序</td>
+            </tr>
+            <tr>
+                <td>精确度正常 + 召回率低</td>
+                <td>遗漏了关键信息</td>
+                <td>查询改写、Multi-Query</td>
+            </tr>
+            <tr>
+                <td>忠实度低</td>
+                <td>LLM 编造信息（幻觉）</td>
+                <td>改进 Prompt、降低 Temperature</td>
+            </tr>
+            <tr>
+                <td>相关性低</td>
+                <td>回答跑题或冗余</td>
+                <td>优化 Prompt 指令</td>
+            </tr>
+            <tr>
+                <td>正确性低</td>
+                <td>回答与事实不符</td>
+                <td>综合优化检索和生成</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 评估最佳实践</div>
+        <p>建议建立自动化评估流水线，每次系统变更后自动执行评估，跟踪各指标的变化趋势。同时，定期人工抽查评估结果，确保自动化评估与人工判断一致。对于关键业务场景，建议结合人工评估和自动化评估，获得更全面的质量判断。</p>
+    </div>
+
+    <h2>九、小结</h2>
+    <p>RAGAS 框架为 RAG 系统提供了一套科学的评估体系。通过五个独立的指标，可以分别评估检索阶段和生成阶段的质量，快速定位问题环节。上下文精确度和召回率评估检索质量，忠实度、相关性和正确性评估生成质量。</p>
+
+    <p>在实际项目中，建议将 RAGAS 评估集成到 CI/CD 流程中，每次代码或配置变更后自动执行评估，确保系统质量不会因变更而下降。同时，建立评估基准线，定期对比不同配置和算法的效果，持续优化 RAG 系统的整体表现。</p>
+
+    <p>评估不是一次性的工作，而是一个持续迭代的过程。随着数据量的增长、用户需求的变化和模型技术的进步，评估指标和基准线也需要相应调整。建议每个季度至少执行一次全面的 RAG 评估，确保系统始终保持在最佳状态。</p>
+
+    <p>在下一节 6.9 中，我们将进入实战环节，综合运用前面学到的所有知识，构建一个完整的企业知识库问答系统。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

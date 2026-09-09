@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年07月31日</title>
+<style>
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card: #1c2333;
+  --bg-card-hover: #222d3f;
+  --border-color: #30363d;
+  --border-accent: #58a6ff;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-orange: #d29922;
+  --accent-purple: #bc8cff;
+  --accent-red: #f85149;
+  --accent-cyan: #39d2c0;
+  --tag-domestic: #3fb950;
+  --tag-foreign: #58a6ff;
+  --tag-app: #bc8cff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.7;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.header {
+  background: linear-gradient(135deg, #1a2332 0%, #0d1117 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 32px 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+}
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header .subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.header .date {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.summary-box {
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.summary-box h2 {
+  font-size: 16px;
+  color: var(--accent-blue);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.summary-box p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 28px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .icon { font-size: 22px; }
+
+.news-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 14px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.news-card:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card-hover);
+}
+.news-card .card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.news-card .card-num {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 20px;
+}
+.news-card .card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tag-domestic { background: rgba(63,185,80,0.15); color: var(--tag-domestic); border: 1px solid rgba(63,185,80,0.3); }
+.tag-foreign { background: rgba(88,166,255,0.15); color: var(--tag-foreign); border: 1px solid rgba(88,166,255,0.3); }
+.tag-app { background: rgba(188,140,255,0.15); color: var(--tag-app); border: 1px solid rgba(188,140,255,0.3); }
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.card-meta .keywords { color: var(--accent-cyan); }
+.card-meta .keywords span { color: var(--text-secondary); }
+.card-meta .source a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  word-break: break-all;
+}
+.card-meta .source a:hover { text-decoration: underline; }
+
+.card-body { font-size: 14px; }
+.card-body .core {
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent-green);
+}
+.card-body .impact {
+  color: var(--text-secondary);
+  padding-left: 12px;
+  border-left: 2px solid var(--accent-orange);
+}
+.card-body strong {
+  color: var(--accent-green);
+  font-weight: 600;
+}
+.card-body .impact strong {
+  color: var(--accent-orange);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 24px 0;
+}
+
+.app-section .news-card {
+  border-color: rgba(188,140,255,0.2);
+}
+.app-section .news-card:hover {
+  border-color: var(--accent-purple);
+}
+
+.footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.footer a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  body { padding: 12px 8px; }
+  .header { padding: 20px 16px; }
+  .header h1 { font-size: 22px; }
+  .news-card { padding: 16px; }
+  .card-meta { flex-direction: column; gap: 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🤖 AI 行业资讯简报</h1>
+  <div class="subtitle">AI Industry Daily Brief</div>
+  <div class="date">2026年07月31日 · 星期四</div>
+</div>
+
+<div class="summary-box">
+  <h2>📋 今日速览</h2>
+  <p>
+    OpenAI宣布GPT-5.6 Luna降价80%，AI模型竞争正式进入成本战时代；Thinking Machines发布Inkling Small开源模型，性能接近前代但体积仅1/4。国内方面，阿里云Qoder开源Better Harness编程Agent分析工具，智谱GLM Coding Plan以透明积分制回归。企业AI落地加速：GM围绕AI Agent重构工程流程使PR合并量翻三倍，Target AI库存系统实现自主补货决策。MCP协议迎来史上最大更新，转向"无状态"架构，为大规模企业部署铺平道路。
+  </p>
+</div>
+
+<!-- ============ 一、大模型 & 技术 ============ -->
+<h2 class="section-title"><span class="icon">🧠</span> 一、大模型 & 技术</h2>
+
+<!-- Item 1 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">1.</span>
+    <span class="card-title">OpenAI GPT-5.6 Luna 降价 80%，AI 模型价格战全面爆发</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>GPT-5.6 Luna、降价80%、价格战、API定价</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/912.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>7月30日，OpenAI宣布将GPT-5.6 Luna模型费用下调80%，性价比已超过DeepSeek V4 Pro。Google同步降低token使用量和tool call费用，Anthropic则强调同等价格下更强的任务性能。</div>
+    <div class="impact"><strong>影响：</strong>AI模型竞争从"拼性能"转向"拼成本"，企业API使用门槛大幅降低，推理成本下降将加速AI应用规模化落地。</div>
+  </div>
+</div>
+
+<!-- Item 2 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">2.</span>
+    <span class="card-title">Thinking Machines 发布 Inkling Small 开源模型，体积仅前代 1/4</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>Inkling Small、开源模型、小模型、企业部署</div>
+    <div class="source"><span>链接：</span><a href="https://venturebeat.com/technology/thinking-machines-debuts-inkling-small-open-source-ai-model-nearing-performance-of-predecessor-at-about-1-4-size" target="_blank">VentureBeat</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>7月31日，Thinking Machines发布Inkling Small开源AI模型，性能接近前代大模型但体积仅约1/4，适合注重数据控制和行为微调的企业用户。</div>
+    <div class="impact"><strong>影响：</strong>小型高性能模型趋势加速，企业在私有化部署时不再需要盲目追求最大参数量，"够用+可控"成为新范式。</div>
+  </div>
+</div>
+
+<!-- Item 3 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">3.</span>
+    <span class="card-title">阿里云 Qoder 开源 Better Harness，面向编程 Agent 的分析改进工具</span>
+    <span class="tag tag-domestic">国内</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>Qoder、Better Harness、编程Agent、开源</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/982/852.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>7月28日，阿里云Qoder团队在GitHub开源Better Harness，面向编程Agent提供分析与持续改进能力，帮助开发者评估和优化AI编程工具的表现。</div>
+    <div class="impact"><strong>影响：</strong>编程Agent生态日趋成熟，开源评估工具将帮助企业和开发者更科学地衡量AI编程效率，推动Coding Agent标准化。</div>
+  </div>
+</div>
+
+<!-- Item 4 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">4.</span>
+    <span class="card-title">谷歌推出 Lyria 3.5 音乐生成 AI 模型</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>Lyria 3.5、音乐生成、Google Flow Music、AI创作</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/412.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>7月29日，谷歌宣布在Google Flow Music中推出Lyria 3.5音乐生成模型，显著提升旋律编排、歌词创作和人声质量，用户可创作更丰富的音乐作品。</div>
+    <div class="impact"><strong>影响：</strong>AI音乐生成进入"可用级"阶段，内容创作工具链进一步被AI渗透，音乐产业面临新的技术变革。</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ============ 二、产品 & 商业 ============ -->
+<h2 class="section-title"><span class="icon">💼</span> 二、产品 & 商业</h2>
+
+<!-- Item 5 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">5.</span>
+    <span class="card-title">MCP 协议迎来史上最大更新：转向"无状态"核心架构</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>MCP、Model Context Protocol、无状态、Anthropic</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/102.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>2026年7月28日，MCP（Model Context Protocol）发布最大规模更新，核心架构转向"无状态"设计。该协议由Anthropic于2024年11月推出，已成为AI Agent与外部软件系统的连接标准。</div>
+    <div class="impact"><strong>影响：</strong>无状态架构将大幅降低Agent部署复杂度，为大规模企业级Agentic AI生产部署扫清基础设施障碍。</div>
+  </div>
+</div>
+
+<!-- Item 6 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">6.</span>
+    <span class="card-title">微软市值暴涨 15% 达 4500 亿美元，创 18 年来最佳单日表现</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>微软、市值暴涨、AI投资回报、财报</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/919.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>微软公布财报后股价飙升15%，市值单日增加4500亿美元，创近18年最大涨幅，市场对其AI投资回报持乐观态度。</div>
+    <div class="impact"><strong>影响：</strong>华尔街开始认可AI基础设施投资的商业价值，AI从"烧钱项目"转向"盈利引擎"的叙事正在形成。</div>
+  </div>
+</div>
+
+<!-- Item 7 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">7.</span>
+    <span class="card-title">消息称 DeepSeek 计划在内蒙古建设大型 AI 数据中心，新增 1GW 算力</span>
+    <span class="tag tag-domestic">国内</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>DeepSeek、AI数据中心、1GW算力、内蒙古</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/925.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>据IT之家报道，DeepSeek计划在内蒙古建设大型AI数据中心，新增1GW算力规模，进一步扩大训练和推理基础设施。</div>
+    <div class="impact"><strong>影响：</strong>中国AI头部企业持续加码算力基础设施，1GW级别的规划显示出国内大模型竞争的算力军备竞赛仍在加速。</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ============ 三、AI 应用案例（新增板块） ============ -->
+<h2 class="section-title"><span class="icon">🚀</span> 三、AI 应用案例</h2>
+
+<!-- App Case 1 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">8.</span>
+    <span class="card-title">GM 围绕 AI Agent 重构工程流程，PR 合并量翻三倍</span>
+    <span class="tag tag-app">应用案例</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>AI Agent、工程流程、GitHub、自动化、GM通用汽车</div>
+    <div class="source"><span>链接：</span><a href="https://venturebeat.com/ai/gm-redesigned-its-engineering-workflows-around-ai-agents-and-tripled-its-merged-pull-requests" target="_blank">VentureBeat</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>GM在VB Transform 2026上披露，通过将工程流程从"聊天机器人外挂"模式重构为"逐环Agent深度集成"模式，合并的Pull Request数量提升至原来的3倍。</div>
+    <div class="impact"><strong>影响：</strong>企业AI集成从"表面工具"进入"流程重塑"阶段，说明Agentic AI在软件工程中的实际ROI已被头部企业验证。</div>
+  </div>
+</div>
+
+<!-- App Case 2 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">9.</span>
+    <span class="card-title">Target AI 库存系统实现自主补货决策，小实验验证AI自治能力</span>
+    <span class="tag tag-app">应用案例</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>AI库存管理、自主决策、零售、Target</div>
+    <div class="source"><span>链接：</span><a href="https://venturebeat.com/ai/target-svp-says-its-real-ai-moat-isnt-the-models-its-everything-built-around-them" target="_blank">VentureBeat</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>Target SVP在VB Transform 2026上分享，某门店AI驱动的库存补货指令起初看似"错误"，但分析师选择让系统继续运行——这个小赌注正在塑造AI未来被赋予多少自主权。</div>
+    <div class="impact"><strong>影响：</strong>零售行业AI应用从"辅助建议"走向"自主执行"，核心壁垒不是模型本身，而是围绕模型构建的完整数据与决策系统。</div>
+  </div>
+</div>
+
+<!-- App Case 3 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">10.</span>
+    <span class="card-title">智谱 GLM Coding Plan 以透明积分制回归，每月 118 元起</span>
+    <span class="tag tag-app">应用案例</span>
+    <span class="tag tag-domestic">国内</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>智谱GLM、Coding Plan、编程订阅、透明积分制</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/934.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>智谱AI将GLM Coding Plan订阅服务以全新透明积分制回归，起步价每月118元，用户可按需消耗编程Agent额度，避免隐性计费。</div>
+    <div class="impact"><strong>影响：</strong>国内AI编程工具商业化进入"透明计费"阶段，降低中小企业采用门槛，推动编程Agent从尝鲜走向日常生产力工具。</div>
+  </div>
+</div>
+
+<!-- App Case 4 -->
+<div class="news-card">
+  <div class="card-header">
+    <span class="card-num">11.</span>
+    <span class="card-title">Meta 借助 AI 大幅缩短应用开发周期，更多新应用已在路上</span>
+    <span class="tag tag-app">应用案例</span>
+    <span class="tag tag-foreign">国外</span>
+  </div>
+  <div class="card-meta">
+    <div class="keywords"><span>关键词：</span>Meta、AI开发、应用周期、效率提升</div>
+    <div class="source"><span>链接：</span><a href="https://www.ithome.com/0/983/923.htm" target="_blank">IT之家</a></div>
+  </div>
+  <div class="card-body">
+    <div class="core"><strong>核心：</strong>Meta内部借助AI工具大幅缩短应用开发周期，更多基于AI加速开发的新应用已在规划中。此前Meta二季度财报披露后股价曾跌10%，但AI赋能业务的成效正在显现。</div>
+    <div class="impact"><strong>影响：</strong>头部科技公司从AI"投入期"进入"产出期"，内部开发效率提升直接转化为产品迭代速度优势，AI ROI的验证正在多个维度展开。</div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>📊 AI 行业资讯简报 · 2026-07-31</p>
+  <p>数据来源：IT之家、VentureBeat 等 · 所有链接经 HTTP 状态码验证</p>
+  <p>Generated by Hermes AI Daily Brief System</p>
+</div>
+
+</body>
+</html>
