@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10.3 框架对比：LangGraph / AutoGen / CrewAI / OpenAI Agents SDK / Dify — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>10.3 框架对比：LangGraph / AutoGen / CrewAI / OpenAI Agents SDK / Dify</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十：AI Agent 开发</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>了解五大主流 Agent 框架的核心差异和适用场景</li>
+        <li>掌握框架选择的关键评估维度</li>
+        <li>学会根据项目需求选择最合适的框架</li>
+        <li>能够基于 LLM 构建智能框架推荐助手</li>
+    </ul>
+
+    <h2>一、框架全景对比</h2>
+    <p>在 AI Agent 开发领域，目前主流的框架有五种：LangGraph（LangChain 生态）、AutoGen（Microsoft）、CrewAI、OpenAI Agents SDK 和 Dify。这些框架各有侧重，覆盖了从低代码可视化到高度编程控制的不同需求层次。理解这些框架的差异，是选择合适工具链的第一步。</p>
+
+    <p>从架构理念来看，LangGraph 追求极致的灵活性和控制力，适合需要精细设计工作流的复杂应用；AutoGen 强调多 Agent 对话协作，适合代码生成和讨论场景；CrewAI 关注角色分工和任务编排，适合团队化 Agent 开发；OpenAI Agents SDK 追求轻量简洁，适合快速集成到现有 OpenAI 应用中；Dify 则面向非技术用户，通过可视化编排降低了 Agent 开发的门槛。</p>
+
+    <p>选择框架时需要考虑多个维度：是否需要多 Agent 协作、是否需要图编排能力、团队的技术水平、项目的时间要求、对定制化的需求程度等。没有一个框架在所有维度上都是最优的，关键在于找到最适合当前项目需求的平衡点。</p>
+
+    <h3>1.1 五维对比</h3>
+    <table>
+        <thead>
+            <tr><th>维度</th><th>LangGraph</th><th>AutoGen</th><th>CrewAI</th><th>OpenAI Agents SDK</th><th>Dify</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Agent 循环</strong></td><td>自定义状态机</td><td>对话驱动</td><td>任务驱动</td><td>函数调用驱动</td><td>可视化编排</td></tr>
+            <tr><td><strong>多 Agent</strong></td><td>支持</td><td>支持</td><td>支持</td><td>不支持</td><td>支持</td></tr>
+            <tr><td><strong>图编排</strong></td><td>支持</td><td>不支持</td><td>不支持</td><td>不支持</td><td>支持</td></tr>
+            <tr><td><strong>代码复杂度</strong></td><td>高</td><td>中</td><td>低</td><td>低</td><td>低</td></tr>
+            <tr><td><strong>学习曲线</strong></td><td>高</td><td>中</td><td>低</td><td>低</td><td>低</td></tr>
+            <tr><td><strong>模型支持</strong></td><td>多模型</td><td>多模型</td><td>多模型</td><td>仅 OpenAI</td><td>多模型</td></tr>
+            <tr><td><strong>社区生态</strong></td><td>活跃</td><td>活跃</td><td>快速增长</td><td>新生态</td><td>活跃</td></tr>
+            <tr><td><strong>生产就绪</strong></td><td>是</td><td>是</td><td>是</td><td>是</td><td>是</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Agent 框架定位矩阵</text>
+            
+            <!-- 坐标轴 -->
+            <line x1="80" y1="180" x2="720" y2="180" stroke="#64748b" stroke-width="1"/>
+            <line x1="80" y1="40" x2="80" y2="180" stroke="#64748b" stroke-width="1"/>
+            
+            <!-- 轴标签 -->
+            <text x="400" y="198" text-anchor="middle" fill="#666" font-size="11">控制力（编程强度） →</text>
+            <text x="20" y="110" text-anchor="middle" fill="#666" font-size="11" transform="rotate(-90, 20, 110)">使用难度 ↓</text>
+            
+            <!-- 框架点 -->
+            <!-- Dify: 低控制力，低难度 -->
+            <circle cx="120" cy="160" r="20" fill="#f59e0b" opacity="0.8"/>
+            <text x="120" y="165" text-anchor="middle" fill="white" font-size="9" font-weight="bold">Dify</text>
+            
+            <!-- OpenAI Agents SDK: 低控制力，低难度 -->
+            <circle cx="180" cy="155" r="18" fill="#10b981" opacity="0.8"/>
+            <text x="180" y="160" text-anchor="middle" fill="white" font-size="8" font-weight="bold">OpenAI</text>
+            
+            <!-- CrewAI: 中控制力，低难度 -->
+            <circle cx="280" cy="145" r="20" fill="#8b5cf6" opacity="0.8"/>
+            <text x="280" y="150" text-anchor="middle" fill="white" font-size="9" font-weight="bold">CrewAI</text>
+            
+            <!-- AutoGen: 中高控制力，中难度 -->
+            <circle cx="420" cy="120" r="22" fill="#3b82f6" opacity="0.8"/>
+            <text x="420" y="125" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AutoGen</text>
+            
+            <!-- LangGraph: 高控制力，高难度 -->
+            <circle cx="600" cy="90" r="24" fill="#1a1a2e" opacity="0.8"/>
+            <text x="600" y="95" text-anchor="middle" fill="white" font-size="10" font-weight="bold">LangGraph</text>
+            
+            <!-- 区域标注 -->
+            <text x="150" y="50" text-anchor="middle" fill="#999" font-size="9">低代码区</text>
+            <text x="400" y="50" text-anchor="middle" fill="#999" font-size="9">中间地带</text>
+            <text x="600" y="50" text-anchor="middle" fill="#999" font-size="9">高定制区</text>
+        </svg>
+    </div>
+
+    <h2>二、LangGraph</h2>
+    <p>LangGraph 是 LangChain 生态中的图编排框架，基于有向图（Directed Graph）概念构建 Agent 工作流。它允许开发者定义复杂的状态机和循环逻辑，是五个框架中控制力最强、灵活度最高的选择。LangGraph 的核心优势在于：支持自定义状态管理、支持循环和条件分支、支持多 Agent 协作、与 LangChain 生态无缝集成。</p>
+
+    <p>使用 LangGraph 需要定义状态结构（State）、节点函数（Node）和边（Edge），然后编译成可执行的应用。这种编程模型虽然灵活，但也带来了较高的学习成本。开发者需要理解状态机的概念，并熟练掌握图编排的语法。</p>
+
+    <h3>2.1 LangGraph 代码示例</h3>
+    <div class="code-file">Python（LangGraph 基本用法）</div>
+<pre><code class="language-python">from langgraph.graph import StateGraph
+from typing import TypedDict
+
+# 1. 定义状态
+class AgentState(TypedDict):
+    messages: list
+    result: str
+
+# 2. 定义节点函数
+def research_node(state):
+    return {"messages": ["搜索中..."]}
+
+def write_node(state):
+    return {"result": "撰写完成"}
+
+# 3. 构建图
+graph = StateGraph(AgentState)
+graph.add_node("research", research_node)
+graph.add_node("write", write_node)
+graph.add_edge("research", "write")
+app = graph.compile()
+
+# 4. 执行
+result = app.invoke({"messages": ["分析数据"]})</code></pre>
+
+    <h2>三、AutoGen</h2>
+    <p>AutoGen 由 Microsoft 开发，是一个基于对话的多 Agent 框架。它的核心理念是：让多个 Agent 通过对话协作来完成复杂任务。AutoGen 特别擅长代码生成和评审场景，因为不同的 Agent 可以扮演不同的角色（如程序员、评审员、测试员），通过对话迭代改进代码。</p>
+
+    <p>AutoGen 的 API 设计简洁，主要通过 ConversableAgent 和 GroupChat 两个核心类来实现。开发者只需创建 Agent 实例，定义它们的角色和系统提示词，然后启动对话即可。AutoGen 的优势在于对话自然、代码生成能力强，但对话控制相对复杂，需要仔细调优以避免无限循环。</p>
+
+    <h3>3.1 AutoGen 代码示例</h3>
+    <div class="code-file">Python（AutoGen 基本用法）</div>
+<pre><code class="language-python">from autogen import ConversableAgent
+
+# 1. 创建 Agent
+user_proxy = ConversableAgent(
+    name="User",
+    llm_config=False
+)
+assistant = ConversableAgent(
+    name="Assistant",
+    llm_config={"model": "gpt-4"}
+)
+
+# 2. 启动对话
+user_proxy.initiate_chat(
+    assistant,
+    message="帮我写一个爬虫程序"
+)</code></pre>
+
+    <h2>四、CrewAI</h2>
+    <p>CrewAI 是一个面向团队协作的 Agent 框架，采用"角色-任务-团队"三层抽象模型。开发者定义不同的 Agent 角色（如研究员、作家、编辑），为每个角色分配具体任务，然后将它们组合成一个 Crew（团队）来执行。CrewAI 的 API 设计非常简洁，是五个框架中最容易上手的之一。</p>
+
+    <p>CrewAI 适合快速构建角色分工明确的 Agent 应用，如内容创作流水线（研究 → 撰写 → 编辑 → 发布）、数据分析流程（收集 → 分析 → 报告）等。它的局限性在于对复杂工作流的支持有限，当需要精细控制执行流程时，可能需要选择 LangGraph。</p>
+
+    <h3>4.1 CrewAI 代码示例</h3>
+    <div class="code-file">Python（CrewAI 基本用法）</div>
+<pre><code class="language-python">from crewai import Agent, Task, Crew
+
+# 1. 定义 Agent
+researcher = Agent(
+    role="研究员",
+    goal="深入研究技术问题",
+    backstory="你是资深技术研究员"
+)
+writer = Agent(
+    role="作家",
+    goal="撰写清晰的技术文章",
+    backstory="你是经验丰富的技术作家"
+)
+
+# 2. 定义任务
+research_task = Task(
+    description="研究 ReAct 框架",
+    agent=researcher
+)
+write_task = Task(
+    description="根据研究撰写文章",
+    agent=writer
+)
+
+# 3. 创建 Crew 并执行
+crew = Crew(agents=[researcher, writer], tasks=[research_task, write_task])
+result = crew.kickoff()</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">CrewAI 团队模型</text>
+            
+            <!-- 团队 -->
+            <rect x="280" y="40" width="220" height="30" rx="15" fill="#8b5cf6"/>
+            <text x="390" y="60" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Crew（团队）</text>
+            
+            <!-- 连接线 -->
+            <line x1="340" y1="70" x2="200" y2="90" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="70" x2="390" y2="90" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="440" y1="70" x2="580" y2="90" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- Agent -->
+            <rect x="130" y="90" width="140" height="50" rx="8" fill="#3b82f6"/>
+            <text x="200" y="110" text-anchor="middle" fill="white" font-size="11" font-weight="bold">研究员</text>
+            <text x="200" y="130" text-anchor="middle" fill="white" font-size="8">Task: 研究</text>
+            
+            <rect x="320" y="90" width="140" height="50" rx="8" fill="#10b981"/>
+            <text x="390" y="110" text-anchor="middle" fill="white" font-size="11" font-weight="bold">作家</text>
+            <text x="390" y="130" text-anchor="middle" fill="white" font-size="8">Task: 撰写</text>
+            
+            <rect x="510" y="90" width="140" height="50" rx="8" fill="#f59e0b"/>
+            <text x="580" y="110" text-anchor="middle" fill="white" font-size="11" font-weight="bold">编辑</text>
+            <text x="580" y="130" text-anchor="middle" fill="white" font-size="8">Task: 审核</text>
+        </svg>
+    </div>
+
+    <h2>五、OpenAI Agents SDK</h2>
+    <p>OpenAI Agents SDK 是 OpenAI 官方推出的轻量级 Agent 开发框架。它基于 OpenAI 的 Function Calling 能力，提供了简洁的 API 来构建 Agent 应用。与其他框架相比，OpenAI Agents SDK 的最大优势是：轻量简单、类型安全、与 OpenAI 生态深度集成。</p>
+
+    <p>OpenAI Agents SDK 适合构建轻量级的 Agent 应用，特别是那些只需要单个 Agent 配合少量工具的场景。它的局限性在于：目前仅支持 OpenAI 模型、多 Agent 支持较弱、复杂工作流编排能力有限。如果你的项目主要使用 OpenAI 模型且需求相对简单，这是一个不错的选择。</p>
+
+    <h3>5.1 OpenAI Agents SDK 代码示例</h3>
+    <div class="code-file">Python（OpenAI Agents SDK 基本用法）</div>
+<pre><code class="language-python">from agents import Agent, Runner, function_tool
+
+@function_tool
+def search(query: str) -> str:
+    return f"搜索结果: {query}"
+
+agent = Agent(
+    name="助手",
+    instructions="你是一个有用的助手",
+    tools=[search]
+)
+
+result = await Runner.run(agent, "查询天气")
+print(result.final_output)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">五大框架能力雷达</text>
+            
+            <!-- OpenAI Agents SDK -->
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#10b981"/>
+            <text x="100" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">OpenAI SDK</text>
+            <text x="50" y="100" fill="white" font-size="8">轻量/简洁/类型安全</text>
+            
+            <!-- CrewAI -->
+            <rect x="190" y="55" width="140" height="60" rx="8" fill="#8b5cf6"/>
+            <text x="260" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">CrewAI</text>
+            <text x="210" y="100" fill="white" font-size="8">任务驱动/快速上手</text>
+            
+            <!-- AutoGen -->
+            <rect x="350" y="55" width="140" height="60" rx="8" fill="#3b82f6"/>
+            <text x="420" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">AutoGen</text>
+            <text x="370" y="100" fill="white" font-size="8">对话驱动/代码生成</text>
+            
+            <!-- Dify -->
+            <rect x="510" y="55" width="140" height="60" rx="8" fill="#f59e0b"/>
+            <text x="580" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Dify</text>
+            <text x="530" y="100" fill="white" font-size="8">可视化/开箱即用</text>
+            
+            <!-- LangGraph -->
+            <rect x="670" y="55" width="80" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="710" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LangGraph</text>
+            <text x="685" y="100" fill="white" font-size="8">精细控制</text>
+        </svg>
+    </div>
+
+    <h2>六、Dify</h2>
+    <p>Dify 是一个开源的 LLMOps 平台，提供了可视化的 Agent 编排能力。与其他框架不同，Dify 主要面向非技术用户，通过拖拽式的工作流编辑器，让用户无需编程即可构建复杂的 Agent 应用。Dify 支持多种模型接入、可视化调试、API 发布、监控分析等功能，是一个开箱即用的 Agent 开发和部署平台。</p>
+
+    <p>Dify 适合以下场景：团队中缺乏专业开发人员、需要快速原型验证、希望降低 Agent 开发门槛、需要一个完整的 LLMOps 平台而不仅仅是开发框架。Dify 的局限性在于：定制化能力有限、高级功能需要付费、对复杂编程逻辑的支持不如代码框架灵活。</p>
+
+    <h3>6.1 Dify 使用方式</h3>
+    <div class="code-file">Python（Dify API 调用）</div>
+<pre><code class="language-python"># Dify 使用方式：
+# 1. 在可视化界面拖拽组件构建工作流
+# 2. 配置 LLM 节点、工具节点、条件节点
+# 3. 通过 API 调用已部署的工作流
+
+import requests
+
+response = requests.post(
+    "https://api.dify.ai/v1/workflows/run",
+    json={"inputs": {"query": "分析数据"}},
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+result = response.json()</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">框架选择决策树</text>
+            
+            <!-- 起点 -->
+            <rect x="310" y="40" width="160" height="30" rx="15" fill="#1a1a2e"/>
+            <text x="390" y="60" text-anchor="middle" fill="white" font-size="10" font-weight="bold">需要多 Agent 吗？</text>
+            
+            <!-- 否分支 -->
+            <line x1="310" y1="55" x2="150" y2="80" stroke="#64748b" stroke-width="1.5"/>
+            <text x="220" y="65" text-anchor="middle" fill="#64748b" font-size="9">否</text>
+            <rect x="80" y="80" width="140" height="30" rx="6" fill="#10b981"/>
+            <text x="150" y="100" text-anchor="middle" fill="white" font-size="10" font-weight="bold">OpenAI Agents SDK</text>
+            <text x="150" y="115" text-anchor="middle" fill="white" font-size="8">轻量简洁</text>
+            
+            <!-- 是分支 -->
+            <line x1="470" y1="55" x2="630" y2="80" stroke="#64748b" stroke-width="1.5"/>
+            <text x="560" y="65" text-anchor="middle" fill="#64748b" font-size="9">是</text>
+            
+            <!-- 是之后的选择 -->
+            <rect x="560" y="80" width="140" height="30" rx="15" fill="#8b5cf6"/>
+            <text x="630" y="100" text-anchor="middle" fill="white" font-size="9" font-weight="bold">需要可视化？</text>
+            
+            <line x1="630" y1="110" x2="630" y2="130" stroke="#64748b" stroke-width="1.5"/>
+            <text x="655" y="125" text-anchor="middle" fill="#64748b" font-size="8">是</text>
+            <rect x="560" y="130" width="140" height="30" rx="6" fill="#f59e0b"/>
+            <text x="630" y="150" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Dify</text>
+            <text x="630" y="165" text-anchor="middle" fill="white" font-size="8">可视化编排</text>
+            
+            <!-- 否之后的选择 -->
+            <rect x="310" y="80" width="160" height="30" rx="15" fill="#3b82f6"/>
+            <text x="390" y="100" text-anchor="middle" fill="white" font-size="9" font-weight="bold">需要图编排？</text>
+            
+            <line x1="390" y1="110" x2="390" y2="130" stroke="#64748b" stroke-width="1.5"/>
+            <text x="410" y="125" text-anchor="middle" fill="#64748b" font-size="8">是</text>
+            <rect x="310" y="130" width="160" height="30" rx="6" fill="#1a1a2e"/>
+            <text x="390" y="150" text-anchor="middle" fill="white" font-size="10" font-weight="bold">LangGraph</text>
+            <text x="390" y="165" text-anchor="middle" fill="white" font-size="8">精细控制</text>
+            
+            <!-- 否之后的另一选择 -->
+            <line x1="230" y1="95" x2="230" y2="130" stroke="#64748b" stroke-width="1.5"/>
+            <text x="210" y="120" text-anchor="middle" fill="#64748b" font-size="8">否</text>
+            <rect x="160" y="130" width="140" height="30" rx="6" fill="#8b5cf6"/>
+            <text x="230" y="150" text-anchor="middle" fill="white" font-size="10" font-weight="bold">CrewAI / AutoGen</text>
+            <text x="230" y="165" text-anchor="middle" fill="white" font-size="8">任务/对话驱动</text>
+        </svg>
+    </div>
+
+    <h2>七、选择建议</h2>
+    <p>选择合适的 Agent 框架是项目成功的关键一步。以下是针对不同场景的框架选择建议：</p>
+
+    <table>
+        <thead>
+            <tr><th>场景</th><th>推荐框架</th><th>原因</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>复杂工作流</strong></td><td>LangGraph</td><td>精细控制每个步骤的状态转换</td></tr>
+            <tr><td><strong>多 Agent 对话</strong></td><td>AutoGen</td><td>对话驱动，代码生成能力强</td></tr>
+            <tr><td><strong>角色分工团队</strong></td><td>CrewAI</td><td>API 简洁，快速构建</td></tr>
+            <tr><td><strong>轻量级助手</strong></td><td>OpenAI Agents SDK</td><td>轻量简单，类型安全</td></tr>
+            <tr><td><strong>非技术用户</strong></td><td>Dify</td><td>可视化编排，开箱即用</td></tr>
+            <tr><td><strong>企业级部署</strong></td><td>LangGraph / Dify</td><td>生产就绪，监控完善</td></tr>
+            <tr><td><strong>快速原型</strong></td><td>CrewAI / Dify</td><td>上手快，开发效率高</td></tr>
+        </tbody>
+    </table>
+
+    <h2>八、基于 LLM 的框架推荐助手</h2>
+    <p>在实际项目中，框架选择往往涉及多个维度的权衡。为了帮助开发者做出更明智的选择，我们可以构建一个基于 LLM 的框架推荐助手。这个助手接收用户的自然语言需求描述，结合框架特性数据，通过大模型推理给出最适合的框架推荐。</p>
+
+    <p>推荐助手的工作流程包括：需求解析（理解用户的项目需求和技术背景）、框架匹配（根据需求特征匹配框架特性）、LLM 推理（调用大模型进行综合分析）、结果输出（给出推荐框架、推荐理由和注意事项）。</p>
+
+    <h3>8.1 推荐助手实现</h3>
+    <div class="code-file">Python（框架推荐助手）</div>
+<pre><code class="language-python">class FrameworkAdvisor:
+    """基于 LLM 的框架选择建议助手"""
+    
+    PROMPT_TEMPLATE = """你是一个 AI 开发专家，擅长选择合适的 Agent 框架。
+请根据用户的需求，从以下框架中选择最合适的一个。
+
+可选框架：
+- LangGraph: 复杂工作流，精细控制
+- AutoGen: 多 Agent 对话，代码生成
+- CrewAI: 角色分工，快速构建
+- OpenAI Agents SDK: 轻量简洁
+- Dify: 可视化编排，开箱即用
+
+用户需求：
+{requirements}
+
+请输出：
+推荐框架: &lt;框架名称&gt;
+推荐理由: &lt;详细理由&gt;
+替代方案: &lt;次优选择&gt;
+注意事项: &lt;使用建议&gt;"""
+
+    def recommend(self, requirements: str):
+        """调用 LLM 进行框架推荐"""
+        prompt = self.PROMPT_TEMPLATE.format(
+            requirements=requirements
+        )
+        response = client.chat.completions.create(
+            model="qwen3.7-max",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        return response.choices[0].message.content</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">框架推荐助手工作流程</text>
+            
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">需求输入</text>
+            <text x="50" y="100" fill="white" font-size="8">自然语言描述</text>
+            
+            <line x1="170" y1="85" x2="210" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="140" height="60" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">需求解析</text>
+            <text x="230" y="100" fill="white" font-size="8">提取关键特征</text>
+            
+            <line x1="350" y1="85" x2="390" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="390" y="55" width="140" height="60" rx="8" fill="#3b82f6"/>
+            <text x="460" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LLM 推理</text>
+            <text x="410" y="100" fill="white" font-size="8">综合分析匹配</text>
+            
+            <line x1="530" y1="85" x2="570" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="570" y="55" width="180" height="60" rx="8" fill="#10b981"/>
+            <text x="660" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">输出推荐</text>
+            <text x="590" y="100" fill="white" font-size="8">框架+理由+注意事项</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在选择 Agent 框架时，建议先在每个候选框架上做一个简单的原型验证（Proof of Concept），评估其实际开发体验。不要仅凭文档和教程做决定，实际的编码体验往往能揭示文档中看不到的问题。同时，考虑团队的长期维护能力——选择一个团队能够熟练掌握的框架，比选择一个功能最全但难以掌握的框架更为重要。</p>
+    </div>
+
+    <h2>九、小结</h2>
+    <p>五大 Agent 框架各有特色，覆盖了从低代码可视化到高度编程控制的不同需求层次。LangGraph 适合需要精细控制的复杂工作流，AutoGen 擅长多 Agent 对话协作，CrewAI 以简洁的 API 快速构建角色分工团队，OpenAI Agents SDK 为轻量级场景提供简洁方案，Dify 则降低了非技术用户的使用门槛。理解各框架的定位和差异，有助于在项目初期做出明智的技术选型决策。</p>
+
+    <p>在下一节 10.4 中，我们将学习 Agent 规划能力，包括任务分解、动态规划等高级技术，帮助 Agent 更好地处理复杂的长程任务。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

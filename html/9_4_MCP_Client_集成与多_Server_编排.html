@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.4 MCP Client 集成与多 Server 编排 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.4 MCP Client 集成与多 Server 编排</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>掌握 MCP Client 的集成方法和连接管理</li>
+        <li>学会连接和管理多个 MCP Server</li>
+        <li>理解多 Server 编排的原理和实现</li>
+        <li>能够设计复杂的多 Server 工作流</li>
+    </ul>
+
+    <h2>一、MCP Client 集成概述</h2>
+    <p>MCP Client 集成是指将 MCP 客户端能力嵌入到 AI 应用中，使其能够连接和使用 MCP Server 提供的工具、资源和 Prompts。在实际应用中，一个 AI 应用通常需要连接多个 MCP Server，每个 Server 提供不同的能力。例如，一个 AI 助手可能需要同时连接天气服务（获取天气数据）、数据库服务（查询用户信息）、文件服务（读写文件）等多个 Server。</p>
+
+    <p>MCP Client 集成的核心价值在于：通过统一的协议接口，AI 应用可以动态发现和调用外部能力，而不需要为每个数据源或工具编写专用的集成代码。这种设计使得 AI 应用的能力扩展变得简单和灵活，新的能力只需要通过 MCP Server 暴露，就可以被现有的 AI 应用自动发现和使用。</p>
+
+    <p>Client 集成需要考虑的关键问题包括：连接管理（建立和断开与 Server 的连接）、能力发现（发现 Server 支持的工具、资源和 Prompts）、工具调用（将 LLM 的工具调用请求转发给对应的 Server）、结果整合（将 Server 返回的结果注入到 LLM 的上下文中）。</p>
+
+    <h3>1.1 集成流程</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP Client 集成流程</text>
+            
+            <rect x="30" y="55" width="120" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">创建 Client</text>
+            
+            <line x1="150" y1="75" x2="190" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="55" width="120" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="250" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">连接 Server</text>
+            
+            <line x1="310" y1="75" x2="350" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="55" width="120" height="40" rx="8" fill="#3b82f6"/>
+            <text x="410" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">发现能力</text>
+            
+            <line x1="470" y1="75" x2="510" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="120" height="40" rx="8" fill="#10b981"/>
+            <text x="570" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">调用工具</text>
+            
+            <line x1="630" y1="75" x2="670" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="40" rx="8" fill="#f59e0b"/>
+            <text x="710" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">整合结果</text>
+            
+            <!-- LLM 层 -->
+            <rect x="30" y="120" width="720" height="65" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="145" text-anchor="middle" fill="#1a1a2e" font-size="12" font-weight="bold">LLM 决策层</text>
+            <text x="390" y="165" text-anchor="middle" fill="#666" font-size="10">LLM 决定调用哪个工具 → Client 转发请求到对应 Server → 获取结果 → 注入 LLM 上下文</text>
+            <text x="390" y="180" text-anchor="middle" fill="#666" font-size="9">这个过程需要精确的消息管理和状态跟踪，确保对话的连贯性</text>
+        </svg>
+    </div>
+
+    <h2>二、Client 连接管理</h2>
+    <p>Client 连接管理是 MCP Client 集成的基础功能。Client 需要管理与多个 Server 的连接，包括建立连接、维护连接状态、处理连接异常、断开连接等。每个 Server 连接都是独立的，Client 需要为每个连接维护独立的状态信息，包括 Server 能力、工具列表、资源列表等。这种独立连接设计使得 Client 可以灵活地添加或移除 Server，而不影响其他连接。</p>
+
+    <p>连接管理的设计需要考虑可靠性和效率。对于本地 Server（通过 stdio 通信），Client 需要管理子进程的生命周期；对于远程 Server（通过 SSE 或 HTTP 通信），Client 需要管理网络连接和重试逻辑。当 Server 连接断开时，Client 应该能够自动重连或通知用户。在实际生产环境中，连接管理还需要考虑连接池、负载均衡、故障转移等高级特性。</p>
+
+    <h3>2.1 连接管理实现</h3>
+    <div class="code-file">Python（Client 连接管理）</div>
+<pre><code class="language-python">class MCPClient:
+    """MCP Client SDK 核心类"""
+    
+    def __init__(self, name: str, version: str):
+        self.name = name
+        self.version = version
+        self.servers = {}  # 管理多个 Server 连接
+        self.connected = False
+
+    def connect_server(self, server_name, server_info):
+        """连接到一个 MCP Server"""
+        conn = MCPServerConnection(server_name, server_info)
+        self.servers[server_name] = conn
+        conn.connect()  # 建立连接并发现能力
+        self.connected = True
+
+    def disconnect_server(self, server_name):
+        """断开与指定 Server 的连接"""
+        if server_name in self.servers:
+            self.servers[server_name].disconnect()
+            del self.servers[server_name]
+        if not self.servers:
+            self.connected = False
+
+    def get_capabilities(self):
+        """获取所有 Server 的能力摘要"""
+        caps = {}
+        for name, conn in self.servers.items():
+            caps[name] = {
+                "tools": len(conn.tools),
+                "resources": len(conn.resources),
+                "prompts": len(conn.prompts),
+            }
+        return caps</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">多 Server 连接管理</text>
+            
+            <!-- Client -->
+            <rect x="30" y="50" width="140" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="100" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">MCP Client</text>
+            <text x="100" y="95" text-anchor="middle" fill="#2563eb" font-size="9">连接管理器</text>
+            <text x="50" y="115" fill="#2563eb" font-size="8">• 连接建立</text>
+            <text x="50" y="130" fill="#2563eb" font-size="8">• 状态维护</text>
+            <text x="50" y="145" fill="#2563eb" font-size="8">• 能力缓存</text>
+            <text x="50" y="160" fill="#2563eb" font-size="8">• 错误恢复</text>
+            
+            <!-- Server 1 -->
+            <line x1="170" y1="85" x2="230" y2="85" stroke="#f59e0b" stroke-width="2"/>
+            <text x="200" y="78" text-anchor="middle" fill="#f59e0b" font-size="8">stdio</text>
+            <rect x="230" y="50" width="160" height="60" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="310" y="75" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">天气 Server</text>
+            <text x="310" y="95" text-anchor="middle" fill="#b45309" font-size="9">3 工具 · 2 资源</text>
+            
+            <!-- Server 2 -->
+            <line x1="170" y1="120" x2="230" y2="120" stroke="#3b82f6" stroke-width="2"/>
+            <text x="200" y="113" text-anchor="middle" fill="#3b82f6" font-size="8">SSE</text>
+            <rect x="230" y="100" width="160" height="60" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="310" y="125" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">数据库 Server</text>
+            <text x="310" y="145" text-anchor="middle" fill="#2563eb" font-size="9">3 工具 · 2 资源</text>
+            
+            <!-- Server 3 -->
+            <line x1="170" y1="155" x2="230" y2="155" stroke="#10b981" stroke-width="2"/>
+            <text x="200" y="148" text-anchor="middle" fill="#10b981" font-size="8">HTTP</text>
+            <rect x="230" y="140" width="160" height="60" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="310" y="165" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">文件 Server</text>
+            <text x="310" y="185" text-anchor="middle" fill="#059669" font-size="9">3 工具 · 2 资源</text>
+            
+            <!-- 右侧：编排层 -->
+            <rect x="430" y="50" width="320" height="130" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="590" y="75" text-anchor="middle" fill="#5b21b6" font-size="12" font-weight="bold">多 Server 编排</text>
+            <text x="450" y="100" fill="#7c3aed" font-size="10">• 工具发现（跨 Server 搜索）</text>
+            <text x="450" y="120" fill="#7c3aed" font-size="10">• 工作流执行（多步骤调用）</text>
+            <text x="450" y="140" fill="#7c3aed" font-size="10">• 结果整合（统一上下文）</text>
+            <text x="450" y="165" fill="#7c3aed" font-size="9">一个 Client 管理多个 Server</text>
+        </svg>
+    </div>
+
+    <h2>三、能力发现</h2>
+    <p>能力发现是指 Client 在连接到 Server 后，获取 Server 支持的工具、资源和 Prompts 列表的过程。能力发现通常在连接建立时自动完成，Client 会缓存 Server 的能力信息，避免每次调用时都需要重新发现。这种缓存策略可以显著提高性能，减少网络通信开销。</p>
+
+    <p>在连接多个 Server 的场景中，Client 需要聚合所有 Server 的能力信息，形成一个全局的能力视图。这使得 LLM 可以看到所有可用的工具，而不需要关心它们来自哪个 Server。当 LLM 决定调用某个工具时，Client 需要根据工具名称找到对应的 Server，并将调用请求转发给该 Server。为了实现这一点，每个工具在聚合时都需要标记其来源 Server，方便后续的路由和调用。</p>
+
+    <h3>3.1 能力发现实现</h3>
+    <div class="code-file">Python（能力发现）</div>
+<pre><code class="language-python">def list_all_tools(self):
+    """列出所有 Server 的工具"""
+    all_tools = []
+    for name, conn in self.servers.items():
+        tools = conn.list_tools()
+        for tool in tools:
+            tool['_server'] = name  # 标记来源 Server
+        all_tools.extend(tools)
+    return all_tools
+
+def list_all_resources(self):
+    """列出所有 Server 的资源"""
+    all_resources = []
+    for name, conn in self.servers.items():
+        resources = conn.list_resources()
+        for res in resources:
+            res['_server'] = name
+        all_resources.extend(resources)
+    return all_resources
+
+def list_all_prompts(self):
+    """列出所有 Server 的 Prompts"""
+    all_prompts = []
+    for name, conn in self.servers.items():
+        prompts = conn.list_prompts()
+        for prompt in prompts:
+            prompt['_server'] = name
+        all_prompts.extend(prompts)
+    return all_prompts</code></pre>
+
+    <h2>四、工具调用与结果整合</h2>
+    <p>工具调用是 MCP Client 最核心的功能。当 LLM 决定调用某个工具时，Client 需要拦截这个调用请求，找到对应的 Server，将请求转发给该 Server，等待 Server 返回结果，然后将结果注入到 LLM 的对话历史中。这个过程需要精确的消息管理和状态跟踪，确保对话的连贯性和一致性。在任何一步出现错误时，Client 都应该能够妥善处理，而不是让整个流程崩溃。</p>
+
+    <p>结果整合是工具调用的关键环节。Server 返回的结果需要转换为 LLM 可以理解的格式，然后注入到对话历史中。对于成功的工具调用，结果内容会作为工具响应返回给 LLM；对于失败的工具调用，错误信息也会返回给 LLM，让它能够采取相应的恢复措施。在实际应用中，结果整合还需要考虑上下文窗口限制，当结果过大时，需要进行截断或摘要处理。</p>
+
+    <h3>4.1 工具调用实现</h3>
+    <div class="code-file">Python（工具调用与结果整合）</div>
+<pre><code class="language-python">def call_tool(self, server_name, tool_name, arguments):
+    """调用指定 Server 的工具"""
+    if server_name not in self.servers:
+        return {"error": f"Server not found: {server_name}"}
+    return self.servers[server_name].call_tool(tool_name, arguments)
+
+# 在 AI 应用中使用
+# 1. LLM 决定调用 get_weather 工具
+# 2. Client 查找哪个 Server 提供 get_weather
+# 3. Client 调用 weather-server/get_weather(北京)
+# 4. Server 返回 "北京: 晴, 25°C"
+# 5. Client 将结果注入 LLM 上下文
+# 6. LLM 基于结果生成回答</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="240" viewBox="0 0 780 240" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">工具调用与结果整合流程</text>
+            
+            <!-- LLM -->
+            <rect x="30" y="55" width="120" height="170" rx="10" fill="#8b5cf6" stroke="#7c3aed"/>
+            <text x="90" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LLM</text>
+            <text x="50" y="105" fill="white" font-size="9">1. 决定调用工具</text>
+            <text x="50" y="125" fill="white" font-size="9">2. 生成调用请求</text>
+            <text x="50" y="155" fill="white" font-size="9">5. 接收结果</text>
+            <text x="50" y="175" fill="white" font-size="9">6. 生成回答</text>
+            
+            <!-- Client -->
+            <line x1="150" y1="120" x2="200" y2="120" stroke="#64748b" stroke-width="2"/>
+            <rect x="200" y="55" width="120" height="170" rx="10" fill="#3b82f6" stroke="#2563eb"/>
+            <text x="260" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">MCP Client</text>
+            <text x="220" y="105" fill="white" font-size="9">3. 查找 Server</text>
+            <text x="220" y="125" fill="white" font-size="9">4. 转发请求</text>
+            <text x="220" y="155" fill="white" font-size="9">7. 整合结果</text>
+            
+            <!-- Server -->
+            <line x1="320" y1="120" x2="370" y2="120" stroke="#64748b" stroke-width="2"/>
+            <rect x="370" y="55" width="160" height="170" rx="10" fill="#10b981" stroke="#059669"/>
+            <text x="450" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">MCP Server</text>
+            <text x="390" y="105" fill="white" font-size="9">4. 接收请求</text>
+            <text x="390" y="125" fill="white" font-size="9">5. 执行工具</text>
+            <text x="390" y="145" fill="white" font-size="9">6. 返回结果</text>
+            
+            <!-- 步骤标注 -->
+            <rect x="570" y="55" width="180" height="170" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="660" y="80" text-anchor="middle" fill="#1a1a2e" font-size="11" font-weight="bold">详细步骤</text>
+            <text x="585" y="105" fill="#666" font-size="9">1. LLM 分析用户请求</text>
+            <text x="585" y="122" fill="#666" font-size="9">2. 决定调用 get_weather</text>
+            <text x="585" y="139" fill="#666" font-size="9">3. Client 查找 weather-server</text>
+            <text x="585" y="156" fill="#666" font-size="9">4. 转发调用请求</text>
+            <text x="585" y="173" fill="#666" font-size="9">5. Server 执行并返回</text>
+            <text x="585" y="190" fill="#666" font-size="9">6. Client 整合到上下文</text>
+            <text x="585" y="207" fill="#666" font-size="9">7. LLM 生成最终回答</text>
+        </svg>
+    </div>
+
+    <h2>五、多 Server 编排</h2>
+    <p>多 Server 编排是指在一个 AI 应用中同时管理多个 MCP Server，并协调它们之间的交互。编排器（Orchestrator）负责工具发现、工作流执行和结果整合。通过编排器，AI 应用可以执行复杂的多步骤任务，每个步骤可能涉及不同的 Server。这种编排能力使得 AI 应用能够像人类一样，协调多个数据源和服务来完成复杂的任务。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">编排器核心功能</text>
+            
+            <rect x="30" y="50" width="170" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="115" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">工具发现</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 跨 Server 搜索</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 自动路由</text>
+            
+            <rect x="220" y="50" width="170" height="90" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="305" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">工作流执行</text>
+            <text x="240" y="100" fill="#059669" font-size="10">• 多步骤调用</text>
+            <text x="240" y="120" fill="#059669" font-size="10">• 参数传递</text>
+            
+            <rect x="410" y="50" width="170" height="90" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="495" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">错误处理</text>
+            <text x="430" y="100" fill="#b45309" font-size="10">• 失败恢复</text>
+            <text x="430" y="120" fill="#b45309" font-size="10">• 重试策略</text>
+            
+            <rect x="600" y="50" width="160" height="90" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="680" y="75" text-anchor="middle" fill="#5b21b6" font-size="12" font-weight="bold">上下文管理</text>
+            <text x="620" y="100" fill="#7c3aed" font-size="10">• 步骤间传参</text>
+            <text x="620" y="120" fill="#7c3aed" font-size="10">• 变量替换</text>
+        </svg>
+    </div>
+
+    <p>编排器的核心功能包括：工具发现（在所有 Server 中查找特定工具）、工作流执行（按顺序执行多个工具调用，支持参数传递）、错误处理（当某个步骤失败时的恢复策略）、上下文管理（在步骤之间传递数据）。</p>
+
+    <h3>5.1 编排器实现</h3>
+    <div class="code-file">Python（多 Server 编排器）</div>
+<pre><code class="language-python">class MCPOrchestrator:
+    """MCP 多 Server 编排器"""
+    
+    def __init__(self, client):
+        self.client = client
+
+    def find_tool(self, tool_name):
+        """在所有 Server 中查找工具"""
+        for name, conn in self.client.servers.items():
+            if tool_name in conn.tools:
+                return {"server": name, "tool": conn.tools[tool_name]}
+        return None
+
+    def execute_workflow(self, steps):
+        """执行工作流（多步骤工具调用）"""
+        results = []
+        context = {}
+        
+        for step in steps:
+            server = step.get("server", "")
+            tool = step.get("tool", "")
+            args = step.get("arguments", {})
+            
+            # 支持从上下文中获取参数
+            resolved_args = {}
+            for key, value in args.items():
+                if isinstance(value, str) and value.startswith("{{"):
+                    var_name = value[2:-2]
+                    resolved_args[key] = context.get(var_name, value)
+                else:
+                    resolved_args[key] = value
+            
+            result = self.client.call_tool(server, tool, resolved_args)
+            results.append({"step": step, "result": result})
+            
+            # 将结果存入上下文
+            context[f"result_{len(results)}"] = result
+        
+        return results</code></pre>
+
+    <h3>5.2 工作流示例</h3>
+    <div class="code-file">Python（工作流定义）</div>
+<pre><code class="language-python"># 定义一个天气报告工作流
+workflow = [
+    {
+        "server": "weather-server",
+        "tool": "get_weather",
+        "arguments": {"city": "北京"}
+    },
+    {
+        "server": "weather-server",
+        "tool": "get_forecast",
+        "arguments": {"city": "北京", "days": 3}
+    },
+    {
+        "server": "weather-server",
+        "tool": "get_air_quality",
+        "arguments": {"city": "北京"}
+    },
+    {
+        "server": "file-server",
+        "tool": "write_file",
+        "arguments": {
+            "path": "/reports/weather.txt",
+            "content": "北京天气报告\n天气: {{result_1}}\n预报: {{result_2}}\n空气质量: {{result_3}}"
+        }
+    },
+]
+
+# 执行工作流
+orchestrator = MCPOrchestrator(client)
+results = orchestrator.execute_workflow(workflow)
+for i, r in enumerate(results):
+    print(f"步骤 {i+1}: {r['step']['tool']} → 成功")</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">多 Server 工作流编排</text>
+            
+            <!-- 步骤 1 -->
+            <rect x="30" y="55" width="140" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="100" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">步骤 1</text>
+            <text x="100" y="100" text-anchor="middle" fill="#b45309" font-size="10">天气 Server</text>
+            <text x="50" y="125" fill="#b45309" font-size="9">get_weather</text>
+            <text x="50" y="145" fill="#b45309" font-size="9">→ 晴, 25°C</text>
+            <text x="50" y="165" fill="#b45309" font-size="8">存入: result_1</text>
+            
+            <line x1="170" y1="115" x2="210" y2="115" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 步骤 2 -->
+            <rect x="210" y="55" width="140" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="280" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">步骤 2</text>
+            <text x="280" y="100" text-anchor="middle" fill="#b45309" font-size="10">天气 Server</text>
+            <text x="230" y="125" fill="#b45309" font-size="9">get_forecast</text>
+            <text x="230" y="145" fill="#b45309" font-size="9">→ 晴转多云</text>
+            <text x="230" y="165" fill="#b45309" font-size="8">存入: result_2</text>
+            
+            <line x1="350" y1="115" x2="390" y2="115" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 步骤 3 -->
+            <rect x="390" y="55" width="140" height="120" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="460" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">步骤 3</text>
+            <text x="460" y="100" text-anchor="middle" fill="#2563eb" font-size="10">文件 Server</text>
+            <text x="410" y="125" fill="#2563eb" font-size="9">write_file</text>
+            <text x="410" y="145" fill="#2563eb" font-size="9">使用: result_1</text>
+            <text x="410" y="165" fill="#2563eb" font-size="8">使用: result_2</text>
+            
+            <!-- 结果 -->
+            <rect x="570" y="55" width="180" height="120" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="660" y="80" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">最终结果</text>
+            <text x="590" y="105" fill="#059669" font-size="9">北京天气报告</text>
+            <text x="590" y="122" fill="#059669" font-size="9">天气: 晴, 25°C</text>
+            <text x="590" y="139" fill="#059669" font-size="9">预报: 晴转多云</text>
+            <text x="590" y="160" fill="#059669" font-size="9">已写入: /reports/</text>
+        </svg>
+    </div>
+
+    <h2>六、最佳实践</h2>
+    <p>在集成 MCP Client 和管理多个 Server 时，遵循以下最佳实践可以显著提高系统的稳定性和可维护性。这些实践涵盖了连接管理、能力发现、工具调用、工作流编排等多个方面，是实际项目经验的重要总结。</p>
+
+    <p>首先，连接管理应该支持自动重连和超时处理。当 Server 连接断开时，Client 应该能够自动尝试重连，并在重连失败时通知用户。对于长时间运行的连接，应该设置心跳机制，定期检测连接状态。自动重连策略应该采用指数退避算法，避免在 Server 故障时造成雪崩效应。</p>
+
+    <p>其次，能力发现应该在连接建立时完成，并缓存结果。当 Server 能力发生变化时（如新增工具），Client 应该能够动态更新缓存。这可以通过订阅 Server 的能力变更通知来实现。</p>
+
+    <p>第三，工具调用应该有超时限制和错误处理。当工具调用超时时，Client 应该能够返回友好的错误信息，而不是让 LLM 无限等待。对于失败的工具调用，应该返回结构化的错误信息，帮助 LLM 理解失败原因。</p>
+
+    <table>
+        <thead>
+            <tr><th>最佳实践</th><th>说明</th><th>示例</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>自动重连</strong></td><td>连接断开时自动重连</td><td>最大重试 3 次，间隔递增</td></tr>
+            <tr><td><strong>能力缓存</strong></td><td>缓存 Server 能力信息</td><td>连接时缓存，变更时更新</td></tr>
+            <tr><td><strong>超时控制</strong></td><td>工具调用设置超时</td><td>默认 30 秒超时</td></tr>
+            <tr><td><strong>错误处理</strong></td><td>返回结构化错误信息</td><td>{"error": "...", "code": 500}</td></tr>
+            <tr><td><strong>日志记录</strong></td><td>记录连接和调用日志</td><td>便于调试和性能分析</td></tr>
+            <tr><td><strong>安全控制</strong></td><td>验证 Server 身份</td><td>使用 TLS 加密通信</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title"> 实战建议</div>
+        <p>在实际项目中，建议将 MCP Client 集成封装为一个独立的模块，与 AI 应用的核心逻辑分离。这样可以方便地更换或升级 MCP Client 实现，而不影响 AI 应用的其他部分。同时，建议为 Client 编写单元测试，模拟 Server 的响应，确保集成逻辑的正确性。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>MCP Client 集成与多 Server 编排是 MCP 协议实践的重要环节。通过 Client 集成，AI 应用可以动态发现和调用外部能力，而不需要为每个数据源或工具编写专用的集成代码。多 Server 编排使得 AI 应用可以执行复杂的多步骤任务，每个步骤可能涉及不同的 Server。这种编排能力大大扩展了 AI 应用的能力边界。</p>
+
+    <p>理解 Client 集成和多 Server 编排的原理和实现，是构建强大 AI 应用的关键。在实际项目中，建议遵循自动重连、能力缓存、超时控制、错误处理和日志记录等最佳实践，确保系统的稳定性和可维护性。在下一节 9.5 中，我们将深入探讨 MCP 与 Function Calling 的关系与差异，理解两种技术如何互补协作，共同构建完整的 AI 工具调用生态。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

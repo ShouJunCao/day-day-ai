@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10.2 ReAct 框架深度解析 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>10.2 ReAct 框架深度解析</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十：AI Agent 开发</span>
+        <span class="tag tag-time">预计学习：55 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>深入理解 ReAct 框架的内部工作机制</li>
+        <li>掌握高级工具注册与错误恢复机制</li>
+        <li>学会管理 Agent 上下文和对话历史</li>
+        <li>能够构建多步骤、多工具的复杂 Agent 应用</li>
+    </ul>
+
+    <h2>一、ReAct 框架概述</h2>
+    <p>ReAct 框架是 AI Agent 开发中最经典和最实用的架构模式之一。它由 Yao 等人在 2022 年提出，通过将推理（Reasoning）和行动（Acting）有机结合，使 Agent 能够在复杂环境中进行多步推理和决策。ReAct 框架的核心思想是：让 LLM 在每一步都先进行思考，然后决定采取什么行动，最后根据行动的观察结果进行下一步思考。</p>
+
+    <p>与传统的单步推理模式相比，ReAct 框架具有显著的优势。在传统模式中，LLM 直接根据问题生成答案，容易受到幻觉的影响，尤其是在需要外部信息的问题上。而 ReAct 框架通过引入工具调用机制，使 Agent 能够主动获取外部信息，从而显著提高答案的准确性和可靠性。这种将推理和行动交替进行的模式，使 Agent 能够处理更加复杂和开放性的任务。</p>
+
+    <p>在实际应用中，ReAct 框架已经被广泛应用于问答系统、数据分析、代码生成等多个领域。它的灵活性和可扩展性使其成为 AI Agent 开发的首选架构之一。通过学习 ReAct 框架的深度实现，开发者可以构建更加复杂和强大的 Agent 应用，实现从简单问答到复杂任务编排的全面覆盖。</p>
+
+    <p>从技术发展的角度来看，ReAct 框架代表了 AI Agent 从"被动响应"到"主动行动"的重要转变。传统的 AI 系统只能在接收到明确的输入后生成输出，而 ReAct Agent 能够主动探索环境、获取信息、验证假设，最终得出可靠的答案。这种主动性的提升，是 AI 技术向更加智能化方向发展的关键一步。</p>
+
+    <h3>1.1 框架核心组件</h3>
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">ReAct 框架核心组件</text>
+            
+            <!-- 中心：ReAct 循环 -->
+            <circle cx="390" cy="130" r="60" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" stroke-width="2"/>
+            <text x="390" y="125" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">ReAct 循环</text>
+            <text x="390" y="145" text-anchor="middle" fill="#92400e" font-size="9">Thought → Action → Observation</text>
+            
+            <!-- 上：工具系统 -->
+            <rect x="310" y="40" width="160" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="390" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">工具系统（Tools）</text>
+            <line x1="390" y1="80" x2="390" y2="70" stroke="#8b5cf6" stroke-width="2"/>
+            
+            <!-- 右：上下文管理 -->
+            <rect x="500" y="110" width="160" height="40" rx="8" fill="#3b82f6"/>
+            <text x="580" y="135" text-anchor="middle" fill="white" font-size="11" font-weight="bold">上下文管理</text>
+            <line x1="500" y1="130" x2="450" y2="130" stroke="#3b82f6" stroke-width="2"/>
+            
+            <!-- 下：错误恢复 -->
+            <rect x="310" y="190" width="160" height="30" rx="6" fill="#ef4444"/>
+            <text x="390" y="210" text-anchor="middle" fill="white" font-size="10" font-weight="bold">错误恢复机制</text>
+            <line x1="390" y1="190" x2="390" y2="190" stroke="#ef4444" stroke-width="2"/>
+            
+            <!-- 左：LLM 接口 -->
+            <rect x="120" y="110" width="160" height="40" rx="8" fill="#10b981"/>
+            <text x="200" y="135" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LLM 接口层</text>
+            <line x1="280" y1="130" x2="330" y2="130" stroke="#10b981" stroke-width="2"/>
+        </svg>
+    </div>
+
+    <h2>二、高级工具注册系统</h2>
+    <p>在复杂的 Agent 应用中，工具系统需要支持更高级的功能：错误重试（当工具调用失败时自动重试）、超时控制（防止工具调用阻塞）、错误处理（自定义的错误恢复策略）、工具描述生成（自动格式化为 LLM 可读的格式）。</p>
+
+    <p>高级工具注册系统的核心是 AdvancedTool 数据类，它扩展了基础工具定义，添加了 max_retries（最大重试次数）、timeout（超时时间）和 error_handler（错误处理函数）等属性。通过这种设计，Agent 可以在工具调用失败时自动进行恢复，而不需要人工干预。</p>
+
+    <p>在实际开发中，建议为每个工具设置合理的重试次数和超时时间。对于网络请求类工具，建议设置较高的重试次数（3-5 次）和较长的超时时间（30 秒）；对于本地计算类工具，建议设置较低的重试次数（1-2 次）和较短的超时时间（5 秒）。</p>
+
+    <p>除了基本的注册和执行，高级工具注册系统还包含参数验证机制。参数验证器会在工具执行前检查输入参数是否符合 Schema 定义，防止格式错误导致的崩溃。常见的验证规则包括：类型检查（整数、字符串、布尔值）、范围限制（最小值、最大值）、格式校验（邮箱、URL、日期）。通过参数验证，可以在 LLM 生成错误参数时提前拦截，避免无效的工具调用，提高系统的稳定性和响应速度。在实际项目中，参数验证通常与错误重试机制结合使用，当验证失败时直接返回错误信息，而不执行重试，从而节省时间和资源。</p>
+
+    <h3>2.1 高级工具定义</h3>
+    <div class="code-file">Python（高级工具定义）</div>
+<pre><code class="language-python">from dataclasses import dataclass, field
+from typing import Callable, Dict, Optional
+
+@dataclass
+class AdvancedTool:
+    """高级工具定义"""
+    name: str
+    description: str
+    func: Callable
+    input_schema: Dict[str, str]
+    max_retries: int = 3
+    timeout: float = 10.0
+    error_handler: Optional[Callable] = None
+
+class AdvancedToolRegistry:
+    """高级工具注册表"""
+    def __init__(self):
+        self.tools = {}
+
+    def execute_with_retry(self, name, arguments):
+        """带重试机制的工具执行"""
+        tool = self.tools.get(name)
+        if not tool:
+            return {"error": f"Unknown tool: {name}"}
+        
+        for attempt in range(tool.max_retries):
+            try:
+                result = tool.func(**arguments)
+                return {"success": True, "data": result}
+            except Exception as e:
+                if attempt == tool.max_retries - 1:
+                    return {"success": False, "error": str(e)}
+        return {"success": False, "error": "Unknown error"}</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">参数验证流程</text>
+            
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LLM 生成参数</text>
+            <text x="50" y="100" fill="white" font-size="8">JSON 格式输入</text>
+            
+            <line x1="170" y1="85" x2="210" y2="85" stroke="#f59e0b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="140" height="60" rx="8" fill="#f59e0b"/>
+            <text x="280" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Schema 校验</text>
+            <text x="230" y="100" fill="white" font-size="8">类型/范围/格式</text>
+            
+            <line x1="350" y1="85" x2="390" y2="85" stroke="#10b981" stroke-width="2"/>
+            
+            <rect x="390" y="55" width="140" height="60" rx="8" fill="#10b981"/>
+            <text x="460" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">参数修正</text>
+            <text x="410" y="100" fill="white" font-size="8">自动补全默认值</text>
+            
+            <line x1="530" y1="85" x2="570" y2="85" stroke="#3b82f6" stroke-width="2"/>
+            
+            <rect x="570" y="55" width="180" height="60" rx="8" fill="#3b82f6"/>
+            <text x="660" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">执行工具函数</text>
+            <text x="590" y="100" fill="white" font-size="8">传入验证后的参数</text>
+        </svg>
+    </div>
+
+    <h2>三、上下文管理系统</h2>
+    <p>上下文管理是 Agent 保持对话连贯性的关键组件。在 ReAct 框架中，上下文包含：对话历史（记录所有 Thought、Action、Observation 和 Final Answer）、工具调用记录（记录每次工具调用的参数和结果）、中间状态（存储跨步骤的临时数据）。</p>
+
+    <p>有效的上下文管理需要考虑几个关键问题：上下文窗口限制（LLM 的上下文窗口是有限的，需要定期压缩或摘要）、历史信息保留策略（决定保留哪些历史信息）、摘要生成机制（当历史信息过多时，自动生成摘要）。</p>
+
+    <p>在实际实现中，建议使用 AgentContext 类来管理上下文。该类提供了添加思考、行动、观察和最终答案的方法，以及获取上下文摘要和构建完整 Prompt 的功能。通过这种方式，可以确保 Agent 在每一步都能获得足够的上下文信息，同时不会因为历史信息过多而超出上下文窗口限制。</p>
+
+    <h3>3.1 上下文管理器实现</h3>
+    <div class="code-file">Python（上下文管理器）</div>
+<pre><code class="language-python">class AgentContext:
+    """Agent 上下文管理器"""
+    
+    def __init__(self):
+        self.history = []
+
+    def add_thought(self, thought):
+        self.history.append({"role": "thought", "content": thought})
+
+    def add_action(self, action, input_data):
+        self.history.append({"role": "action", "action": action})
+
+    def add_observation(self, observation):
+        self.history.append({"role": "observation", "content": observation})
+
+    def get_context_summary(self):
+        """获取上下文摘要"""
+        parts = []
+        for entry in self.history[-10:]:
+            if entry["role"] == "thought":
+                parts.append(f"[思考] {entry['content']}")
+            elif entry["role"] == "action":
+                parts.append(f"[行动] {entry['action']}")
+        return "\n".join(parts)
+
+    def to_prompt(self, system_prompt, question):
+        """构建完整 Prompt"""
+        context = self.get_context_summary()
+        return f"{system_prompt}\n\nQuestion: {question}\n\nContext:\n{context}"</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">上下文管理流程</text>
+            
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">记录历史</text>
+            <text x="50" y="100" fill="white" font-size="8">Thought/Action/Obs</text>
+            
+            <line x1="170" y1="85" x2="210" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="210" y="55" width="140" height="60" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">窗口限制</text>
+            <text x="230" y="100" fill="white" font-size="8">保留最近 N 条</text>
+            
+            <line x1="350" y1="85" x2="390" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="390" y="55" width="140" height="60" rx="8" fill="#3b82f6"/>
+            <text x="460" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">生成摘要</text>
+            <text x="410" y="100" fill="white" font-size="8">压缩历史信息</text>
+            
+            <line x1="530" y1="85" x2="570" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="570" y="55" width="180" height="60" rx="8" fill="#10b981"/>
+            <text x="660" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">构建 Prompt</text>
+            <text x="590" y="100" fill="white" font-size="8">System + Context + Question</text>
+        </svg>
+    </div>
+
+    <h2>四、错误恢复机制</h2>
+    <p>在 Agent 运行过程中，工具调用失败是常见的情况。错误恢复机制确保 Agent 在遇到错误时能够优雅地处理，而不是直接崩溃。常见的错误类型包括：网络超时（工具调用超时）、参数错误（参数格式不正确）、权限错误（无权访问工具）、资源错误（资源不存在或不可用）。</p>
+
+    <p>错误恢复的策略包括：自动重试（对于临时性错误，自动重试）、参数修正（根据错误信息修正参数后重试）、降级处理（使用备用工具或默认值）、人工介入（当自动恢复失败时，请求人工帮助）。</p>
+
+    <p>在实际实现中，建议为每个工具定义错误处理函数。错误处理函数接收错误信息和当前尝试次数作为参数，返回修正后的参数或 None（表示无法恢复）。通过这种方式，Agent 可以根据不同类型的错误采取不同的恢复策略，显著提高系统的鲁棒性。</p>
+
+    <h3>4.1 错误处理示例</h3>
+    <div class="code-file">Python（错误恢复）</div>
+<pre><code class="language-python">def handle_api_error(error, attempt):
+    """API 错误处理"""
+    if "timeout" in str(error).lower():
+        # 超时错误：增加等待时间后重试
+        time.sleep(2 ** attempt)
+        return None  # 使用原参数重试
+    elif "rate_limit" in str(error).lower():
+        # 速率限制：等待后重试
+        time.sleep(5)
+        return None
+    return None  # 无法恢复
+
+# 注册带错误处理的工具
+registry.register(AdvancedTool(
+    name="api_call",
+    description="调用外部 API",
+    func=call_api,
+    input_schema={"endpoint": "string"},
+    max_retries=3,
+    error_handler=handle_api_error
+))</code></pre>
+
+    <h2>五、多工具编排</h2>
+    <p>在复杂的 Agent 应用中，通常需要多个工具协同工作来完成一个任务。多工具编排是指 Agent 根据任务需求，选择合适的工具组合，并按照正确的顺序执行。例如，一个数据分析任务可能需要先查询数据库获取数据，然后进行计算分析，最后生成报告并发送通知。</p>
+
+    <p>多工具编排的关键在于：工具选择（根据任务需求选择合适的工具）、执行顺序（确定工具的执行顺序）、结果传递（将前一个工具的结果作为后一个工具的输入）、错误传播（当某个工具失败时，如何处理后续步骤）。</p>
+
+    <p>在 ReAct 框架中，多工具编排是通过 Thought-Action-Observation 循环自然实现的。Agent 在每一步都根据当前的观察结果决定下一步的行动，从而自然地实现了多工具的编排。这种编排方式的优势在于灵活性高，Agent 可以根据实际情况动态调整工具的使用策略。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">多工具编排示例：数据分析任务</text>
+            
+            <!-- 步骤 1 -->
+            <rect x="30" y="50" width="160" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="70" text-anchor="middle" fill="white" font-size="11" font-weight="bold">步骤 1: 查询数据</text>
+            <text x="110" y="90" text-anchor="middle" fill="white" font-size="8">search_database</text>
+            
+            <line x1="190" y1="75" x2="230" y2="75" stroke="#64748b" stroke-width="2"/>
+            <text x="210" y="68" text-anchor="middle" fill="#64748b" font-size="8">数据</text>
+            
+            <!-- 步骤 2 -->
+            <rect x="230" y="50" width="160" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="310" y="70" text-anchor="middle" fill="white" font-size="11" font-weight="bold">步骤 2: 分析计算</text>
+            <text x="310" y="90" text-anchor="middle" fill="white" font-size="8">calculate</text>
+            
+            <line x1="390" y1="75" x2="430" y2="75" stroke="#64748b" stroke-width="2"/>
+            <text x="410" y="68" text-anchor="middle" fill="#64748b" font-size="8">结果</text>
+            
+            <!-- 步骤 3 -->
+            <rect x="430" y="50" width="160" height="50" rx="8" fill="#3b82f6"/>
+            <text x="510" y="70" text-anchor="middle" fill="white" font-size="11" font-weight="bold">步骤 3: 生成报告</text>
+            <text x="510" y="90" text-anchor="middle" fill="white" font-size="8">generate_report</text>
+            
+            <line x1="590" y1="75" x2="630" y2="75" stroke="#64748b" stroke-width="2"/>
+            <text x="610" y="68" text-anchor="middle" fill="#64748b" font-size="8">报告</text>
+            
+            <!-- 步骤 4 -->
+            <rect x="630" y="50" width="130" height="50" rx="8" fill="#10b981"/>
+            <text x="695" y="70" text-anchor="middle" fill="white" font-size="11" font-weight="bold">步骤 4: 发送</text>
+            <text x="695" y="90" text-anchor="middle" fill="white" font-size="8">send_notification</text>
+            
+            <!-- 底部说明 -->
+            <rect x="100" y="120" width="580" height="45" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="140" text-anchor="middle" fill="#92400e" font-size="10">Thought → 查询数据 → Action → 分析计算 → Action → 生成报告 → Action → 发送通知</text>
+            <text x="390" y="158" text-anchor="middle" fill="#92400e" font-size="9">每个步骤的观察结果都会影响下一步的思考</text>
+        </svg>
+    </div>
+
+    <h2>六、安全与限制</h2>
+    <p>在 Agent 开发中，安全和限制是不可忽视的重要方面。主要的安全考虑包括：最大迭代次数限制（防止 Agent 无限循环）、超时控制（防止 Agent 运行时间过长）、工具权限控制（限制 Agent 可以使用的工具）、敏感数据保护（防止 Agent 泄露敏感信息）。</p>
+
+    <p>在实际项目中，建议实施多层安全防护：在 Agent 层面设置最大迭代次数和超时限制；在工具层面设置权限控制和参数验证；在数据层面实施脱敏和加密。这些措施共同构成了 Agent 的安全防护体系。</p>
+
+    <table>
+        <thead>
+            <tr><th>安全维度</th><th>防护措施</th><th>实现方式</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>迭代控制</strong></td><td>最大迭代次数限制</td><td>max_iterations 参数</td></tr>
+            <tr><td><strong>超时控制</strong></td><td>工具调用超时</td><td>timeout 参数</td></tr>
+            <tr><td><strong>权限控制</strong></td><td>工具访问权限</td><td>工具白名单</td></tr>
+            <tr><td><strong>数据保护</strong></td><td>敏感数据脱敏</td><td>DataProtector</td></tr>
+            <tr><td><strong>参数验证</strong></td><td>输入参数校验</td><td>InputValidator</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">ReAct Agent 安全防护体系</text>
+            
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="100" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">迭代限制</text>
+            <text x="50" y="100" fill="#b45309" font-size="9">max_iterations</text>
+            
+            <rect x="190" y="55" width="140" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="260" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">超时控制</text>
+            <text x="210" y="100" fill="#2563eb" font-size="9">timeout 参数</text>
+            
+            <rect x="350" y="55" width="140" height="60" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="420" y="80" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">权限控制</text>
+            <text x="370" y="100" fill="#059669" font-size="9">工具白名单</text>
+            
+            <rect x="510" y="55" width="140" height="60" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="580" y="80" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">数据脱敏</text>
+            <text x="530" y="100" fill="#7c3aed" font-size="9">敏感信息隐藏</text>
+            
+            <rect x="670" y="55" width="80" height="60" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="710" y="80" text-anchor="middle" fill="#666" font-size="11" font-weight="bold">审计</text>
+            <text x="685" y="100" fill="#999" font-size="9">操作日志</text>
+        </svg>
+    </div>
+
+    <h2>七、高级 Agent 实现</h2>
+    <p>基于上述组件，我们可以构建一个高级的 ReAct Agent。这个 Agent 集成了工具注册、上下文管理、错误恢复和多工具编排等功能，能够处理复杂的多步骤任务。</p>
+
+    <h3>7.1 完整 Agent 实现</h3>
+    <div class="code-file">Python（高级 ReAct Agent）</div>
+<pre><code class="language-python">class AdvancedReActAgent:
+    """高级 ReAct Agent"""
+    
+    def __init__(self, registry, max_iterations=8):
+        self.registry = registry
+        self.max_iterations = max_iterations
+        self.context = AgentContext()
+
+    def run(self, query):
+        """执行 ReAct 循环"""
+        tools_desc = self.registry.get_tools_description()
+        prompt = self.SYSTEM_PROMPT.format(tools=tools_desc)
+        prompt += f"\n\nQuestion: {query}\n"
+        
+        for i in range(self.max_iterations):
+            response = self._call_llm(prompt)
+            parsed = self._parse_response(response)
+            
+            # 记录思考
+            self.context.add_thought(parsed["thought"])
+            
+            # 检查是否完成
+            if parsed["final_answer"]:
+                self.context.add_final_answer(parsed["final_answer"])
+                return {"success": True, "answer": parsed["final_answer"]}
+            
+            # 执行工具
+            result = self.registry.execute_with_retry(
+                parsed["action"],
+                json.loads(parsed["action_input"])
+            )
+            
+            # 记录观察
+            self.context.add_observation(str(result))
+            
+            # 更新 Prompt
+            prompt = self.context.to_prompt(
+                self.SYSTEM_PROMPT.format(tools=tools_desc),
+                query
+            )</code></pre>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在开发高级 ReAct Agent 时，建议先实现基础的单工具 Agent，然后逐步添加工具注册、上下文管理和错误恢复等功能。每个功能模块都应该有独立的单元测试，确保其正确性。同时，建议为 Agent 添加详细的日志记录，便于调试和优化。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>ReAct 框架的深度解析涵盖了工具注册、上下文管理、错误恢复和多工具编排等核心组件。理解这些组件的工作原理和实现方法，是构建复杂 Agent 应用的基础。在实际项目中，可以根据任务需求选择合适的组件组合，并不断优化 Agent 的性能和可靠性。</p>
+
+    <p>在下一节 10.3 中，我们将对比主流的 Agent 开发框架（LangGraph、AutoGen、CrewAI、OpenAI Agents SDK、Dify），帮助开发者选择最适合自己项目的框架。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.3 MCP Server 开发（Python/TypeScript SDK） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.3 MCP Server 开发（Python/TypeScript SDK）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>掌握使用 Python SDK 开发 MCP Server 的方法</li>
+        <li>了解 TypeScript SDK 的开发流程和语法</li>
+        <li>学会注册工具、资源和 Prompts 的装饰器用法</li>
+        <li>能够独立开发一个简单的 MCP Server</li>
+    </ul>
+
+    <h2>一、MCP Server 开发概述</h2>
+    <p>MCP Server 开发是指创建符合 MCP 协议的服务端程序，用于向 AI 客户端暴露工具、资源和 Prompts。MCP 提供了 Python 和 TypeScript 两种官方 SDK，使得开发者可以用熟悉的语言快速构建 MCP 服务。无论使用哪种语言，核心开发流程都是一致的：创建 Server 实例、注册能力（工具/资源/Prompts）、启动服务。这种统一的开发模式大幅降低了跨语言开发的门槛。</p>
+
+    <p>MCP SDK 的设计哲学是"约定优于配置"。通过装饰器模式，开发者只需要在函数上添加简单的注解，SDK 就会自动处理参数解析、JSON-RPC 消息格式、错误处理等底层细节。这种设计大幅降低了开发门槛，使得开发者可以专注于业务逻辑的实现，而不需要关心协议细节。开发者不需要了解 JSON-RPC 的具体消息格式，也不需要手动处理协议的序列化和反序列化。</p>
+
+    <p>在实际开发中，MCP Server 通常以独立进程的形式运行，通过 stdio 与客户端通信。对于需要远程访问的场景，也可以使用 SSE 或 HTTP 传输层。Server 可以是简单的单文件脚本，也可以是复杂的多模块应用程序，SDK 提供了灵活的扩展点，支持自定义中间件、日志记录和错误处理。对于生产环境的 Server，还需要考虑性能优化、安全加固、监控告警等工程实践。</p>
+
+    <h3>1.1 开发流程</h3>
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP Server 开发流程</text>
+            
+            <rect x="30" y="55" width="120" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">创建实例</text>
+            
+            <line x1="150" y1="75" x2="190" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="55" width="120" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="250" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">注册能力</text>
+            
+            <line x1="310" y1="75" x2="350" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="55" width="120" height="40" rx="8" fill="#3b82f6"/>
+            <text x="410" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">实现逻辑</text>
+            
+            <line x1="470" y1="75" x2="510" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="120" height="40" rx="8" fill="#10b981"/>
+            <text x="570" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">启动服务</text>
+            
+            <line x1="630" y1="75" x2="670" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="40" rx="8" fill="#f59e0b"/>
+            <text x="710" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">测试</text>
+            
+            <rect x="30" y="110" width="720" height="35" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="133" text-anchor="middle" fill="#666" font-size="10">创建 Server → 注册 Tools/Resources/Prompts → 实现业务逻辑 → 启动服务 → 测试验证</text>
+        </svg>
+    </div>
+
+    <h2>二、Python SDK 开发</h2>
+    <p>Python 是 MCP Server 开发的首选语言之一，因为 Python 拥有丰富的数据处理和 AI 生态系统。MCP Python SDK 提供了简洁的装饰器接口，使得开发者可以用极少的代码构建功能完整的 MCP 服务。SDK 支持 stdio、SSE 和 HTTP 三种传输层，满足不同场景的需求。对于本地开发的 Server，stdio 传输层是最常用的选择，它通过标准输入输出与客户端通信，简单高效。</p>
+
+    <p>Python SDK 的核心优势在于装饰器模式的使用。通过简单的注解，开发者可以将任意 Python 函数转换为 MCP 工具。SDK 会自动解析函数的参数类型和名称，生成符合 MCP 规范的输入 Schema。这种设计使得工具的开发变得极其简单，开发者只需要关注业务逻辑的实现，而不需要关心协议细节。</p>
+
+    <h3>2.1 安装和初始化</h3>
+    <div class="code-file">Python（安装 MCP SDK）</div>
+<pre><code class="language-python"># 安装 MCP Python SDK
+pip install mcp
+
+# 创建 Server 实例
+from mcp.server import Server
+
+server = Server(name="weather-server", version="1.0.0")
+
+# 配置传输层
+# stdio: 标准输入输出（本地进程通信）
+# sse: Server-Sent Events（远程通信）
+# http: HTTP 端点（Web 服务）</code></pre>
+
+    <h3>2.2 注册工具</h3>
+    <p>工具是 MCP Server 最核心的能力。通过 @server.tool() 装饰器，可以将任意 Python 函数注册为 MCP 工具。SDK 会自动解析函数的参数类型和名称，生成符合 MCP 规范的输入 Schema。</p>
+
+    <div class="code-file">Python（注册工具）</div>
+<pre><code class="language-python">@server.tool(description="获取指定城市天气")
+def get_weather(city: str) -> str:
+    """获取指定城市天气"""
+    weather_data = {
+        "北京": "晴, 25°C",
+        "上海": "多云, 28°C",
+        "广州": "雷阵雨, 32°C"
+    }
+    return weather_data.get(city, "未知城市")
+
+# SDK 自动生成的工具定义
+# {
+#     "name": "get_weather",
+#     "description": "获取指定城市天气",
+#     "inputSchema": {
+#         "type": "object",
+#         "properties": {
+#             "city": {"type": "string", "description": "参数 city"}
+#         },
+#         "required": ["city"]
+#     }
+# }</code></pre>
+
+    <h3>2.3 注册资源</h3>
+    <p>资源是只读的数据访问接口。通过 @server.resource() 装饰器，可以将 Python 函数注册为 MCP 资源。每个资源通过 URI 唯一标识，支持多种 MIME 类型。资源函数返回字符串内容，SDK 会将其包装为标准的 MCP 资源响应格式。</p>
+
+    <div class="code-file">Python（注册资源）</div>
+<pre><code class="language-python">@server.resource(
+    uri="file:///docs/guide.md",
+    name="用户指南",
+    description="MCP 用户使用指南",
+    mime_type="text/markdown"
+)
+def read_guide() -> str:
+    """读取用户指南"""
+    return """# MCP 用户指南
+欢迎使用 MCP 协议！
+
+## 快速开始
+1. 安装 MCP SDK
+2. 创建 Server 实例
+3. 注册工具和资源
+4. 启动服务"""</code></pre>
+
+    <h3>2.4 注册 Prompts</h3>
+    <p>Prompts 是可复用的提示词模板。通过 @server.prompt() 装饰器，可以将 Python 函数注册为 MCP Prompt。Prompt 函数接受参数并返回填充后的模板内容，SDK 会将其转换为标准的 MCP 消息格式。</p>
+
+    <div class="code-file">Python（注册 Prompts）</div>
+<pre><code class="language-python">@server.prompt(description="生成天气报告")
+def weather_report(city: str, days: int = 3) -> str:
+    """生成天气报告 Prompt"""
+    return f"""请生成{city}的天气报告，包括以下内容：
+
+1. 当前天气状况
+2. 未来{days}天天气预报
+3. 空气质量指数
+4. 出行建议
+
+请使用友好的语气，提供实用的建议。"""</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Python SDK 装饰器注册</text>
+            
+            <rect x="30" y="50" width="220" height="110" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">@server.tool()</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 自动解析参数</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 生成输入 Schema</text>
+            <text x="50" y="140" fill="#2563eb" font-size="10">• 处理工具调用</text>
+            
+            <rect x="280" y="50" width="220" height="110" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">@server.resource()</text>
+            <text x="300" y="100" fill="#059669" font-size="10">• URI 唯一标识</text>
+            <text x="300" y="120" fill="#059669" font-size="10">• 支持 MIME 类型</text>
+            <text x="300" y="140" fill="#059669" font-size="10">• 只读数据访问</text>
+            
+            <rect x="530" y="50" width="220" height="110" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="640" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">@server.prompt()</text>
+            <text x="550" y="100" fill="#b45309" font-size="10">• 参数化模板</text>
+            <text x="550" y="120" fill="#b45309" font-size="10">• 自动消息格式</text>
+            <text x="550" y="140" fill="#b45309" font-size="10">• 可复用设计</text>
+        </svg>
+    </div>
+
+    <h2>三、TypeScript SDK 开发</h2>
+    <p>TypeScript 是 MCP Server 开发的另一个重要语言选择。TypeScript SDK 提供了类型安全的开发体验，特别适合需要严格类型检查的大型项目。TypeScript SDK 与 Python SDK 功能对等，但在语法和开发体验上有所不同。TypeScript 的强类型系统可以在编译阶段捕获大部分错误，减少运行时异常的发生。</p>
+
+    <p>TypeScript SDK 使用请求处理器模式而不是装饰器模式。开发者需要显式地注册每个请求类型的处理器，包括工具列表、工具调用、资源列表、资源读取等。虽然代码量稍多，但这种模式提供了更大的灵活性和控制力。对于需要精细控制请求处理流程的场景，TypeScript SDK 是更好的选择。</p>
+
+    <h3>3.1 安装和初始化</h3>
+    <div class="code-file">TypeScript（安装 MCP SDK）</div>
+<pre><code class="language-typescript">// 安装 MCP TypeScript SDK
+npm install @modelcontextprotocol/sdk
+
+// 创建 Server 实例
+import { Server } from "@modelcontextprotocol/sdk/server";
+
+const server = new Server(
+    { name: "weather-server", version: "1.0.0" },
+    { capabilities: { tools: {}, resources: {}, prompts: {} } }
+);</code></pre>
+
+    <h3>3.2 注册工具</h3>
+    <div class="code-file">TypeScript（注册工具）</div>
+<pre><code class="language-typescript">// 注册工具列表
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+        tools: [{
+            name: "get_weather",
+            description: "获取指定城市天气",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    city: { type: "string", description: "城市名称" }
+                },
+                required: ["city"]
+            }
+        }]
+    };
+});
+
+// 处理工具调用
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    
+    if (name === "get_weather") {
+        const weatherData: Record<string, string> = {
+            "北京": "晴, 25°C",
+            "上海": "多云, 28°C",
+        };
+        return {
+            content: [{
+                type: "text",
+                text: weatherData[args.city] || "未知城市"
+            }]
+        };
+    }
+    
+    throw new Error(`Tool not found: ${name}`);
+});</code></pre>
+
+    <h3>3.3 注册资源</h3>
+    <div class="code-file">TypeScript（注册资源）</div>
+<pre><code class="language-typescript">// 注册资源列表
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+    return {
+        resources: [{
+            uri: "file:///docs/guide.md",
+            name: "用户指南",
+            description: "MCP 用户使用指南",
+            mimeType: "text/markdown"
+        }]
+    };
+});
+
+// 处理资源读取
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const { uri } = request.params;
+    
+    if (uri === "file:///docs/guide.md") {
+        return {
+            contents: [{
+                uri,
+                mimeType: "text/markdown",
+                text: "# MCP 用户指南\n欢迎使用..."
+            }]
+        };
+    }
+    
+    throw new Error(`Resource not found: ${uri}`);
+});</code></pre>
+
+    <table>
+        <thead>
+            <tr><th>对比维度</th><th>Python SDK</th><th>TypeScript SDK</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>安装方式</strong></td><td>pip install mcp</td><td>npm install @modelcontextprotocol/sdk</td></tr>
+            <tr><td><strong>注册方式</strong></td><td>装饰器（@server.tool）</td><td>请求处理器（setRequestHandler）</td></tr>
+            <tr><td><strong>类型安全</strong></td><td>可选类型注解</td><td>原生 TypeScript 类型</td></tr>
+            <tr><td><strong>传输层</strong></td><td>stdio / SSE / HTTP</td><td>stdio / SSE / HTTP</td></tr>
+            <tr><td><strong>适用场景</strong></td><td>数据处理、AI 集成</td><td>Web 服务、前端集成</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Python vs TypeScript SDK 架构对比</text>
+            
+            <rect x="30" y="50" width="340" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="200" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">Python SDK</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 装饰器模式注册</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 自动参数解析</text>
+            <text x="50" y="140" fill="#2563eb" font-size="10">• 简洁的 API 设计</text>
+            
+            <rect x="410" y="50" width="340" height="90" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="580" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">TypeScript SDK</text>
+            <text x="430" y="100" fill="#059669" font-size="10">• 请求处理器模式</text>
+            <text x="430" y="120" fill="#059669" font-size="10">• 类型安全保证</text>
+            <text x="430" y="140" fill="#059669" font-size="10">• 完整的 Schema 定义</text>
+        </svg>
+    </div>
+
+    <h2>四、实战：天气服务 Server</h2>
+    <p>下面我们通过一个完整的实战项目，演示如何使用 Python SDK 开发一个天气服务 MCP Server。这个 Server 提供了天气查询、天气预报和空气质量查询三个工具，以及用户指南和天气数据两个资源，还有天气报告和代码审查两个 Prompt 模板。</p>
+
+    <p>天气服务 Server 的设计考虑了实际应用场景的需求。工具方面，get_weather 提供实时天气查询，get_forecast 提供未来几天的天气预报，get_air_quality 提供空气质量指数查询。这三个工具覆盖了用户日常天气查询的主要需求。资源方面，用户指南提供了 Server 的使用说明，天气数据提供了城市列表和数据来源信息。Prompt 方面，天气报告 Prompt 帮助 LLM 生成格式化的天气报告，代码审查 Prompt 提供了代码审查的标准化模板。</p>
+
+    <h3>4.1 项目结构</h3>
+    <div class="code-file">Python（项目结构）</div>
+<pre><code class="language-python">weather-server/
+── server.py          # MCP Server 主文件
+├── tools.py           # 工具实现
+├── resources.py       # 资源实现
+├── prompts.py         # Prompt 实现
+├── config.py          # 配置文件
+└── requirements.txt   # 依赖文件</code></pre>
+
+    <h3>4.2 Server 核心代码</h3>
+    <div class="code-file">Python（Server 核心实现）</div>
+<pre><code class="language-python">from mcp.server import Server
+from mcp.server.stdio import stdio_server
+import asyncio
+
+# 创建 Server
+server = Server("weather-server")
+
+@server.tool()
+def get_weather(city: str) -> str:
+    """获取天气"""
+    return f"{city}: 晴, 25°C"
+
+@server.tool()
+def get_forecast(city: str, days: int = 3) -> str:
+    """获取预报"""
+    return f"{city} 未来{days}天: 晴转多云"
+
+@server.resource(uri="file:///data/weather.json")
+def read_data() -> str:
+    """读取数据"""
+    return '{"cities": ["北京", "上海", "广州"]}'
+
+async def main():
+    async with stdio_server() as streams:
+        await server.run(
+            streams[0], streams[1],
+            server.create_initialization_options()
+        )
+
+if __name__ == "__main__":
+    asyncio.run(main())</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">天气服务 Server 架构</text>
+            
+            <!-- Client -->
+            <rect x="30" y="55" width="100" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="80" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">AI 客户端</text>
+            <text x="80" y="100" text-anchor="middle" fill="#2563eb" font-size="9">Claude Desktop</text>
+            <text x="80" y="115" text-anchor="middle" fill="#2563eb" font-size="9">Cursor</text>
+            <text x="80" y="130" text-anchor="middle" fill="#2563eb" font-size="9">IDE 插件</text>
+            <text x="80" y="150" text-anchor="middle" fill="#2563eb" font-size="9">MCP Client</text>
+            
+            <!-- Connection -->
+            <line x1="130" y1="120" x2="180" y2="120" stroke="#64748b" stroke-width="2"/>
+            <text x="155" y="112" text-anchor="middle" fill="#64748b" font-size="8">stdio</text>
+            
+            <!-- Server -->
+            <rect x="180" y="55" width="160" height="130" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="260" y="80" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">MCP Server</text>
+            <text x="260" y="100" text-anchor="middle" fill="#059669" font-size="10">weather-server</text>
+            <text x="200" y="120" fill="#059669" font-size="9">├─ get_weather</text>
+            <text x="200" y="135" fill="#059669" font-size="9">├─ get_forecast</text>
+            <text x="200" y="150" fill="#059669" font-size="9">├─ get_air_quality</text>
+            <text x="200" y="165" fill="#059669" font-size="9">├─ guide.md</text>
+            <text x="200" y="180" fill="#059669" font-size="9">└─ weather.json</text>
+            
+            <!-- Tools -->
+            <line x1="340" y1="85" x2="400" y2="85" stroke="#f59e0b" stroke-width="1.5"/>
+            <rect x="400" y="55" width="120" height="55" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="460" y="78" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">Tools</text>
+            <text x="420" y="95" fill="#b45309" font-size="9">• 天气查询</text>
+            <text x="420" y="110" fill="#b45309" font-size="9">• 天气预报</text>
+            
+            <!-- Resources -->
+            <line x1="340" y1="120" x2="400" y2="120" stroke="#3b82f6" stroke-width="1.5"/>
+            <rect x="400" y="115" width="120" height="55" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="460" y="138" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="bold">Resources</text>
+            <text x="420" y="155" fill="#2563eb" font-size="9">• 用户指南</text>
+            <text x="420" y="170" fill="#2563eb" font-size="9">• 天气数据</text>
+            
+            <!-- Prompts -->
+            <line x1="340" y1="155" x2="400" y2="155" stroke="#8b5cf6" stroke-width="1.5"/>
+            <rect x="550" y="55" width="120" height="115" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="610" y="78" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="bold">Prompts</text>
+            <text x="570" y="100" fill="#7c3aed" font-size="9">• 天气报告</text>
+            <text x="570" y="115" fill="#7c3aed" font-size="9">• 代码审查</text>
+            <text x="570" y="135" fill="#7c3aed" font-size="9">参数化模板</text>
+            <text x="570" y="150" fill="#7c3aed" font-size="9">可复用设计</text>
+        </svg>
+    </div>
+
+    <h2>五、最佳实践</h2>
+    <p>在开发 MCP Server 时，遵循以下最佳实践可以显著提高代码质量和可维护性。这些实践是基于实际项目经验总结的，涵盖了工具设计、错误处理、安全性、性能优化等多个方面。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP Server 开发最佳实践</text>
+            
+            <rect x="30" y="50" width="160" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">工具设计</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 单一职责</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 清晰命名</text>
+            
+            <rect x="210" y="50" width="160" height="90" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="290" y="75" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">安全控制</text>
+            <text x="230" y="100" fill="#059669" font-size="10">• 参数验证</text>
+            <text x="230" y="120" fill="#059669" font-size="10">• 权限控制</text>
+            
+            <rect x="390" y="50" width="160" height="90" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="470" y="75" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">错误处理</text>
+            <text x="410" y="100" fill="#b45309" font-size="10">• 结构化错误</text>
+            <text x="410" y="120" fill="#b45309" font-size="10">• 超时控制</text>
+            
+            <rect x="570" y="50" width="160" height="90" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="650" y="75" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">运维保障</text>
+            <text x="590" y="100" fill="#7c3aed" font-size="10">• 日志记录</text>
+            <text x="590" y="120" fill="#7c3aed" font-size="10">• 单元测试</text>
+        </svg>
+    </div>
+
+    <p>首先，工具设计应该遵循单一职责原则。每个工具应该只完成一个明确的功能，避免工具功能过于复杂。工具名称应该使用动词加名词的格式（如 get_weather、search_users），使客户端能够直观理解工具的功能。工具描述应该简洁明了地说明工具的功能、使用场景和注意事项。</p>
+
+    <p>其次，错误处理是 Server 开发的重要环节。工具执行过程中可能遇到各种异常情况，如参数错误、网络超时、服务不可用等。Server 应该为每个工具定义清晰的错误处理逻辑，返回结构化的错误信息，帮助客户端和 LLM 理解失败原因并采取相应的恢复措施。</p>
+
+    <p>第三，安全性考虑不容忽视。Server 应该对输入参数进行严格验证，防止恶意输入导致的安全问题。对于涉及敏感操作的工具（如文件写入、数据库修改），应该实施权限控制和操作审计。同时，Server 不应该暴露内部实现细节，如文件路径、数据库连接串等敏感信息。</p>
+
+    <table>
+        <thead>
+            <tr><th>最佳实践</th><th>说明</th><th>示例</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>单一职责</strong></td><td>每个工具只完成一个功能</td><td>get_weather 只查天气，不查空气质量</td></tr>
+            <tr><td><strong>清晰命名</strong></td><td>动词 + 名词格式</td><td>get_weather、search_users</td></tr>
+            <tr><td><strong>错误处理</strong></td><td>返回结构化错误信息</td><td>{"error": "城市不存在", "code": 404}</td></tr>
+            <tr><td><strong>参数验证</strong></td><td>验证输入参数合法性</td><td>检查必填参数、类型、范围</td></tr>
+            <tr><td><strong>超时控制</strong></td><td>设置工具执行超时</td><td>避免长时间阻塞影响服务</td></tr>
+            <tr><td><strong>日志记录</strong></td><td>记录工具调用和错误</td><td>便于调试和性能分析</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title"> 实战建议</div>
+        <p>在开发 MCP Server 时，建议先使用 Python SDK 进行原型开发，因为它提供了更简洁的装饰器接口和更快的开发速度。当 Server 功能稳定后，如果需要类型安全和更好的工程化支持，可以考虑迁移到 TypeScript SDK。同时，建议为 Server 编写单元测试，确保工具、资源和 Prompts 的功能正确性。</p>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>MCP Server 开发是 MCP 协议实践的核心环节。通过 Python 和 TypeScript 两种 SDK，开发者可以用熟悉的语言快速构建 MCP 服务。Python SDK 提供了简洁的装饰器接口，使得工具、资源和 Prompts 的注册变得极其简单。TypeScript SDK 提供了类型安全的开发体验，特别适合需要严格类型检查的大型项目。无论使用哪种语言，核心开发流程都是一致的：创建 Server 实例、注册能力、实现业务逻辑、启动服务。</p>
+
+    <p>在实际开发中，建议遵循单一职责、清晰命名、错误处理、参数验证、超时控制和日志记录等最佳实践。这些实践不仅提高了代码质量，也使得 Server 更加可靠和易于维护。同时，建议为 Server 编写单元测试，确保工具、资源和 Prompts 的功能正确性。</p>
+
+    <p>在下一节 9.4 中，我们将学习 MCP Client 集成与多 Server 编排，掌握如何在 AI 应用中连接和管理多个 MCP Server，实现复杂的能力组合和编排。通过学习 Client 集成方法，你将能够为自己的 AI 应用添加 MCP 能力，让它们使用任何 MCP Server 提供的工具、资源和 Prompts。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

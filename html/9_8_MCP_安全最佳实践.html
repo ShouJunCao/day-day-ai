@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.8 MCP 安全最佳实践 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.8 MCP 安全最佳实践</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 MCP 协议中的安全风险和威胁模型</li>
+        <li>掌握身份验证和授权控制的最佳实践</li>
+        <li>学会输入验证和数据脱敏技术</li>
+        <li>能够构建安全的 MCP Server 应用</li>
+    </ul>
+
+    <h2>一、MCP 安全概述</h2>
+    <p>MCP 协议连接了 AI 应用与外部数据源和工具，这引入了多种安全风险。理解这些风险并采取相应的防护措施，是构建安全 MCP 应用的关键。MCP 协议本身提供了一定的安全机制，但开发者仍需要在应用层实施额外的安全措施。安全措施的缺失可能导致数据泄露、未授权访问、注入攻击等严重后果。</p>
+
+    <p>MCP 协议面临的主要安全挑战包括：身份验证（确保请求来自合法用户）、授权控制（限制用户只能访问授权的工具和数据）、输入安全（防止注入攻击）、数据安全（保护敏感信息不被泄露）、传输安全（防止通信被窃听或篡改）。这些安全挑战需要开发者在设计和实现 MCP Server 时充分考虑，并采取相应的防护措施。</p>
+
+    <p>在实际项目中，安全措施应该从设计阶段就开始考虑，而不是事后添加。这被称为"安全左移"（Shift-Left Security）理念。在 MCP Server 开发中，这意味着在定义工具接口时就要考虑输入验证，在暴露资源时就要考虑访问控制，在传输数据时就要考虑加密保护。安全不是一次性的工作，而是一个持续的过程，需要不断地审查、测试和改进。</p>
+
+    <h3>1.1 安全威胁模型</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP 安全威胁模型</text>
+            
+            <rect x="30" y="55" width="200" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="130" y="80" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">外部威胁</text>
+            <text x="50" y="105" fill="#b45309" font-size="10">• 恶意用户注入</text>
+            <text x="50" y="125" fill="#b45309" font-size="10">• 中间人攻击</text>
+            <text x="50" y="145" fill="#b45309" font-size="10">• DoS 攻击</text>
+            <text x="50" y="165" fill="#b45309" font-size="10">• 未授权访问</text>
+            
+            <rect x="270" y="55" width="240" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="390" y="80" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">安全防护层</text>
+            <text x="290" y="105" fill="#2563eb" font-size="10">• 身份验证</text>
+            <text x="290" y="125" fill="#2563eb" font-size="10">• 授权控制</text>
+            <text x="290" y="145" fill="#2563eb" font-size="10">• 输入验证</text>
+            <text x="290" y="165" fill="#2563eb" font-size="10">• 数据加密</text>
+            <text x="290" y="185" fill="#2563eb" font-size="10">• 日志审计</text>
+            
+            <rect x="550" y="55" width="200" height="130" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="650" y="80" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">内部风险</text>
+            <text x="570" y="105" fill="#059669" font-size="10">• 敏感数据泄露</text>
+            <text x="570" y="125" fill="#059669" font-size="10">• 权限配置错误</text>
+            <text x="570" y="145" fill="#059669" font-size="10">• 依赖漏洞</text>
+            <text x="570" y="165" fill="#059669" font-size="10">• 内部人员滥用</text>
+        </svg>
+    </div>
+
+    <h2>二、身份验证与授权</h2>
+    <p>身份验证和授权是 MCP 安全的第一道防线。身份验证确认"你是谁"，授权确定"你能做什么"。在 MCP 协议中，身份验证可以通过多种方式实现：API 密钥、Bearer Token、OAuth 2.0 等。授权则通过 RBAC（基于角色的访问控制）或 ABAC（基于属性的访问控制）来实现。</p>
+
+    <p>在实际应用中，MCP Server 应该在每次请求处理前验证用户身份，然后根据用户的角色和权限决定是否可以执行所请求的操作。对于敏感工具（如数据库写入、文件删除），应该实施更严格的授权检查，确保只有经过授权的用户才能执行这些操作。同时，建议实施最小权限原则（Principle of Least Privilege），即用户只拥有完成其任务所需的最小权限。</p>
+
+    <p>身份验证和授权的设计还需要考虑性能影响。每次请求都进行完整的身份验证和授权检查可能会增加延迟。在实际项目中，可以使用缓存机制来减少重复验证的开销，同时确保安全级别不受影响。对于高频调用的场景，还可以考虑使用 JWT（JSON Web Token）等轻量级认证方式。</p>
+
+    <h3>2.1 身份验证实现</h3>
+    <div class="code-file">Python（API 密钥认证）</div>
+<pre><code class="language-python">class APIKeyAuth:
+    """API 密钥身份验证"""
+    
+    def __init__(self, valid_keys):
+        self.valid_keys = valid_keys
+    
+    def authenticate(self, headers):
+        """验证 API 密钥"""
+        api_key = headers.get("X-API-Key", "")
+        return api_key in self.valid_keys
+
+# 使用示例
+auth = APIKeyAuth({"key1", "key2"})
+if auth.authenticate({"X-API-Key": "key1"}):
+    print("认证通过")</code></pre>
+
+    <h3>2.2 授权控制实现</h3>
+    <div class="code-file">Python（RBAC 访问控制）</div>
+<pre><code class="language-python">class RBAC:
+    """基于角色的访问控制"""
+    
+    def __init__(self):
+        self.role_permissions = {
+            "admin": {"read", "write", "delete", "admin"},
+            "editor": {"read", "write"},
+            "viewer": {"read"},
+        }
+    
+    def has_permission(self, role, permission):
+        """检查角色是否有指定权限"""
+        return permission in self.role_permissions.get(role, set())
+
+# 使用示例
+rbac = RBAC()
+print(rbac.has_permission("editor", "write"))   # True
+print(rbac.has_permission("viewer", "delete"))   # False</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">身份验证与授权流程</text>
+            
+            <rect x="30" y="55" width="120" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">用户请求</text>
+            
+            <line x1="150" y1="80" x2="190" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="55" width="120" height="50" rx="8" fill="#f59e0b"/>
+            <text x="250" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">身份验证</text>
+            
+            <line x1="310" y1="80" x2="350" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="55" width="120" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="410" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">授权检查</text>
+            
+            <line x1="470" y1="80" x2="510" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="120" height="50" rx="8" fill="#10b981"/>
+            <text x="570" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">执行操作</text>
+            
+            <line x1="630" y1="80" x2="670" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="50" rx="8" fill="#3b82f6"/>
+            <text x="710" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">审计</text>
+            
+            <rect x="100" y="120" width="580" height="30" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="140" text-anchor="middle" fill="#666" font-size="10">请求 → 身份验证 → 授权检查 → 执行操作 → 审计日志</text>
+        </svg>
+    </div>
+
+    <h2>三、输入验证与安全过滤</h2>
+    <p>输入验证是防止注入攻击的关键措施。MCP Server 接收的所有用户输入都应该经过严格的验证和过滤。常见的输入验证包括：类型检查（确保参数类型正确）、长度限制（防止超长输入）、格式验证（确保数据格式符合要求）、内容过滤（移除潜在的恶意内容）。</p>
+
+    <p>在实际开发中，建议采用"白名单"策略而非"黑名单"策略。白名单策略只允许已知的安全输入通过，而黑名单策略试图阻止已知的恶意输入。白名单策略更加安全，因为黑名单永远无法覆盖所有可能的恶意输入。例如，对于文件名参数，应该只允许字母、数字和下划线，而不是试图过滤所有可能的危险字符。</p>
+
+    <p>除了内容过滤，还需要防范 SQL 注入、命令注入、路径遍历等常见攻击。SQL 注入通过使用参数化查询来防范；命令注入通过限制可执行命令的范围来防范；路径遍历通过规范化路径并检查前缀来防范。这些防护措施应该在每个工具的入口点实施，确保即使某个工具的实现存在漏洞，也不会被恶意利用。</p>
+
+    <h3>3.1 输入验证实现</h3>
+    <div class="code-file">Python（输入验证器）</div>
+<pre><code class="language-python">import re
+
+class InputValidator:
+    """输入验证器"""
+    
+    SAFE_PATTERN = re.compile(r'^[\w\s\.,!?@\-]+$')
+
+    @staticmethod
+    def validate_text(text):
+        """验证文本安全性"""
+        if not text:
+            return True
+        return bool(InputValidator.SAFE_PATTERN.match(text))
+
+    @staticmethod
+    def sanitize_html(text):
+        """清理 HTML 标签，防止 XSS"""
+        return re.sub(r'<[^>]*>', '', text)</code></pre>
+
+    <h2>四、数据安全与脱敏</h2>
+    <p>数据安全是 MCP 应用中的重要环节。敏感数据（如个人信息、API 密钥、密码等）在传输和存储过程中都需要保护。常见的数据安全措施包括：传输加密（使用 TLS/HTTPS）、存储加密（使用加密算法保护静态数据）、数据脱敏（在日志和输出中隐藏敏感信息）、数据哈希（用于完整性校验）。</p>
+
+    <p>在 MCP 应用中，数据脱敏尤为重要。当 MCP Server 返回数据给 LLM 时，应该确保敏感信息不会被泄露。例如，用户的邮箱地址应该显示为 "a***@example.com"，API 密钥应该只显示前几位字符，电话号码应该部分隐藏。这种脱敏处理应该在 Server 端完成，而不是依赖客户端处理。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">数据安全处理流程</text>
+            
+            <rect x="30" y="55" width="140" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="100" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">原始数据</text>
+            <text x="50" y="105" fill="#b45309" font-size="9">admin@example.com</text>
+            <text x="50" y="120" fill="#b45309" font-size="9">sk-abc...def</text>
+            
+            <line x1="170" y1="88" x2="210" y2="88" stroke="#f59e0b" stroke-width="2"/>
+            <text x="190" y="80" text-anchor="middle" fill="#f59e0b" font-size="9">脱敏</text>
+            
+            <rect x="210" y="55" width="140" height="65" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="280" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">传输加密</text>
+            <text x="230" y="105" fill="#2563eb" font-size="9">TLS 1.2+ 加密</text>
+            <text x="230" y="120" fill="#2563eb" font-size="9">HTTPS 通道</text>
+            
+            <line x1="350" y1="88" x2="390" y2="88" stroke="#3b82f6" stroke-width="2"/>
+            <text x="370" y="80" text-anchor="middle" fill="#3b82f6" font-size="9">加密</text>
+            
+            <rect x="390" y="55" width="140" height="65" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="460" y="80" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">存储保护</text>
+            <text x="410" y="105" fill="#059669" font-size="9">哈希存储密码</text>
+            <text x="410" y="120" fill="#059669" font-size="9">加密存储密钥</text>
+            
+            <line x1="530" y1="88" x2="570" y2="88" stroke="#10b981" stroke-width="2"/>
+            <text x="550" y="80" text-anchor="middle" fill="#10b981" font-size="9">保护</text>
+            
+            <rect x="570" y="55" width="180" height="65" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="660" y="80" text-anchor="middle" fill="#666" font-size="11" font-weight="bold">安全数据</text>
+            <text x="590" y="105" fill="#999" font-size="9">admi*********.com</text>
+            <text x="590" y="120" fill="#999" font-size="9">sk-123...cdef</text>
+        </svg>
+    </div>
+
+    <h3>4.1 数据脱敏实现</h3>
+    <div class="code-file">Python（数据保护器）</div>
+<pre><code class="language-python">import re
+import hashlib
+
+class DataProtector:
+    """数据保护器"""
+    
+    PATTERNS = {
+        "email": re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
+        "api_key": re.compile(r'\b(?:sk|pk|api)[-_]?[a-zA-Z0-9]{20,}\b'),
+    }
+
+    @staticmethod
+    def mask_sensitive_data(text):
+        """脱敏敏感数据"""
+        for name, pattern in DataProtector.PATTERNS.items():
+            def replacer(match):
+                original = match.group(0)
+                if len(original) > 8:
+                    return original[:4] + "*" * (len(original) - 8) + original[-4:]
+                return "***"
+            text = pattern.sub(replacer, text)
+        return text
+
+    @staticmethod
+    def compute_hash(content):
+        """计算 SHA-256 哈希"""
+        return hashlib.sha256(content.encode('utf-8')).hexdigest()</code></pre>
+
+    <h2>五、传输安全与 TLS</h2>
+    <p>传输安全是 MCP 远程通信的基础。对于通过 HTTP/SSE 传输的数据，必须使用 TLS（Transport Layer Security）进行加密，防止中间人攻击。TLS 确保了数据在传输过程中的机密性和完整性。对于 stdio 传输层，因为是本地进程通信，通常不需要 TLS 加密。</p>
+
+    <h3>5.1 TLS 配置示例</h3>
+    <div class="code-file">Python（HTTPS Server）</div>
+<pre><code class="language-python">import ssl
+from http.server import HTTPServer
+
+# 创建 HTTPS Server
+server = HTTPServer(("0.0.0.0", 8443), handler)
+
+# 配置 TLS
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+context.minimum_version = ssl.TLSVersion.TLSv1_2
+
+# 启动 HTTPS Server
+server.socket = context.wrap_socket(server.socket, server_side=True)
+print("HTTPS Server started on port 8443")</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">TLS 加密传输流程</text>
+            
+            <rect x="30" y="55" width="120" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="90" y="85" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">MCP Client</text>
+            
+            <line x1="150" y1="80" x2="200" y2="80" stroke="#10b981" stroke-width="3"/>
+            <text x="175" y="72" text-anchor="middle" fill="#10b981" font-size="9">TLS 1.2+</text>
+            <polygon points="200,75 210,80 200,85" fill="#10b981"/>
+            
+            <rect x="210" y="55" width="120" height="50" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="270" y="85" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">MCP Server</text>
+            
+            <rect x="370" y="50" width="380" height="90" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="560" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">TLS 安全要素</text>
+            <text x="390" y="100" fill="#b45309" font-size="10">• 证书验证 - 确认服务器身份</text>
+            <text x="390" y="120" fill="#b45309" font-size="10">• 密钥交换 - 建立共享密钥</text>
+            <text x="390" y="140" fill="#b45309" font-size="10">• 对称加密 - AES-256-GCM</text>
+        </svg>
+    </div>
+
+    <h2>六、日志审计与监控</h2>
+    <p>日志审计是 MCP 安全的重要组成部分。通过记录所有工具调用、资源访问和错误事件，可以追踪潜在的安全问题，并在发生安全事件时进行回溯分析。审计日志应该包含：时间戳、用户身份、操作类型、操作结果、IP 地址等信息。</p>
+
+    <p>在实际项目中，建议将审计日志发送到集中的日志管理系统（如 ELK Stack、Splunk），并设置告警规则，当检测到异常行为时及时通知安全团队。例如，当同一个用户在短时间内尝试访问未授权工具超过 10 次时，应该触发安全告警。</p>
+
+    <h3>6.1 审计日志实现</h3>
+    <div class="code-file">Python（审计日志）</div>
+<pre><code class="language-python">import logging
+import json
+import time
+
+class AuditLogger:
+    """审计日志记录器"""
+    
+    def __init__(self, log_file="mcp_audit.log"):
+        self.logger = logging.getLogger("mcp_audit")
+        handler = logging.FileHandler(log_file)
+        handler.setFormatter(logging.Formatter('%(asctime)s | %(message)s'))
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.INFO)
+
+    def log(self, event_type, user_id, details, success=True):
+        """记录审计事件"""
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = {
+            "timestamp": timestamp, "event": event_type,
+            "user_id": user_id, "details": details, "success": success
+        }
+        self.logger.info(json.dumps(log_entry, ensure_ascii=False))
+        return log_entry
+
+# 使用示例
+audit = AuditLogger()
+audit.log("LOGIN", "user_123", {"ip": "192.168.1.1"})
+audit.log("TOOL_CALL", "user_123", {"tool": "get_weather"})</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">审计日志工作流程</text>
+            
+            <rect x="30" y="50" width="130" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="95" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">事件发生</text>
+            <text x="95" y="95" text-anchor="middle" fill="white" font-size="8">工具调用/访问</text>
+            
+            <line x1="160" y1="80" x2="190" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="50" width="130" height="60" rx="8" fill="#f59e0b"/>
+            <text x="255" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">收集信息</text>
+            <text x="255" y="95" text-anchor="middle" fill="white" font-size="8">时间/用户/IP</text>
+            
+            <line x1="320" y1="80" x2="350" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="50" width="130" height="60" rx="8" fill="#8b5cf6"/>
+            <text x="415" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">格式化</text>
+            <text x="415" y="95" text-anchor="middle" fill="white" font-size="8">JSON 格式</text>
+            
+            <line x1="480" y1="80" x2="510" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="50" width="130" height="60" rx="8" fill="#10b981"/>
+            <text x="575" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">写入日志</text>
+            <text x="575" y="95" text-anchor="middle" fill="white" font-size="8">文件/数据库</text>
+            
+            <line x1="640" y1="80" x2="670" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="50" width="80" height="60" rx="8" fill="#ef4444"/>
+            <text x="710" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">告警</text>
+            <text x="710" y="95" text-anchor="middle" fill="white" font-size="8">异常触发</text>
+        </svg>
+    </div>
+
+    <h2>七、安全最佳实践清单</h2>
+    <p>以下是 MCP Server 开发的安全最佳实践清单，建议在实际项目中逐一落实。</p>
+
+    <table>
+        <thead>
+            <tr><th>安全实践</th><th>描述</th><th>优先级</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>身份验证</strong></td><td>所有 API 请求必须携带有效凭证</td><td> 高</td></tr>
+            <tr><td><strong>授权控制</strong></td><td>基于角色的访问控制（RBAC）</td><td> 高</td></tr>
+            <tr><td><strong>输入验证</strong></td><td>验证所有输入参数，使用白名单</td><td> 高</td></tr>
+            <tr><td><strong>HTTPS 加密</strong></td><td>远程通信必须使用 TLS 1.2+</td><td> 高</td></tr>
+            <tr><td><strong>数据脱敏</strong></td><td>敏感数据在输出前脱敏</td><td> 中</td></tr>
+            <tr><td><strong>审计日志</strong></td><td>记录所有操作日志</td><td> 中</td></tr>
+            <tr><td><strong>速率限制</strong></td><td>防止 API 滥用和 DDoS</td><td> 中</td></tr>
+            <tr><td><strong>错误处理</strong></td><td>不泄露内部实现细节</td><td> 低</td></tr>
+            <tr><td><strong>依赖扫描</strong></td><td>定期检查第三方依赖漏洞</td><td> 低</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">MCP 安全分层架构</text>
+            
+            <rect x="30" y="50" width="720" height="30" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="70" text-anchor="middle" fill="#92400e" font-size="11">应用层：身份验证 · 授权控制 · 速率限制 · 审计日志</text>
+            
+            <rect x="30" y="85" width="720" height="30" rx="6" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="390" y="105" text-anchor="middle" fill="#1e40af" font-size="11">传输层：TLS 1.2+ 加密 · HTTPS 通道 · 证书验证</text>
+            
+            <rect x="30" y="120" width="720" height="30" rx="6" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="140" text-anchor="middle" fill="#065f46" font-size="11">数据层：输入验证 · 数据脱敏 · 哈希存储 · 加密存储</text>
+        </svg>
+    </div>
+
+    <div class="note note-warn">
+        <div class="note-title">️ 安全提醒</div>
+        <p>MCP Server 暴露了外部工具和数据源的访问能力，安全风险较高。在生产环境中，务必实施完整的身份验证、授权控制和输入验证。不要在生产环境中使用默认的 API 密钥或测试凭证。定期审查和更新安全措施，确保系统的安全性。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>MCP 安全最佳实践涵盖了身份验证、授权控制、输入验证、数据安全、传输安全和日志审计等多个方面。理解并落实这些安全实践，是构建安全可靠的 MCP 应用的基础。安全不是一次性的工作，而是一个持续的过程，需要不断地审查、测试和改进。在实际开发中，建议采用"安全左移"的理念，将安全措施集成到开发的每个阶段。</p>
+
+    <p>在下一节 9.9 中，我们将通过实战项目，综合运用前面学习的所有 MCP 知识，开发一个完整的 MCP Server（集成数据库查询、文件操作、Web 搜索等功能），将理论知识转化为实际编码能力。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

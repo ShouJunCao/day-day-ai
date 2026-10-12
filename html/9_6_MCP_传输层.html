@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.6 MCP 传输层（stdio、SSE、HTTP Streaming） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.6 MCP 传输层（stdio、SSE、HTTP Streaming）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 MCP 三种传输层的核心差异</li>
+        <li>掌握 stdio 传输层的工作原理和实现</li>
+        <li>了解 SSE 和 HTTP Streaming 传输层的特点</li>
+        <li>能够根据实际需求选择合适的传输层</li>
+    </ul>
+
+    <h2>一、传输层概述</h2>
+    <p>MCP 协议支持三种传输层：stdio（标准输入输出）、SSE（Server-Sent Events）和 HTTP Streaming（流式 HTTP）。传输层负责在客户端和服务器之间传输 JSON-RPC 2.0 消息。选择合适的传输层取决于应用场景：本地工具调用通常使用 stdio，远程服务调用使用 SSE 或 HTTP Streaming。</p>
+
+    <p>传输层的设计需要考虑几个关键因素：通信方向（单向或双向）、连接方式（进程通信或网络通信）、数据格式（行分隔 JSON 或事件流）、以及安全性（本地通信无需加密，远程通信需要 TLS）。MCP 协议抽象了传输层的差异，使得上层的应用逻辑可以在不同传输层之间无缝切换。</p>
+
+    <p>在实际项目中，传输层的选择直接影响系统的部署方式和性能表现。stdio 传输层因为不需要网络配置，是本地开发和调试的最佳选择；SSE 传输层因为兼容性广泛，是远程部署的稳妥选择；HTTP Streaming 传输层因为架构简洁，是未来发展的主流方向。理解三种传输层的特点和差异，是正确部署 MCP 服务的基础。</p>
+
+    <h3>1.1 传输层架构</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP 传输层架构</text>
+            
+            <!-- 应用层 -->
+            <rect x="30" y="50" width="720" height="35" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="390" y="74" text-anchor="middle" fill="#5b21b6" font-size="12" font-weight="bold">MCP 协议层（JSON-RPC 2.0 消息）</text>
+            
+            <!-- 传输层 -->
+            <line x1="190" y1="85" x2="190" y2="110" stroke="#64748b" stroke-width="1"/>
+            <line x1="390" y1="85" x2="390" y2="110" stroke="#64748b" stroke-width="1"/>
+            <line x1="590" y1="85" x2="590" y2="110" stroke="#64748b" stroke-width="1"/>
+            
+            <rect x="30" y="110" width="240" height="75" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="150" y="135" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">stdio</text>
+            <text x="50" y="155" fill="#2563eb" font-size="9">• 标准输入输出</text>
+            <text x="50" y="172" fill="#2563eb" font-size="9">• 行分隔 JSON</text>
+            
+            <rect x="270" y="110" width="240" height="75" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="135" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">SSE</text>
+            <text x="290" y="155" fill="#b45309" font-size="9">• Server-Sent Events</text>
+            <text x="290" y="172" fill="#b45309" font-size="9">• 双端点通信</text>
+            
+            <rect x="510" y="110" width="240" height="75" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="630" y="135" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">HTTP Streaming</text>
+            <text x="530" y="155" fill="#059669" font-size="9">• 流式 HTTP</text>
+            <text x="530" y="172" fill="#059669" font-size="9">• 单端点双向</text>
+        </svg>
+    </div>
+
+    <h2>二、stdio 传输层</h2>
+    <p>stdio 是 MCP 最简单的传输层，基于标准输入（stdin）和标准输出（stdout）。客户端将 MCP Server 作为子进程启动，通过 stdin 发送 JSON-RPC 请求，通过 stdout 读取响应。这种传输方式不需要网络配置，简单高效，是本地工具调用的首选。</p>
+
+    <p>stdio 传输层的核心特点：消息以换行符分隔的 JSON 格式传输，每行一条完整的 JSON-RPC 消息；stdout 用于发送响应，stderr 用于输出日志和调试信息（stderr 不会被解析为协议消息）；连接建立即开始通信，无需握手过程。</p>
+
+    <p>在实际应用中，stdio 传输层是最常用的传输方式，特别是在 AI 编辑器（如 Cursor、Claude Desktop）调用本地 MCP Server 的场景中。编辑器将 Server 作为子进程启动，通过 stdin 发送用户请求，通过 stdout 读取 Server 响应。这种方式的优点是启动速度快、无需端口配置、安全性高（因为是本地进程通信）。</p>
+
+    <h3>2.1 stdio 实现</h3>
+    <div class="code-file">Python（stdio 传输层）</div>
+<pre><code class="language-python">import json
+import sys
+import asyncio
+
+class StdioTransport:
+    """stdio 传输层"""
+    
+    async def connect(self):
+        """stdio 连接即时可用"""
+        self.connected = True
+    
+    async def send(self, message):
+        """发送消息到 stdout（换行分隔 JSON）"""
+        json_str = json.dumps(message, ensure_ascii=False) + "\n"
+        sys.stdout.write(json_str)
+        await sys.stdout.flush()
+    
+    async def receive(self):
+        """从 stdin 读取消息"""
+        line = sys.stdin.readline()
+        if not line:
+            raise EOFError("End of input")
+        return json.loads(line.strip())
+
+# 使用示例
+# Server 端：监听 stdin，处理请求，写入 stdout
+# Client 端：启动 Server 子进程，通过 stdin 发送，通过 stdout 接收</code></pre>
+
+    <h3>2.2 stdio 通信流程</h3>
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">stdio 通信流程</text>
+            
+            <!-- Client -->
+            <rect x="30" y="50" width="160" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">MCP Client</text>
+            <text x="50" y="100" fill="#2563eb" font-size="9">启动 Server 进程</text>
+            <text x="50" y="120" fill="#2563eb" font-size="9">写入 stdin</text>
+            <text x="50" y="140" fill="#2563eb" font-size="9">读取 stdout</text>
+            
+            <!-- stdin -->
+            <line x1="190" y1="85" x2="250" y2="85" stroke="#f59e0b" stroke-width="2"/>
+            <text x="220" y="78" text-anchor="middle" fill="#f59e0b" font-size="8">stdin</text>
+            
+            <!-- stdout -->
+            <line x1="250" y1="115" x2="190" y2="115" stroke="#10b981" stroke-width="2"/>
+            <text x="220" y="128" text-anchor="middle" fill="#10b981" font-size="8">stdout</text>
+            
+            <!-- Server -->
+            <rect x="250" y="50" width="160" height="90" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="330" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">MCP Server</text>
+            <text x="270" y="100" fill="#059669" font-size="9">读取 stdin</text>
+            <text x="270" y="120" fill="#059669" font-size="9">处理请求</text>
+            <text x="270" y="140" fill="#059669" font-size="9">写入 stdout</text>
+            
+            <!-- stderr -->
+            <rect x="450" y="50" width="200" height="90" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="550" y="75" text-anchor="middle" fill="#666" font-size="11" font-weight="bold">stderr（日志）</text>
+            <text x="470" y="100" fill="#999" font-size="9">• Server 日志输出</text>
+            <text x="470" y="120" fill="#999" font-size="9">• 调试信息</text>
+            <text x="470" y="140" fill="#999" font-size="9">• 不参与协议通信</text>
+        </svg>
+    </div>
+
+    <h2>三、SSE 传输层</h2>
+    <p>SSE（Server-Sent Events）是 MCP 早期版本的主要远程传输层。它基于 HTTP 的 SSE 协议，允许服务器向客户端推送事件流。SSE 传输层需要两个端点：一个 GET 端点用于建立 SSE 长连接（接收服务器消息），一个 POST 端点用于发送请求给服务器。</p>
+
+    <p>SSE 的工作流程：客户端首先通过 GET 请求连接到 /sse 端点，服务器返回一个 SSE 事件流，包含一个特殊的 "endpoint" 事件，告知客户端 POST 请求的目标地址。随后，客户端通过 POST 请求将 JSON-RPC 消息发送到指定端点，服务器处理后将响应通过 SSE 事件流返回给客户端。</p>
+
+    <h3>3.1 SSE 实现</h3>
+    <div class="code-file">Python（SSE 传输层）</div>
+<pre><code class="language-python">class SSETransport:
+    """SSE 传输层"""
+    
+    def __init__(self, server_url):
+        self.server_url = server_url
+        self.endpoint_url = ""
+    
+    async def connect(self):
+        """建立 SSE 连接"""
+        # 1. GET /sse 建立长连接
+        # 2. 接收 endpoint 事件，获取 POST 地址
+        # 3. 开始监听 SSE 事件流
+        response = await httpx.get(f"{self.server_url}/sse")
+        self.endpoint_url = f"{self.server_url}/message"
+    
+    async def send(self, message):
+        """通过 POST 发送请求"""
+        await httpx.post(self.endpoint_url, json=message)
+    
+    async def receive(self):
+        """从 SSE 事件流接收响应"""
+        # 监听 SSE 事件，解析 JSON-RPC 响应
+        async for event in self.sse_stream:
+            return json.loads(event.data)</code></pre>
+
+    <h3>3.2 SSE 通信流程</h3>
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">SSE 通信流程</text>
+            
+            <!-- Client -->
+            <rect x="30" y="50" width="160" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="110" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">MCP Client</text>
+            <text x="50" y="100" fill="#2563eb" font-size="9">GET /sse (长连接)</text>
+            <text x="50" y="120" fill="#2563eb" font-size="9">POST /message (请求)</text>
+            <text x="50" y="140" fill="#2563eb" font-size="9">监听 SSE 事件流</text>
+            
+            <!-- SSE 连接 -->
+            <line x1="190" y1="95" x2="250" y2="95" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4,2"/>
+            <text x="220" y="88" text-anchor="middle" fill="#8b5cf6" font-size="8">SSE 流</text>
+            
+            <!-- POST 请求 -->
+            <line x1="250" y1="115" x2="190" y2="115" stroke="#f59e0b" stroke-width="2"/>
+            <text x="220" y="128" text-anchor="middle" fill="#f59e0b" font-size="8">POST</text>
+            
+            <!-- Server -->
+            <rect x="250" y="50" width="160" height="90" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="330" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">MCP Server</text>
+            <text x="270" y="100" fill="#059669" font-size="9">GET /sse 处理</text>
+            <text x="270" y="120" fill="#059669" font-size="9">POST /message 处理</text>
+            <text x="270" y="140" fill="#059669" font-size="9">推送 SSE 事件</text>
+            
+            <!-- 右侧说明 -->
+            <rect x="450" y="50" width="300" height="90" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="600" y="75" text-anchor="middle" fill="#666" font-size="11" font-weight="bold">SSE 特点</text>
+            <text x="470" y="100" fill="#999" font-size="9">• 需要两个 HTTP 端点</text>
+            <text x="470" y="118" fill="#999" font-size="9">• 服务器→客户端单向推送</text>
+            <text x="470" y="136" fill="#999" font-size="9">• 客户端→服务器 POST 请求</text>
+        </svg>
+    </div>
+
+    <h2>四、HTTP Streaming 传输层</h2>
+    <p>HTTP Streaming 是 MCP 最新的传输标准，旨在简化远程通信。与 SSE 需要两个端点不同，HTTP Streaming 只需要一个端点即可完成双向通信。客户端通过 POST 请求发送消息，服务器通过 HTTP 响应流（Chunked Encoding）或 Server-Sent Events 返回响应。</p>
+
+    <p>HTTP Streaming 的优势在于简化了客户端实现：只需要一个 HTTP 端点，不需要管理两个独立的连接；支持双向流式传输，服务器可以在处理过程中实时返回部分结果；更好的代理兼容性，因为使用的是标准的 HTTP POST 请求。</p>
+
+    <h3>4.1 HTTP Streaming 实现</h3>
+    <div class="code-file">Python（HTTP Streaming 传输层）</div>
+<pre><code class="language-python">class HTTPTransport:
+    """HTTP Streaming 传输层"""
+    
+    def __init__(self, server_url):
+        self.server_url = server_url
+    
+    async def send(self, message):
+        """发送 HTTP 请求"""
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                "POST", self.server_url,
+                json=message,
+                timeout=None  # 流式传输需要无限超时
+            ) as response:
+                async for chunk in response.aiter_text():
+                    # 解析 Chunked Encoding 中的 JSON-RPC 响应
+                    yield json.loads(chunk)
+    
+    async def receive(self):
+        """接收 HTTP 响应流"""
+        # 处理 Server-Sent Events 或 NDJSON 格式
+        # 支持实时流式返回结果</code></pre>
+
+    <h3>4.2 传输层对比</h3>
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">三种传输层对比</text>
+            
+            <rect x="30" y="50" width="220" height="110" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">stdio</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 本地进程通信</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 无需网络配置</text>
+            <text x="50" y="140" fill="#2563eb" font-size="10">• 简单高效</text>
+            <text x="50" y="160" fill="#2563eb" font-size="9">适用：本地 CLI 工具</text>
+            
+            <rect x="280" y="50" width="220" height="110" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="75" text-anchor="middle" fill="#92400e" font-size="12" font-weight="bold">SSE</text>
+            <text x="300" y="100" fill="#b45309" font-size="10">• 远程网络通信</text>
+            <text x="300" y="120" fill="#b45309" font-size="10">• 两个 HTTP 端点</text>
+            <text x="300" y="140" fill="#b45309" font-size="10">• 兼容性好</text>
+            <text x="300" y="160" fill="#b45309" font-size="9">适用：远程服务</text>
+            
+            <rect x="530" y="50" width="220" height="110" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="640" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">HTTP Streaming</text>
+            <text x="550" y="100" fill="#059669" font-size="10">• 远程网络通信</text>
+            <text x="550" y="120" fill="#059669" font-size="10">• 单端点双向</text>
+            <text x="550" y="140" fill="#059669" font-size="10">• 流式传输</text>
+            <text x="550" y="160" fill="#059669" font-size="9">适用：最新标准</text>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>对比维度</th><th>stdio</th><th>SSE</th><th>HTTP Streaming</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>通信方式</strong></td><td>本地进程</td><td>HTTP 网络</td><td>HTTP 网络</td></tr>
+            <tr><td><strong>端点数量</strong></td><td>1（stdin/stdout）</td><td>2（GET + POST）</td><td>1（POST）</td></tr>
+            <tr><td><strong>双向通信</strong></td><td>是</td><td>是（需两个端点）</td><td>是（单端点）</td></tr>
+            <tr><td><strong>流式传输</strong></td><td>不支持</td><td>支持（SSE 事件流）</td><td>支持（Chunked）</td></tr>
+            <tr><td><strong>网络配置</strong></td><td>不需要</td><td>需要（URL + 端口）</td><td>需要（URL + 端口）</td></tr>
+            <tr><td><strong>安全加密</strong></td><td>不需要</td><td>需要 TLS</td><td>需要 TLS</td></tr>
+            <tr><td><strong>代理兼容</strong></td><td>不适用</td><td>中等</td><td>好</td></tr>
+            <tr><td><strong>推荐场景</strong></td><td>本地工具调用</td><td>远程服务（兼容旧版）</td><td>远程服务（新版）</td></tr>
+        </tbody>
+    </table>
+
+    <h2>五、传输层选型建议</h2>
+    <p>选择合适的传输层是 MCP 集成的关键决策之一。以下是具体的选型建议：</p>
+
+    <p>如果你需要在本地调用 AI 工具（如通过 Cursor、Claude Desktop 调用本地 Python 脚本），stdio 是最简单高效的选择。它不需要配置网络端口，启动即用，适合开发和测试阶段。如果你的 Server 需要部署到远程服务器上，并且客户端通过网络访问，那么应该选择 HTTP Streaming 或 SSE。HTTP Streaming 是最新的标准，推荐使用；SSE 适合需要兼容旧版 MCP 客户端的场景。</p>
+
+    <p>在实际项目中，建议 Server 同时支持多种传输层，以便客户端可以根据实际需求选择最合适的方式。MCP Python SDK 和 TypeScript SDK 都提供了对多种传输层的支持，开发者只需要在启动 Server 时指定传输类型即可。</p>
+
+    <div class="note note-tip">
+        <div class="note-title"> 实战建议</div>
+        <p>在开发 MCP Server 时，建议优先实现 stdio 传输层，因为它最简单，便于本地开发和调试。当需要部署到远程环境时，再添加 HTTP Streaming 或 SSE 支持。同时，建议为 Server 添加传输层自动检测功能，根据运行环境自动选择最合适的传输方式。</p>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>MCP 协议支持三种传输层：stdio、SSE 和 HTTP Streaming。stdio 适用于本地进程通信，简单高效；SSE 适用于远程通信，兼容性好但需要两个端点；HTTP Streaming 是最新的标准，只需一个端点即可完成双向通信。理解不同传输层的特点和适用场景，是正确部署 MCP 服务的关键。</p>
+
+    <p>在下一节 9.7 中，我们将学习 MCP 生态与社区工具（MCP Hub、Smithery），了解如何发现、安装和管理 MCP 服务器，以及如何使用社区工具简化 MCP 的开发和部署流程。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

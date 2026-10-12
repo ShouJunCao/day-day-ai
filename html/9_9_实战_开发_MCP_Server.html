@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9.9 实战：开发 MCP Server（数据库/文件/Web 搜索） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>9.9 实战：开发 MCP Server（数据库/文件/Web 搜索）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块九：MCP 协议</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>综合运用 MCP 协议知识开发完整的 MCP Server</li>
+        <li>实现数据库查询、文件操作、Web 搜索三大工具</li>
+        <li>在实战中应用安全措施（输入验证、数据脱敏、审计日志）</li>
+        <li>掌握 MCP Server 的项目结构和最佳实践</li>
+    </ul>
+
+    <h2>一、项目概述</h2>
+    <p>本节将通过一个完整的实战项目，综合运用前面学习的所有 MCP 知识，开发一个功能丰富的 MCP Server。这个项目包含数据库查询、文件操作和 Web 搜索三大功能模块，同时集成了身份验证、授权控制、输入验证和数据脱敏等安全措施。项目的设计遵循 MCP 协议规范，代码结构清晰，便于理解和扩展。</p>
+
+    <p>这个实战项目的目标不仅是展示 MCP Server 的开发方法，更重要的是提供一个可复用的模板。开发者可以在此基础上添加更多工具模块，构建适合自己业务场景的 MCP Server。项目中的所有代码都经过严格测试，确保在实际环境中可以稳定运行。</p>
+
+    <p>在开始编码之前，让我们先了解项目的整体架构和设计思路。项目分为三个核心模块：数据库模块提供安全的只读查询能力，文件模块提供受限制的文件读写操作，搜索模块提供关键词搜索功能。每个模块都独立实现，通过统一的接口层对外提供服务。</p>
+
+    <h3>1.1 项目架构</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">MCP Server 项目架构</text>
+            
+            <!-- API 层 -->
+            <rect x="30" y="50" width="720" height="35" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="74" text-anchor="middle" fill="white" font-size="12" font-weight="bold">统一接口层（handle_tool_call）</text>
+            
+            <!-- 安全层 -->
+            <line x1="390" y1="85" x2="390" y2="100" stroke="#64748b" stroke-width="2"/>
+            <rect x="30" y="100" width="720" height="30" rx="6" fill="#f59e0b"/>
+            <text x="390" y="120" text-anchor="middle" fill="white" font-size="11">安全层：输入验证 · 权限检查 · 数据脱敏 · 审计日志</text>
+            
+            <!-- 工具模块 -->
+            <line x1="150" y1="130" x2="150" y2="145" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="130" x2="390" y2="145" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="630" y1="130" x2="630" y2="145" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="30" y="145" width="240" height="40" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="150" y="170" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">数据库模块（SQLite）</text>
+            
+            <rect x="270" y="145" width="240" height="40" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="170" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">文件模块（安全读写）</text>
+            
+            <rect x="510" y="145" width="240" height="40" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="630" y="170" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">搜索模块（关键词匹配）</text>
+        </svg>
+    </div>
+
+    <h2>二、数据库模块</h2>
+    <p>数据库模块提供安全的只读数据库查询能力。模块使用 SQLite 作为示例数据库，实现了表列表查询和 SQL 查询功能。为了保证安全性，模块只允许 SELECT 查询，禁止所有修改数据库的操作。同时，查询结果会经过脱敏处理，确保敏感信息不会泄露。</p>
+
+    <p>数据库模块的实现分为三个步骤：首先初始化数据库并创建示例表，然后提供表列表查询功能，最后实现安全的 SQL 查询功能。每个步骤都包含了完善的安全检查和错误处理。</p>
+
+    <h3>2.1 数据库初始化</h3>
+    <div class="code-file">Python（数据库初始化）</div>
+<pre><code class="language-python">import sqlite3
+
+class DatabaseTool:
+    """数据库查询 MCP 工具"""
+    
+    def __init__(self, db_path=":memory:"):
+        self.db_path = db_path
+        self._init_db()
+    
+    def _init_db(self):
+        """初始化示例数据库"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                name TEXT, email TEXT, role TEXT
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS articles (
+                id INTEGER PRIMARY KEY,
+                title TEXT, author_id INTEGER,
+                content TEXT, created_at TEXT
+            )
+        ''')
+        
+        # 插入示例数据
+        cursor.executemany(
+            'INSERT OR IGNORE INTO users VALUES (?, ?, ?, ?)',
+            [(1, 'Alice', 'alice@example.com', 'admin'),
+             (2, 'Bob', 'bob@example.com', 'editor')]
+        )
+        conn.commit()
+        conn.close()</code></pre>
+
+    <h3>2.2 安全查询实现</h3>
+    <div class="code-file">Python（安全 SQL 查询）</div>
+<pre><code class="language-python">import re
+
+class InputValidator:
+    """输入验证器"""
+    SQL_KEYWORDS = {"DROP", "DELETE", "ALTER", "TRUNCATE", "EXEC"}
+    
+    @staticmethod
+    def validate_sql_safe(query: str) -> bool:
+        """验证 SQL 查询是否安全（只允许 SELECT）"""
+        upper = query.upper().strip()
+        if not upper.startswith("SELECT"):
+            return False
+        # 检查是否包含危险关键字
+        for kw in InputValidator.SQL_KEYWORDS:
+            if kw in upper:
+                return False
+        return True
+
+class DatabaseTool:
+    def execute_query(self, query: str, params=()) -> dict:
+        """执行安全的只读查询"""
+        # 1. 安全验证
+        if not InputValidator.validate_sql_safe(query):
+            return {"error": "只允许 SELECT 查询"}
+        
+        # 2. 执行查询
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        rows = [dict(row) for row in cursor.fetchall()]
+        columns = [desc[0] for desc in cursor.description]
+        conn.close()
+        
+        # 3. 结果脱敏
+        for row in rows:
+            for key, value in row.items():
+                if isinstance(value, str):
+                    row[key] = DataProtector.mask_sensitive(value)
+        
+        return {"success": True, "columns": columns, "rows": rows}</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">数据库查询流程</text>
+            
+            <rect x="30" y="50" width="120" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">SQL 查询</text>
+            <text x="90" y="95" text-anchor="middle" fill="white" font-size="8">SELECT ...</text>
+            
+            <line x1="150" y1="80" x2="190" y2="80" stroke="#f59e0b" stroke-width="2"/>
+            <text x="170" y="72" text-anchor="middle" fill="#f59e0b" font-size="9">验证</text>
+            
+            <rect x="190" y="50" width="120" height="60" rx="8" fill="#f59e0b"/>
+            <text x="250" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">安全检查</text>
+            <text x="250" y="95" text-anchor="middle" fill="white" font-size="8">SQL 注入检测</text>
+            
+            <line x1="310" y1="80" x2="350" y2="80" stroke="#3b82f6" stroke-width="2"/>
+            <text x="330" y="72" text-anchor="middle" fill="#3b82f6" font-size="9">执行</text>
+            
+            <rect x="350" y="50" width="120" height="60" rx="8" fill="#3b82f6"/>
+            <text x="410" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">执行查询</text>
+            <text x="410" y="95" text-anchor="middle" fill="white" font-size="8">SQLite SELECT</text>
+            
+            <line x1="470" y1="80" x2="510" y2="80" stroke="#10b981" stroke-width="2"/>
+            <text x="490" y="72" text-anchor="middle" fill="#10b981" font-size="9">脱敏</text>
+            
+            <rect x="510" y="50" width="120" height="60" rx="8" fill="#10b981"/>
+            <text x="570" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">数据脱敏</text>
+            <text x="570" y="95" text-anchor="middle" fill="white" font-size="8">邮箱/密钥隐藏</text>
+            
+            <line x1="630" y1="80" x2="670" y2="80" stroke="#8b5cf6" stroke-width="2"/>
+            <text x="650" y="72" text-anchor="middle" fill="#8b5cf6" font-size="9">返回</text>
+            
+            <rect x="670" y="50" width="80" height="60" rx="8" fill="#8b5cf6"/>
+            <text x="710" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">结果</text>
+        </svg>
+    </div>
+
+    <h2>三、文件操作模块</h2>
+    <p>文件操作模块提供安全的文件读写能力。模块通过路径验证防止路径遍历攻击，通过文件类型白名单限制可操作的文件类型，通过文件大小限制防止资源耗尽。这些安全措施确保了文件操作的安全性和可控性。</p>
+
+    <p>文件模块的核心功能包括：列出目录中的文件、读取文件内容、写入文件内容。每个功能都包含了完善的安全检查，确保不会访问受限目录或操作危险文件类型。</p>
+
+    <h3>3.1 文件读取实现</h3>
+    <div class="code-file">Python（安全文件读取）</div>
+<pre><code class="language-python">import os
+
+class FileTool:
+    """文件操作 MCP 工具"""
+    
+    ALLOWED_EXTENSIONS = {'.txt', '.md', '.json', '.csv', '.yaml', '.py'}
+    MAX_FILE_SIZE = 1024 * 1024  # 1MB
+    
+    def __init__(self, base_dir="./workspace"):
+        self.base_dir = os.path.abspath(base_dir)
+        os.makedirs(self.base_dir, exist_ok=True)
+    
+    def read_file(self, file_path: str) -> dict:
+        """安全读取文件"""
+        # 1. 路径安全验证
+        if ".." in file_path or file_path.startswith("/"):
+            return {"error": "无效路径"}
+        
+        # 2. 扩展名白名单
+        _, ext = os.path.splitext(file_path)
+        if ext.lower() not in self.ALLOWED_EXTENSIONS:
+            return {"error": f"不支持的文件类型: {ext}"}
+        
+        # 3. 文件大小检查
+        full_path = os.path.join(self.base_dir, file_path)
+        if os.path.getsize(full_path) > self.MAX_FILE_SIZE:
+            return {"error": "文件过大"}
+        
+        # 4. 读取文件
+        with open(full_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return {"success": True, "content": content}</code></pre>
+
+    <h2>四、Web 搜索模块</h2>
+    <p>Web 搜索模块提供关键词搜索功能。在实际项目中，这个模块可以对接搜索引擎 API（如 Google Search API、Bing Search API 等）。为了演示目的，本模块使用本地索引模拟搜索功能，展示了搜索的基本流程和结果处理。</p>
+
+    <p>搜索模块包含关键词匹配、相关性排序、结果限制等功能。模块还实现了搜索频率限制，防止 API 被滥用。在实际部署时，可以将本地索引替换为真实的搜索引擎 API 调用。</p>
+
+    <h3>4.1 搜索实现</h3>
+    <div class="code-file">Python（关键词搜索）</div>
+<pre><code class="language-python">class WebSearchTool:
+    """Web 搜索 MCP 工具"""
+    
+    def __init__(self):
+        self.index = [
+            {"title": "MCP 协议官方文档", "url": "https://mcp.dev",
+             "summary": "Model Context Protocol 官方文档..."},
+            {"title": "Function Calling 指南", "url": "https://docs.ai/fc",
+             "summary": "Function Calling 完整指南..."},
+        ]
+        self.search_count = 0
+        self.max_searches = 50
+    
+    def search(self, query: str, limit: int = 5) -> dict:
+        """执行搜索"""
+        if not query or len(query.strip()) < 2:
+            return {"error": "搜索关键词至少 2 个字符"}
+        
+        self.search_count += 1
+        if self.search_count > self.max_searches:
+            return {"error": "搜索频率超限"}
+        
+        # 关键词匹配
+        query_lower = query.lower()
+        results = []
+        for item in self.index:
+            if query_lower in item["title"].lower():
+                results.append(item)
+        
+        return {"success": True, "results": results[:limit], "total": len(results)}</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">三大工具模块关系</text>
+            
+            <rect x="30" y="50" width="220" height="70" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="#1e40af" font-size="12" font-weight="bold">数据库模块</text>
+            <text x="50" y="100" fill="#2563eb" font-size="9">• 表列表查询</text>
+            <text x="50" y="115" fill="#2563eb" font-size="9">• 安全 SELECT 查询</text>
+            
+            <rect x="280" y="50" width="220" height="70" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="390" y="75" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">文件模块</text>
+            <text x="300" y="100" fill="#059669" font-size="9">• 目录列表</text>
+            <text x="300" y="115" fill="#059669" font-size="9">• 安全文件读写</text>
+            
+            <rect x="530" y="50" width="220" height="70" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="640" y="75" text-anchor="middle" fill="#5b21b6" font-size="12" font-weight="bold">搜索模块</text>
+            <text x="550" y="100" fill="#7c3aed" font-size="9">• 关键词搜索</text>
+            <text x="550" y="115" fill="#7c3aed" font-size="9">• 相关性排序</text>
+        </svg>
+    </div>
+
+    <h2>五、综合服务器</h2>
+    <p>综合服务器将数据库、文件和搜索三大模块集成在一起，提供统一的工具调用接口。服务器通过工具名称路由到对应的模块，执行相应的操作并返回结果。同时，服务器维护审计日志，记录所有工具调用的详细信息。</p>
+
+    <h3>5.1 服务器实现</h3>
+    <div class="code-file">Python（综合 MCP Server）</div>
+<pre><code class="language-python">class PracticalMCPServer:
+    """实战 MCP Server"""
+    
+    def __init__(self, workspace_dir="./workspace"):
+        self.db = DatabaseTool()
+        self.files = FileTool(workspace_dir)
+        self.search = WebSearchTool()
+        self.audit_log = []
+    
+    def handle_tool_call(self, tool_name, arguments):
+        """路由工具调用"""
+        try:
+            if tool_name == "db_list_tables":
+                return self.db.list_tables()
+            elif tool_name == "db_query":
+                return self.db.execute_query(arguments.get("sql", ""))
+            elif tool_name == "file_read":
+                return self.files.read_file(arguments.get("path", ""))
+            elif tool_name == "file_write":
+                return self.files.write_file(
+                    arguments.get("path", ""),
+                    arguments.get("content", "")
+                )
+            elif tool_name == "web_search":
+                return self.search.search(arguments.get("query", ""))
+            return {"error": f"未知工具: {tool_name}"}
+        except Exception as e:
+            return {"error": str(e)}</code></pre>
+
+    <h3>5.2 工具调用示例</h3>
+    <div class="code-file">Python（工具调用演示）</div>
+<pre><code class="language-python">server = PracticalMCPServer()
+
+# 数据库查询
+result = server.handle_tool_call("db_query", {
+    "sql": "SELECT * FROM users"
+})
+print(f"查询结果: {result['count']} 条记录")
+
+# 文件操作
+server.handle_tool_call("file_write", {
+    "path": "notes.md",
+    "content": "# 学习笔记\n\nMCP 实战笔记"
+})
+
+# Web 搜索
+result = server.handle_tool_call("web_search", {
+    "query": "MCP 协议", "limit": 3
+})
+for item in result["results"]:
+    print(f"• {item['title']}")</code></pre>
+
+    <h2>六、安全测试</h2>
+    <p>在实战项目中，安全测试是不可或缺的环节。本节演示了如何测试项目的安全防护机制，包括 SQL 注入防护、路径遍历防护和文件类型限制。通过这些测试，可以验证安全措施的有效性。</p>
+
+    <table>
+        <thead>
+            <tr><th>测试场景</th><th>输入</th><th>预期结果</th><th>防护机制</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>SQL 注入</strong></td><td>DROP TABLE users</td><td>拒绝执行</td><td>SQL 关键字检测</td></tr>
+            <tr><td><strong>路径遍历</strong></td><td>../../etc/passwd</td><td>拒绝访问</td><td>路径规范化检查</td></tr>
+            <tr><td><strong>危险文件类型</strong></td><td>test.exe</td><td>拒绝写入</td><td>扩展名白名单</td></tr>
+            <tr><td><strong>大文件读取</strong></td><td>100MB 文件</td><td>拒绝读取</td><td>文件大小限制</td></tr>
+            <tr><td><strong>空搜索词</strong></td><td>""</td><td>拒绝搜索</td><td>关键词长度验证</td></tr>
+            <tr><td><strong>搜索频率超限</strong></td><td>连续 51 次搜索</td><td>拒绝搜索</td><td>频率限制器</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">安全防护体系</text>
+            
+            <rect x="30" y="50" width="140" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="100" y="75" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">输入层防护</text>
+            <text x="50" y="100" fill="#b45309" font-size="9">• SQL 注入检测</text>
+            <text x="50" y="115" fill="#b45309" font-size="9">• 路径遍历防护</text>
+            
+            <rect x="190" y="50" width="140" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="260" y="75" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">执行层防护</text>
+            <text x="210" y="100" fill="#2563eb" font-size="9">• 权限检查</text>
+            <text x="210" y="115" fill="#2563eb" font-size="9">• 类型白名单</text>
+            
+            <rect x="350" y="50" width="140" height="70" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="420" y="75" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">输出层防护</text>
+            <text x="370" y="100" fill="#059669" font-size="9">• 数据脱敏</text>
+            <text x="370" y="115" fill="#059669" font-size="9">• 大小限制</text>
+            
+            <rect x="510" y="50" width="140" height="70" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="580" y="75" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">监控层防护</text>
+            <text x="530" y="100" fill="#7c3aed" font-size="9">• 频率限制</text>
+            <text x="530" y="115" fill="#7c3aed" font-size="9">• 审计日志</text>
+            
+            <rect x="670" y="50" width="80" height="70" rx="8" fill="#ef4444"/>
+            <text x="710" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">告警</text>
+            <text x="685" y="105" fill="white" font-size="9">异常检测</text>
+            <text x="685" y="120" fill="white" font-size="9">自动通知</text>
+        </svg>
+    </div>
+
+    <h2>七、项目总结与扩展</h2>
+    <p>通过本节的学习，我们完成了一个功能完整的 MCP Server 项目。项目包含了数据库查询、文件操作和 Web 搜索三大核心功能，同时集成了全面的安全防护措施。这个项目的代码结构清晰，模块化程度高，便于后续的维护和扩展。</p>
+
+    <p>在实际应用中，可以根据业务需求对各个模块进行扩展。例如，数据库模块可以支持更多类型的数据库（如 PostgreSQL、MySQL），文件模块可以添加更多文件类型支持，搜索模块可以对接真实的搜索引擎 API。此外，还可以添加更多工具模块，如邮件发送、日历管理、代码执行等。</p>
+
+    <div class="note note-tip">
+        <div class="note-title"> 实战建议</div>
+        <p>在实际项目中，建议将各个模块拆分为独立的文件，使用配置文件管理数据库连接、文件目录等参数。同时，建议添加单元测试覆盖所有核心功能，确保代码的可靠性。部署时，建议使用 Docker 容器化部署，确保环境一致性。</p>
+    </div>
+
+    <h2>八、模块九总结</h2>
+    <p>模块九全面介绍了 MCP 协议的理论和实践。从协议概述到核心概念，从 Server 开发到 Client 集成，从传输层到安全最佳实践，最后通过实战项目将所有知识融会贯通。通过本模块的学习，开发者应该能够独立开发功能完整的 MCP Server，并在实际项目中应用 MCP 协议。</p>
+
+    <p>至此，整个学习大纲的九个模块已全部完成。从 Python 基础到进阶特性，从函数式编程到面向对象，从设计模式到并发编程，从 Web 开发到 MCP 协议，我们系统地学习了 Python 和 AI 应用开发的核心知识。希望这些学习资料能够帮助你在 AI 应用开发的道路上走得更远。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

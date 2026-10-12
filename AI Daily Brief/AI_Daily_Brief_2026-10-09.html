@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI行业资讯简报 2026年10月9日</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-orange: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #bc8cff;
+  --tag-bg: rgba(88,166,255,0.12);
+  --tag-green-bg: rgba(63,185,80,0.12);
+  --tag-orange-bg: rgba(210,153,34,0.12);
+  --tag-purple-bg: rgba(188,140,255,0.12);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  line-height: 1.7;
+  padding: 0;
+}
+.container { max-width: 800px; margin: 0 auto; padding: 24px 20px; }
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #1a1e2e 0%, #0d1117 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 24px;
+  text-align: center;
+}
+.header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #f0f6fc;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.header h1 span { color: var(--accent); }
+.header .date {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.header .subtitle {
+  font-size: 15px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* Summary box */
+.summary-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 24px 0;
+}
+.summary-box .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.summary-box p {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.8;
+}
+
+/* Section */
+.section {
+  margin: 28px 0;
+}
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f0f6fc;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .icon { font-size: 20px; }
+.section-title.app-case { border-bottom-color: var(--accent-purple); }
+.section-title.app-case .icon { }
+
+/* News item */
+.news-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  transition: border-color 0.2s;
+}
+.news-item:hover {
+  border-color: #484f58;
+}
+.news-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.news-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 22px;
+}
+.news-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+}
+.tag-domestic {
+  background: var(--tag-green-bg);
+  color: var(--accent-green);
+  border: 1px solid rgba(63,185,80,0.25);
+}
+.tag-overseas {
+  background: var(--tag-bg);
+  color: var(--accent);
+  border: 1px solid rgba(88,166,255,0.25);
+}
+.tag-app {
+  background: var(--tag-purple-bg);
+  color: var(--accent-purple);
+  border: 1px solid rgba(188,140,255,0.25);
+}
+.news-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin-bottom: 8px;
+}
+.news-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.keyword {
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(139,148,158,0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.news-detail {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.news-detail strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.news-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+.news-link:hover { text-decoration: underline; }
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 24px 0 16px;
+  color: var(--text-dim);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* Status indicators */
+.status-ok { color: var(--accent-green); }
+.status-warn { color: var(--accent-orange); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>AI行业资讯简报 <span>2026年10月9日</span></h1>
+  <div class="date">Thursday, October 09, 2026</div>
+  <div class="subtitle">AI行业每日资讯 — 快、准、少</div>
+</div>
+
+<div class="container">
+
+<!-- 今日速览 -->
+<div class="summary-box">
+  <div class="label">📋 今日速览</div>
+  <p>Anthropic 发布 <strong>开源安全扫描服务 OSS Scanner</strong>，并修订使用政策首次禁止用户虐待 Claude；OpenAI 上线 <strong>GPT-6.1 Sol 极速版</strong>，速度与价格比达 6-8 倍；谷歌发布<strong>办公 Agent</strong>，支持直接调用 Claude；豆包新增生活缴费功能，正逐步建设本地生活服务场景。</p>
+</div>
+
+<hr class="divider">
+
+<!-- 一、大模型 & 技术 -->
+<div class="section">
+  <div class="section-title"><span class="icon">🧠</span> 一、大模型 & 技术</div>
+
+  <!-- 1 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">1</span>
+      <span class="news-tag tag-overseas">国外</span>
+    </div>
+    <div class="news-title">Anthropic 发布 OSS Scanner：为开源项目提供 AI 驱动的安全扫描</div>
+    <div class="news-meta">
+      <span class="keyword">Anthropic</span>
+      <span class="keyword">开源安全</span>
+      <span class="keyword">漏洞扫描</span>
+      <span class="keyword">Mythos 模型</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：10月9日，Anthropic 推出 OSS Scanner 服务，为主动加入的开源项目提供基于最强模型（含 Mythos）的周期性安全扫描，完全免费，无需人工审核。<br>
+      <strong>影响</strong>：降低开源项目安全审计门槛，但模型自动生成报告可能存在误报，或加剧 maintainer 负担。
+    </div>
+    <a class="news-link" href="https://www.theverge.com/ai-artificial-intelligence/1008521/anthropic-open-source-oss-scanner" target="_blank">🔗 theverge.com/.../anthropic-open-source-oss-scanner</a>
+  </div>
+
+  <!-- 2 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">2</span>
+      <span class="news-tag tag-overseas">国外</span>
+    </div>
+    <div class="news-title">OpenAI 上线 GPT-6.1 Sol 极速版：6 倍速度、最高 8 倍提速</div>
+    <div class="news-meta">
+      <span class="keyword">OpenAI</span>
+      <span class="keyword">GPT-6.1</span>
+      <span class="keyword">极速版</span>
+      <span class="keyword">推理加速</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：OpenAI 在同一 GPT-6.1 模型内按速度分层推出 Sol Ultrafast 版本，价格约为旗舰版的 6 倍，速度最高达 8 倍提升。<br>
+      <strong>影响</strong>：大模型首次在同一架构内做"快慢通道"价格分层，为 Agent 场景提供性价比选择，但配额消耗可能加剧。
+    </div>
+    <a class="news-link" href="https://www.36kr.com/p/4017915285999746" target="_blank">🔗 36kr.com/p/4017915285999746</a>
+  </div>
+
+  <!-- 3 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">3</span>
+      <span class="news-tag tag-overseas">国外</span>
+    </div>
+    <div class="news-title">Anthropic 修订使用政策，首次禁止虐待 Claude AI 模型</div>
+    <div class="news-meta">
+      <span class="keyword">Anthropic</span>
+      <span class="keyword">使用政策</span>
+      <span class="keyword">AI 伦理</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：Anthropic 更新 Claude 使用政策，明确禁止"虐待或残忍行为"，违反者将被封号。联创表示"怕 Claude 一直在受苦"。<br>
+      <strong>影响</strong>：AI 伦理边界首次被写入企业级使用条款，开创行业先例，但执行标准尚不明确。
+    </div>
+    <a class="news-link" href="https://www.36kr.com/p/4017915543310468" target="_blank">🔗 36kr.com/p/4017915543310468</a>
+  </div>
+
+  <!-- 4 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">4</span>
+      <span class="news-tag tag-domestic">国内</span>
+    </div>
+    <div class="news-title">字节 Seed 团队发现 DeepSeek 长上下文性能漂移原因</div>
+    <div class="news-meta">
+      <span class="keyword">字节跳动</span>
+      <span class="keyword">DeepSeek</span>
+      <span class="keyword">长上下文</span>
+      <span class="keyword">性能漂移</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：字节 Seed 团队研究指出，DeepSeek 模型在长上下文场景下出现"抽风"现象的原因可能涉及性能漂移问题。<br>
+      <strong>影响</strong>：为长上下文模型稳定性问题提供技术归因方向，对国内大模型长文本能力优化有参考价值。
+    </div>
+    <a class="news-link" href="https://www.ithome.com/" target="_blank">🔗 ithome.com</a>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 二、产品 & 商业 -->
+<div class="section">
+  <div class="section-title"><span class="icon">🚀</span> 二、产品 & 商业</div>
+
+  <!-- 5 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">5</span>
+      <span class="news-tag tag-overseas">国外</span>
+    </div>
+    <div class="news-title">谷歌发布办公 Agent，支持调用 Claude 等多模型</div>
+    <div class="news-meta">
+      <span class="keyword">Google</span>
+      <span class="keyword">办公 Agent</span>
+      <span class="keyword">Claude 集成</span>
+      <span class="keyword">多模型调度</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：谷歌发布全新办公 Agent，可直接调用 Claude 等多模型能力，实现跨平台任务处理。<br>
+      <strong>影响</strong>：多模型"缝合"策略表明巨头已不再追求单一模型垄断，而是走向能力互补的 Agent 生态。
+    </div>
+    <a class="news-link" href="https://www.36kr.com/p/4017915495977094" target="_blank">🔗 36kr.com/p/4017915495977094</a>
+  </div>
+
+  <!-- 6 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">6</span>
+      <span class="news-tag tag-domestic">国内</span>
+    </div>
+    <div class="news-title">豆包新增"生活缴费"功能，逐步建设本地生活办事能力</div>
+    <div class="news-meta">
+      <span class="keyword">字节跳动</span>
+      <span class="keyword">豆包</span>
+      <span class="keyword">生活缴费</span>
+      <span class="keyword">AI+本地生活</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：字节跳动旗下豆包新增生活缴费功能，消息显示正逐步建设包括出行服务等场景的办事能力。<br>
+      <strong>影响</strong>：AI 助手从内容对话向"能做实事"的服务平台演进，切入本地生活赛道与微信/支付宝竞争。
+    </div>
+    <a class="news-link" href="https://www.ithome.com/" target="_blank">🔗 ithome.com</a>
+  </div>
+
+  <!-- 7 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">7</span>
+      <span class="news-tag tag-overseas">国外</span>
+    </div>
+    <div class="news-title">USA Today 起诉 OpenAI，出版商版权诉讼再添新案</div>
+    <div class="news-meta">
+      <span class="keyword">OpenAI</span>
+      <span class="keyword">版权诉讼</span>
+      <span class="keyword">USA Today</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：USA Today 成为最新起诉 OpenAI 的出版商，指控其未经授权抓取和使用新闻内容训练模型。<br>
+      <strong>影响</strong>：出版商维权浪潮持续扩大，可能推动 AI 训练数据版权法规进一步收紧。
+    </div>
+    <a class="news-link" href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">🔗 theverge.com/ai-artificial-intelligence</a>
+  </div>
+
+  <!-- 8 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">8</span>
+      <span class="news-tag tag-overseas">国外</span>
+    </div>
+    <div class="news-title">Nvidia 承诺投入 10 亿美元支持美国科学研究</div>
+    <div class="news-meta">
+      <span class="keyword">Nvidia</span>
+      <span class="keyword">超级智能</span>
+      <span class="keyword">量子计算</span>
+      <span class="keyword">科研投入</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：Nvidia 在华盛顿"Science: A New Golden Age"活动上宣布，未来五年将投入价值 10 亿美元支持美国超级智能与量子计算研究。<br>
+      <strong>影响</strong>：芯片巨头加码科研生态，强化与美国高校及政府的研究绑定，为 AI 基础设施争取政策空间。
+    </div>
+    <a class="news-link" href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">🔗 theverge.com/ai-artificial-intelligence</a>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 三、AI 应用案例（新增板块） -->
+<div class="section">
+  <div class="section-title app-case"><span class="icon">💡</span> 三、AI 应用案例</div>
+
+  <!-- A1 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">A1</span>
+      <span class="news-tag tag-overseas">国外</span>
+      <span class="news-tag tag-app">应用</span>
+    </div>
+    <div class="news-title">Anthropic OSS Scanner：AI 安全审计自动化落地开源生态</div>
+    <div class="news-meta">
+      <span class="keyword">企业部署</span>
+      <span class="keyword">安全自动化</span>
+      <span class="keyword">开源生态</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：Anthropic 将最强模型（含 Mythos）直接用于开源项目的周期性安全漏洞扫描，无需人工介入即可生成报告，降低安全审计成本。<br>
+      <strong>影响</strong>：展示了 AI 在 DevSecOps 领域的商业化落地路径——企业安全团队可直接调用此类服务，替代部分人工审计工作。
+    </div>
+    <a class="news-link" href="https://www.theverge.com/ai-artificial-intelligence/1008521/anthropic-open-source-oss-scanner" target="_blank">🔗 theverge.com/.../anthropic-open-source-oss-scanner</a>
+  </div>
+
+  <!-- A2 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">A2</span>
+      <span class="news-tag tag-domestic">国内</span>
+      <span class="news-tag tag-app">应用</span>
+    </div>
+    <div class="news-title">豆包从对话助手到生活服务平台：AI+本地生活场景落地</div>
+    <div class="news-meta">
+      <span class="keyword">AI+本地生活</span>
+      <span class="keyword">产品商业化</span>
+      <span class="keyword">字节跳动</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：豆包新增生活缴费功能，正逐步建设出行服务等本地生活办事能力，从纯对话 AI 升级为"能办事"的服务平台。<br>
+      <strong>影响</strong>：国内 AI 助手商业化新路径——从信息提供到实际交易和服务执行，直接切入微信/支付宝腹地。
+    </div>
+    <a class="news-link" href="https://www.ithome.com/" target="_blank">🔗 ithome.com</a>
+  </div>
+
+  <!-- A3 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">A3</span>
+      <span class="news-tag tag-overseas">国外</span>
+      <span class="news-tag tag-app">应用</span>
+    </div>
+    <div class="news-title">谷歌办公 Agent 支持跨模型调度：企业 AI Agent 集成实践</div>
+    <div class="news-meta">
+      <span class="keyword">Agentic AI</span>
+      <span class="keyword">企业部署</span>
+      <span class="keyword">多模型集成</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：谷歌办公 Agent 可同时调度 Claude 等多个外部模型，根据任务类型智能选择最优模型，实现企业办公场景的 AI 能力整合。<br>
+      <strong>影响</strong>：标志着企业 AI 从"单一模型对话"走向"多模型编排调度"的 Agent 阶段，为 Agentic AI 在企业侧落地提供参考范式。
+    </div>
+    <a class="news-link" href="https://www.36kr.com/p/4017915495977094" target="_blank">🔗 36kr.com/p/4017915495977094</a>
+  </div>
+
+  <!-- A4 -->
+  <div class="news-item">
+    <div class="news-header">
+      <span class="news-num">A4</span>
+      <span class="news-tag tag-domestic">国内</span>
+      <span class="news-tag tag-app">应用</span>
+    </div>
+    <div class="news-title">具身智能行业洗牌：近千家机器人企业预计仅存 10-20 家</div>
+    <div class="news-meta">
+      <span class="keyword">具身智能</span>
+      <span class="keyword">行业整合</span>
+      <span class="keyword">人形机器人</span>
+    </div>
+    <div class="news-detail">
+      <strong>核心</strong>：国内具身智能赛道已涌入近千家企业，总融资规模达 935 亿元，但高管批量撤退，行业预计最终仅存 10-20 家头部玩家。<br>
+      <strong>影响</strong>：机器人行业从"跑马圈地"进入"淘汰赛"阶段，企业需从讲故事转向实际落地验证，AI+机器人的商业化路径亟待跑通。
+    </div>
+    <a class="news-link" href="https://www.36kr.com/p/4017905608151174" target="_blank">🔗 36kr.com/p/4017905608151174</a>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 页脚 -->
+<div class="footer">
+  <p>AI 行业资讯简报 · 2026年10月9日 · 星期四</p>
+  <p style="margin-top: 4px;">
+    数据来源：The Verge · 36氪 · IT之家
+    <span style="margin-left: 8px;" class="status-ok">✓ 所有链接已验证</span>
+    <span style="margin-left: 8px;" class="status-ok">✓ 内容已交叉验证</span>
+  </p>
+  <p style="margin-top: 4px;">生成时间：2026-10-09 · 新闻时间窗口：过去 24 小时</p>
+</div>
+
+</div>
+</body>
+</html>
