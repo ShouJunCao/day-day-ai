@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10.4 Agent 规划能力（任务分解、动态规划） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>10.4 Agent 规划能力（任务分解、动态规划）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十：AI Agent 开发</span>
+        <span class="tag tag-time">预计学习：55 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 Agent 规划能力的核心概念和价值</li>
+        <li>掌握任务分解的技术和方法</li>
+        <li>学会实现动态规划机制</li>
+        <li>能够构建具备规划能力的复杂 Agent 应用</li>
+    </ul>
+
+    <h2>一、规划能力概述</h2>
+    <p>规划能力是 AI Agent 区别于简单问答系统的核心特征之一。具备规划能力的 Agent 能够在执行复杂任务之前，先将宏大的目标分解为一系列可操作的子任务，并按照合理的顺序依次执行。这种"先思考后行动"的模式，使 Agent 能够处理远超单步推理能力范围的复杂问题。</p>
+
+    <p>在实际应用中，规划能力体现在多个方面：任务分解（将复杂目标拆解为原子操作）、依赖分析（识别任务之间的先后关系）、资源分配（合理分配计算资源）、动态调整（根据执行反馈修改计划）。这些能力共同构成了 Agent 处理长程任务的基础。</p>
+
+    <p>从认知科学的角度来看，规划能力反映了 Agent 的"元认知"水平——它不仅知道如何执行具体任务，还知道如何组织和协调多个任务以达成最终目标。这种能力是人类智能的重要特征，也是 AI Agent 向更加智能化方向发展的关键里程碑。</p>
+
+    <p>规划能力的实现通常依赖于大语言模型的推理能力。通过精心设计的提示词，LLM 可以分析目标的复杂性，识别其中的关键步骤，并按照逻辑顺序排列。随着模型能力的不断提升，规划能力也在持续进化，从简单的线性任务序列发展为能够处理复杂依赖关系和动态变化的智能规划系统。</p>
+
+    <h3>1.1 规划能力层级</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Agent 规划能力层级</text>
+            
+            <!-- Level 4 -->
+            <rect x="260" y="45" width="260" height="30" rx="6" fill="#ef4444"/>
+            <text x="390" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Level 4: 自适应规划</text>
+            <text x="390" y="80" text-anchor="middle" fill="white" font-size="8">根据反馈自主调整策略</text>
+            
+            <line x1="390" y1="75" x2="390" y2="95" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Level 3 -->
+            <rect x="260" y="95" width="260" height="30" rx="6" fill="#f59e0b"/>
+            <text x="390" y="115" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Level 3: 动态规划</text>
+            <text x="390" y="130" text-anchor="middle" fill="white" font-size="8">根据执行结果调整计划</text>
+            
+            <line x1="390" y1="125" x2="390" y2="145" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Level 2 -->
+            <rect x="260" y="145" width="260" height="30" rx="6" fill="#3b82f6"/>
+            <text x="390" y="165" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Level 2: 静态规划</text>
+            <text x="390" y="180" text-anchor="middle" fill="white" font-size="8">预先分解，按序执行</text>
+            
+            <!-- Level 1 -->
+            <rect x="260" y="180" width="260" height="0" rx="0" fill="none"/>
+            <text x="390" y="195" text-anchor="middle" fill="#666" font-size="10">Level 1: 无规划 — 直接执行单一任务</text>
+        </svg>
+    </div>
+
+    <h2>二、任务分解技术</h2>
+    <p>任务分解是规划能力的基础环节。它的核心目标是将一个复杂的、难以直接执行的目标，拆解为一系列具体的、可操作的子任务。有效的任务分解需要满足几个条件：原子性（每个子任务应该是不可再分的基本操作）、完整性（所有子任务组合起来应该覆盖原目标的全部要求）、可执行性（每个子任务都应该是 Agent 能力范围内可以完成的）。</p>
+
+    <p>在实际实现中，任务分解通常由 LLM 完成。通过精心设计的提示词，LLM 可以分析目标的复杂性，识别其中的关键步骤，并按照逻辑顺序排列。分解过程中需要考虑任务之间的依赖关系，确保后续任务不会依赖于尚未完成的前置任务。同时，分解的粒度也很重要：粒度过粗会导致单个子任务过于复杂，难以执行；粒度过细则会导致任务数量过多，增加管理开销。</p>
+
+    <p>任务分解的质量直接影响整个规划过程的效率。一个高质量的分解应该使得每个子任务都有明确的输入和输出，便于验证完成情况。在实际项目中，建议采用迭代式分解方法：先进行粗略分解，然后根据执行反馈逐步细化，直到每个子任务都可以被可靠地执行。这种方法既保证了分解的效率，又确保了分解的质量。</p>
+
+    <h3>2.1 LLM 驱动的任务分解</h3>
+    <div class="code-file">Python（任务分解器）</div>
+<pre><code class="language-python">import json
+import re
+from typing import List
+from dataclasses import dataclass
+
+@dataclass
+class SubTask:
+    id: str
+    description: str
+    dependency: List[str]
+
+class TaskDecomposer:
+    """任务分解器"""
+    
+    PROMPT = """请将以下目标分解为子任务序列。
+目标：{goal}
+
+输出 JSON 格式：
+[
+  {{"id": "1", "description": "任务描述", "dependency": []}},
+  {{"id": "2", "description": "任务描述", "dependency": ["1"]}}
+]"""
+
+    def decompose(self, goal: str) -> List[SubTask]:
+        prompt = self.PROMPT.format(goal=goal)
+        response = client.chat.completions.create(
+            model="qwen3.7-max",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        content = response.choices[0].message.content
+        tasks_data = json.loads(content)
+        return [SubTask(**t) for t in tasks_data]</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">任务分解示例：数据分析报告</text>
+            
+            <!-- 根任务 -->
+            <rect x="280" y="40" width="220" height="35" rx="17" fill="#1a1a2e"/>
+            <text x="390" y="63" text-anchor="middle" fill="white" font-size="11" font-weight="bold">生成数据分析报告</text>
+            
+            <!-- 连接线 -->
+            <line x1="340" y1="75" x2="150" y2="95" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="75" x2="390" y2="95" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="440" y1="75" x2="630" y2="95" stroke="#64748b" stroke-width="1.5"/>
+            
+            <!-- 子任务 -->
+            <rect x="60" y="95" width="180" height="35" rx="8" fill="#3b82f6"/>
+            <text x="150" y="117" text-anchor="middle" fill="white" font-size="10" font-weight="bold">收集数据</text>
+            
+            <rect x="280" y="95" width="220" height="35" rx="8" fill="#8b5cf6"/>
+            <text x="390" y="117" text-anchor="middle" fill="white" font-size="10" font-weight="bold">数据清洗与分析</text>
+            
+            <rect x="540" y="95" width="180" height="35" rx="8" fill="#10b981"/>
+            <text x="630" y="117" text-anchor="middle" fill="white" font-size="10" font-weight="bold">生成可视化报告</text>
+            
+            <!-- 底部说明 -->
+            <rect x="150" y="140" width="480" height="20" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="155" text-anchor="middle" fill="#666" font-size="9">依赖关系: 收集 → 分析 → 报告（顺序执行）</text>
+        </svg>
+    </div>
+
+    <h2>三、动态规划机制</h2>
+    <p>动态规划是 Agent 规划能力的高级形态。与静态规划不同，动态规划允许 Agent 在执行过程中根据实际反馈调整计划。当某个子任务失败时，Agent 可以选择重试、跳过、修改后续任务，或者在某些情况下完全放弃当前计划并制定新计划。</p>
+
+    <p>动态规划的核心挑战在于：如何平衡计划的稳定性和灵活性。过于稳定的计划可能导致 Agent 在遇到问题时无法适应；过于灵活的计划则可能导致 Agent 频繁改变方向，无法有效推进任务。因此，需要设计合理的调整策略和触发条件。</p>
+
+    <p>在实际实现中，动态规划通常包含以下几个步骤：监控执行状态（跟踪每个子任务的完成情况）、检测异常（识别失败或偏离预期的情况）、评估影响（分析异常对整个计划的影响）、制定调整策略（决定如何修改计划）、执行调整（更新计划并通知后续步骤）。</p>
+
+    <h3>3.1 动态规划实现</h3>
+    <div class="code-file">Python（动态规划器）</div>
+<pre><code class="language-python">class DynamicPlanner:
+    """动态规划器"""
+    
+    ADJUST_PROMPT = """当前计划执行中遇到了问题，请决定如何调整。
+
+目标：{goal}
+已完成：{completed}
+失败任务：{failed}
+失败原因：{error}
+剩余任务：{remaining}
+
+输出调整决策（JSON）：
+{{
+  "action": "retry" | "skip" | "modify" | "abort",
+  "reason": "调整原因"
+}}"""
+
+    def adjust_plan(self, plan, failed_task, error):
+        """根据失败情况调整计划"""
+        prompt = self.ADJUST_PROMPT.format(
+            goal=plan.goal,
+            completed=[t.description for t in plan.completed_tasks],
+            failed=failed_task.description,
+            error=error,
+            remaining=[t.description for t in plan.remaining_tasks]
+        )
+        response = client.chat.completions.create(
+            model="qwen3.7-max",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return json.loads(response.choices[0].message.content)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">动态规划执行流程</text>
+            
+            <!-- 正常流程 -->
+            <rect x="30" y="50" width="120" height="40" rx="8" fill="#10b981"/>
+            <text x="90" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">执行任务</text>
+            
+            <line x1="150" y1="70" x2="190" y2="70" stroke="#64748b" stroke-width="2"/>
+            <text x="170" y="62" text-anchor="middle" fill="#64748b" font-size="8">成功</text>
+            
+            <rect x="190" y="50" width="120" height="40" rx="8" fill="#3b82f6"/>
+            <text x="250" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">继续下一步</text>
+            
+            <!-- 失败分支 -->
+            <line x1="90" y1="90" x2="90" y2="120" stroke="#ef4444" stroke-width="2"/>
+            <text x="100" y="110" text-anchor="middle" fill="#ef4444" font-size="8">失败</text>
+            
+            <rect x="30" y="120" width="120" height="40" rx="8" fill="#ef4444"/>
+            <text x="90" y="145" text-anchor="middle" fill="white" font-size="10" font-weight="bold">评估影响</text>
+            
+            <line x1="150" y1="140" x2="190" y2="140" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="120" width="120" height="40" rx="8" fill="#f59e0b"/>
+            <text x="250" y="145" text-anchor="middle" fill="white" font-size="10" font-weight="bold">调整决策</text>
+            
+            <line x1="310" y1="140" x2="350" y2="140" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 决策分支 -->
+            <rect x="350" y="100" width="80" height="30" rx="6" fill="#8b5cf6"/>
+            <text x="390" y="120" text-anchor="middle" fill="white" font-size="9">重试</text>
+            
+            <rect x="350" y="140" width="80" height="30" rx="6" fill="#3b82f6"/>
+            <text x="390" y="160" text-anchor="middle" fill="white" font-size="9">跳过</text>
+            
+            <rect x="450" y="100" width="80" height="30" rx="6" fill="#10b981"/>
+            <text x="490" y="120" text-anchor="middle" fill="white" font-size="9">修改</text>
+            
+            <rect x="450" y="140" width="80" height="30" rx="6" fill="#ef4444"/>
+            <text x="490" y="160" text-anchor="middle" fill="white" font-size="9">中止</text>
+            
+            <!-- 右侧：正常流程继续 -->
+            <line x1="310" y1="70" x2="600" y2="70" stroke="#10b981" stroke-width="2"/>
+            <text x="450" y="62" text-anchor="middle" fill="#10b981" font-size="10">正常执行流</text>
+            
+            <rect x="600" y="50" width="150" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="675" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">完成所有任务</text>
+        </svg>
+    </div>
+
+    <h2>四、任务依赖分析</h2>
+    <p>在任务分解过程中，识别和管理任务之间的依赖关系是至关重要的。依赖关系决定了任务的执行顺序，错误的依赖分析可能导致任务无法正确完成。常见的依赖类型包括：顺序依赖（任务 B 必须在任务 A 完成后执行）、并行依赖（多个任务可以同时执行）、条件依赖（任务 B 的执行取决于任务 A 的特定结果）。</p>
+
+    <p>在实际实现中，建议使用有向无环图（DAG）来表示任务依赖关系。DAG 可以清晰地表达任务之间的先后关系，同时支持并行任务的识别和执行。通过分析 DAG 的拓扑排序，可以确定任务的执行顺序，确保所有前置任务在后续任务开始之前完成。</p>
+
+    <h3>4.1 依赖分析实现</h3>
+    <div class="code-file">Python（依赖分析）</div>
+<pre><code class="language-python">from collections import defaultdict, deque
+
+class DependencyAnalyzer:
+    """任务依赖分析器"""
+    
+    def __init__(self, tasks):
+        self.tasks = tasks
+        self.graph = defaultdict(list)
+        self.in_degree = defaultdict(int)
+        self._build_graph()
+    
+    def _build_graph(self):
+        """构建依赖图"""
+        for task in self.tasks:
+            for dep in task.dependency:
+                self.graph[dep].append(task.id)
+                self.in_degree[task.id] += 1
+    
+    def get_execution_order(self):
+        """获取拓扑排序的执行顺序"""
+        queue = deque([t.id for t in self.tasks 
+                      if self.in_degree[t.id] == 0])
+        order = []
+        
+        while queue:
+            task_id = queue.popleft()
+            order.append(task_id)
+            for next_id in self.graph[task_id]:
+                self.in_degree[next_id] -= 1
+                if self.in_degree[next_id] == 0:
+                    queue.append(next_id)
+        
+        return order
+
+    def get_parallel_groups(self):
+        """获取可并行执行的任务组"""
+        groups = []
+        remaining = set(t.id for t in self.tasks)
+        
+        while remaining:
+            # 找到所有当前可执行的任务（无未完成依赖）
+            available = [t for t in self.tasks 
+                        if t.id in remaining 
+                        and all(d not in remaining 
+                               for d in t.dependency)]
+            if not available:
+                break
+            groups.append([t.id for t in available])
+            for t in available:
+                remaining.remove(t.id)
+        
+        return groups</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">任务依赖关系图（DAG）</text>
+            
+            <!-- 任务节点 -->
+            <rect x="30" y="55" width="100" height="35" rx="8" fill="#1a1a2e"/>
+            <text x="80" y="77" text-anchor="middle" fill="white" font-size="10" font-weight="bold">数据收集</text>
+            
+            <rect x="180" y="40" width="100" height="35" rx="8" fill="#3b82f6"/>
+            <text x="230" y="62" text-anchor="middle" fill="white" font-size="10" font-weight="bold">数据清洗</text>
+            
+            <rect x="180" y="100" width="100" height="35" rx="8" fill="#8b5cf6"/>
+            <text x="230" y="122" text-anchor="middle" fill="white" font-size="10" font-weight="bold">数据探索</text>
+            
+            <rect x="340" y="70" width="100" height="35" rx="8" fill="#f59e0b"/>
+            <text x="390" y="92" text-anchor="middle" fill="white" font-size="10" font-weight="bold">特征工程</text>
+            
+            <rect x="500" y="55" width="100" height="35" rx="8" fill="#10b981"/>
+            <text x="550" y="77" text-anchor="middle" fill="white" font-size="10" font-weight="bold">模型训练</text>
+            
+            <rect x="660" y="70" width="100" height="35" rx="8" fill="#ef4444"/>
+            <text x="710" y="92" text-anchor="middle" fill="white" font-size="10" font-weight="bold">生成报告</text>
+            
+            <!-- 依赖箭头 -->
+            <line x1="130" y1="72" x2="180" y2="57" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="130" y1="72" x2="180" y2="117" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="280" y1="57" x2="340" y2="82" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="280" y1="117" x2="340" y2="92" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="440" y1="87" x2="500" y2="72" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="600" y1="72" x2="660" y2="82" stroke="#64748b" stroke-width="1.5"/>
+        </svg>
+    </div>
+
+    <h2>五、规划 Agent 完整实现</h2>
+    <p>结合任务分解和动态规划，我们可以构建一个完整的规划 Agent。这个 Agent 接收一个复杂目标，首先将其分解为子任务序列，然后逐个执行。在执行过程中，如果遇到失败，会调用动态规划器调整计划，确保最终能够完成目标。</p>
+
+    <p>规划 Agent 的核心优势在于：它将复杂问题的处理过程结构化和自动化，使 Agent 能够处理远超单步推理能力范围的复杂任务。通过任务分解，Agent 将大问题转化为小问题；通过动态规划，Agent 能够在遇到问题时灵活应对，而不是简单地放弃。</p>
+
+    <h3>5.1 完整 Agent 实现</h3>
+    <div class="code-file">Python（规划 Agent）</div>
+<pre><code class="language-python">class PlanningAgent:
+    """规划 Agent"""
+    
+    def __init__(self):
+        self.decomposer = TaskDecomposer()
+        self.planner = DynamicPlanner()
+        self.current_plan = None
+
+    def create_plan(self, goal):
+        """创建计划"""
+        tasks = self.decomposer.decompose(goal)
+        self.current_plan = Plan(goal=goal, tasks=tasks)
+        return self.current_plan
+
+    def execute_plan(self, executor):
+        """执行计划"""
+        plan = self.current_plan
+        for task in plan.tasks:
+            task.status = "in_progress"
+            success, result = executor(task)
+            
+            if success:
+                task.status = "completed"
+                task.result = result
+            else:
+                # 动态调整
+                adjustment = self.planner.adjust_plan(
+                    plan, task, result
+                )
+                if adjustment["action"] == "retry":
+                    # 重试逻辑
+                    pass
+                elif adjustment["action"] == "skip":
+                    task.status = "skipped"
+                elif adjustment["action"] == "abort":
+                    return {"success": False, "reason": "Aborted"}
+        
+        return {"success": True, "plan": plan}</code></pre>
+
+    <h2>六、规划能力评估</h2>
+    <p>评估 Agent 的规划能力是确保其有效性的关键步骤。评估维度包括：分解质量（子任务是否合理、完整、可执行）、执行效率（完成任务所需的时间和资源）、适应性（面对变化和异常时的调整能力）、成功率（最终完成目标的比例）。</p>
+
+    <table>
+        <thead>
+            <tr><th>评估维度</th><th>评估方法</th><th>目标值</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>分解质量</strong></td><td>人工评审 + 自动化检查</td><td>子任务完成率 ≥ 90%</td></tr>
+            <tr><td><strong>执行效率</strong></td><td>测量任务完成时间</td><td>比直接执行快 30%+</td></tr>
+            <tr><td><strong>适应性</strong></td><td>注入异常测试调整能力</td><td>异常恢复率 ≥ 80%</td></tr>
+            <tr><td><strong>成功率</strong></td><td>多场景测试统计</td><td>总体成功率 ≥ 85%</td></tr>
+            <tr><td><strong>依赖正确性</strong></td><td>DAG 拓扑验证</td><td>依赖错误率 = 0%</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">规划能力评估指标</text>
+            
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="100" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">分解质量</text>
+            <text x="50" y="100" fill="#b45309" font-size="9">合理性/完整性</text>
+            
+            <rect x="190" y="55" width="140" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="260" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">执行效率</text>
+            <text x="210" y="100" fill="#2563eb" font-size="9">时间/资源消耗</text>
+            
+            <rect x="350" y="55" width="140" height="60" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="420" y="80" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">适应性</text>
+            <text x="370" y="100" fill="#059669" font-size="9">异常恢复能力</text>
+            
+            <rect x="510" y="55" width="140" height="60" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="580" y="80" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">成功率</text>
+            <text x="530" y="100" fill="#7c3aed" font-size="9">目标完成比例</text>
+            
+            <rect x="670" y="55" width="90" height="60" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="715" y="80" text-anchor="middle" fill="#666" font-size="11" font-weight="bold">依赖</text>
+            <text x="685" y="100" fill="#999" font-size="9">DAG 正确性</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在实现规划 Agent 时，建议先从一个简单的场景开始，验证任务分解和执行的完整流程。然后逐步增加复杂度，引入动态规划和依赖分析。每个阶段都应该有充分的测试，确保规划逻辑的正确性。同时，建议记录 Agent 的规划过程和执行情况，便于后续的分析和优化。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>Agent 的规划能力是其处理复杂任务的核心竞争力。通过任务分解，Agent 将宏大目标转化为可操作的小步骤；通过动态规划，Agent 能够在执行过程中灵活应对各种变化；通过依赖分析，Agent 确保任务按照正确的顺序执行。这些能力共同构成了 Agent 处理长程、复杂任务的基础，是 AI Agent 向更加智能化方向发展的关键技术。</p>
+
+    <p>在下一节 10.5 中，我们将学习 Agent Loop 的三种主要设计模式：ReAct、Plan-and-Execute 和 Reflexion，深入理解不同循环模式的适用场景和实现方法。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

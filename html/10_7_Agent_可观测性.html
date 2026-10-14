@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10.7 Agent 可观测性（LangSmith、LangFuse、Phoenix） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>10.7 Agent 可观测性（LangSmith、LangFuse、Phoenix）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十：AI Agent 开发</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 Agent 可观测性的核心概念和重要性</li>
+        <li>掌握 LangSmith、LangFuse、Phoenix 三大平台的功能差异</li>
+        <li>学会构建 Agent 的追踪、监控和评估系统</li>
+        <li>能够利用可观测性数据持续优化 Agent 性能</li>
+    </ul>
+
+    <h2>一、Agent 可观测性概述</h2>
+    <p>Agent 可观测性（Observability）是指通过收集、分析和可视化 Agent 执行过程中的各种数据，来理解系统内部状态和行为的能力。与传统软件的可观测性不同，Agent 的可观测性面临更多挑战：执行过程非确定性（相同的输入可能产生不同的输出）、多步骤交互（需要追踪完整的调用链）、外部依赖（工具调用和 LLM 响应）。</p>
+
+    <p>可观测性的核心价值在于：帮助开发者理解 Agent 的决策过程（为什么做出某个选择）、快速定位问题（哪一步出了错）、持续优化性能（哪些环节需要改进）。没有可观测性的 Agent 就像一个"黑盒"，开发者无法了解内部发生了什么，也就无法有效地调试和优化。</p>
+
+    <p>完整的 Agent 可观测性体系包含三个层次：追踪（Tracing，记录执行的详细路径）、监控（Monitoring，实时跟踪关键指标）、评估（Evaluation，衡量输出质量）。这三个层次相互补充，共同构成了 Agent 可观测性的完整视图。在实际项目中，这三个层次通常由不同的工具或平台来提供支持，开发者需要根据项目需求选择合适的组合。</p>
+
+    <h3>1.1 可观测性三层架构</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Agent 可观测性三层架构</text>
+            
+            <!-- 追踪层 -->
+            <rect x="30" y="50" width="220" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="75" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">追踪 (Tracing)</text>
+            <text x="50" y="100" fill="#2563eb" font-size="10">• 执行路径记录</text>
+            <text x="50" y="120" fill="#2563eb" font-size="10">• 调用链追踪</text>
+            <text x="50" y="140" fill="#2563eb" font-size="10">• 步骤详情</text>
+            <text x="50" y="160" fill="#2563eb" font-size="10">• 时间线分析</text>
+            <text x="140" y="178" text-anchor="middle" fill="#1e40af" font-size="9" font-weight="bold">LangSmith</text>
+            
+            <!-- 监控层 -->
+            <rect x="280" y="50" width="220" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="75" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">监控 (Monitoring)</text>
+            <text x="300" y="100" fill="#b45309" font-size="10">• 延迟跟踪</text>
+            <text x="300" y="120" fill="#b45309" font-size="10">• Token 消耗</text>
+            <text x="300" y="140" fill="#b45309" font-size="10">• 成本统计</text>
+            <text x="300" y="160" fill="#b45309" font-size="10">• 告警通知</text>
+            <text x="390" y="178" text-anchor="middle" fill="#92400e" font-size="9" font-weight="bold">LangFuse</text>
+            
+            <!-- 评估层 -->
+            <rect x="530" y="50" width="220" height="130" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="640" y="75" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">评估 (Evaluation)</text>
+            <text x="550" y="100" fill="#059669" font-size="10">• 准确性评分</text>
+            <text x="550" y="120" fill="#059669" font-size="10">• 相关性分析</text>
+            <text x="550" y="140" fill="#059669" font-size="10">• 安全性检查</text>
+            <text x="550" y="160" fill="#059669" font-size="10">• A/B 测试</text>
+            <text x="640" y="178" text-anchor="middle" fill="#065f46" font-size="9" font-weight="bold">Phoenix</text>
+        </svg>
+    </div>
+
+    <h2>二、LangSmith</h2>
+    <p>LangSmith 是 LangChain 官方推出的 Agent 追踪和调试平台。它提供了完整的调用链追踪功能，能够记录 Agent 执行过程中的每一个步骤，包括 LLM 调用、工具执行、中间状态等。LangSmith 的核心优势在于与 LangChain 生态的深度集成，开发者几乎不需要额外配置即可开始使用。</p>
+
+    <p>LangSmith 的主要功能包括：调用链可视化（以树形结构展示 Agent 的执行路径）、延迟分析（识别执行中的瓶颈步骤）、Token 消耗跟踪（分析每次 LLM 调用的 token 使用情况）、数据集管理（保存和管理测试用例）、版本对比（比较不同版本 Agent 的性能差异）。通过这些功能，开发者可以快速了解 Agent 的执行效率和资源消耗情况，从而有针对性地优化 Agent 的性能和成本。</p>
+
+    <p>使用 LangSmith 时，开发者只需在代码中添加少量的追踪注解，即可自动收集所有执行数据。这些数据会自动上传到 LangSmith 平台，开发者可以通过 Web 界面查看详细的执行报告和性能分析。对于使用 LangChain 构建的 Agent 应用，LangSmith 是最便捷的可观测性解决方案，能够帮助开发者快速定位问题并持续改进 Agent 的质量。</p>
+
+    <h3>2.1 LangSmith 集成示例</h3>
+    <div class="code-file">Python（LangSmith 集成）</div>
+<pre><code class="language-python">import os
+from langsmith import traceable
+from langchain.agents import AgentExecutor
+
+# 设置 LangSmith API Key
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = "ls_xxx"
+os.environ["LANGCHAIN_PROJECT"] = "my-agent"
+
+@traceable
+def run_agent(query):
+    agent = create_agent()
+    return agent.run(query)
+
+# 执行后，所有调用链自动上传到 LangSmith</code></pre>
+
+    <h2>三、LangFuse</h2>
+    <p>LangFuse 是一个开源的 LLM 工程平台，专注于 Agent 和 LLM 应用的监控和评估。与 LangSmith 不同，LangFuse 支持自托管部署，适合对数据隐私有严格要求的企业。LangFuse 提供了丰富的 API 和 SDK，支持多种编程语言和框架，使得开发者可以根据自己的需求灵活地集成可观测性功能。LangFuse 的核心优势在于其开源性质和自托管能力，所有数据都可以保存在自有服务器上，避免将敏感信息传输到第三方平台。</p>
+
+    <p>LangFuse 的核心功能包括：追踪管理（记录和管理所有 LLM 调用）、评分系统（对 Agent 输出进行人工或自动评分）、提示词版本管理（跟踪提示词的演变历史）、成本分析（详细分析 token 消耗和费用）、A/B 测试（比较不同提示词或模型的效果）。这些功能的组合使得 LangFuse 成为一个全面的 LLM 工程平台，不仅能够监控 Agent 的运行状态，还能够持续优化其性能和成本。</p>
+
+    <p>在实际使用中，LangFuse 特别适合需要数据隐私控制的场景。通过自托管部署，企业可以确保所有的追踪数据、评分结果和分析报告都保存在内部服务器上，满足合规和安全要求。同时，LangFuse 的开源性质意味着开发者可以深入了解其内部实现，并根据特定需求进行定制开发。</p>
+
+    <h3>3.1 LangFuse 集成示例</h3>
+    <div class="code-file">Python（LangFuse 集成）</div>
+<pre><code class="language-python">from langfuse import Langfuse
+
+# 初始化
+langfuse = Langfuse(
+    public_key="pk-lf-xxx",
+    secret_key="sk-lf-xxx",
+    host="https://cloud.langfuse.com"
+)
+
+# 创建追踪
+trace = langfuse.trace(name="agent-execution")
+
+# 记录生成
+generation = trace.generation(
+    name="llm-call",
+    model="qwen3.7-max",
+    input="分析销售数据",
+    output="销售数据分析报告..."
+)
+
+# 记录评分
+trace.score(name="accuracy", value=0.95)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">LangFuse 数据流</text>
+            
+            <!-- Agent -->
+            <rect x="30" y="55" width="120" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Agent</text>
+            
+            <line x1="150" y1="80" x2="190" y2="80" stroke="#64748b" stroke-width="2"/>
+            <text x="170" y="72" text-anchor="middle" fill="#64748b" font-size="9">追踪数据</text>
+            
+            <!-- LangFuse SDK -->
+            <rect x="190" y="55" width="140" height="50" rx="8" fill="#f59e0b"/>
+            <text x="260" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LangFuse SDK</text>
+            
+            <line x1="330" y1="80" x2="370" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- LangFuse Cloud -->
+            <rect x="370" y="55" width="160" height="50" rx="8" fill="#3b82f6"/>
+            <text x="450" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">LangFuse Cloud</text>
+            <text x="450" y="95" text-anchor="middle" fill="white" font-size="8">(自托管 / 云端)</text>
+            
+            <line x1="530" y1="80" x2="570" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Dashboard -->
+            <rect x="570" y="55" width="180" height="50" rx="8" fill="#10b981"/>
+            <text x="660" y="75" text-anchor="middle" fill="white" font-size="11" font-weight="bold">可视化仪表板</text>
+            <text x="660" y="95" text-anchor="middle" fill="white" font-size="8">追踪 / 评分 / 成本</text>
+        </svg>
+    </div>
+
+    <h2>四、Phoenix</h2>
+    <p>Phoenix 是 Arize AI 推出的开源 LLM 可观测性平台，专注于 Agent 应用的评估和调试。Phoenix 提供了独特的"时间旅行"功能，允许开发者回放 Agent 的执行过程，逐步检查每个决策点。这种能力对于调试复杂的 Agent 行为非常有用。</p>
+
+    <p>Phoenix 的核心特色在于其强大的评估能力。它支持多种评估方法：基于规则的评估（使用预定义的规则检查输出）、基于模型的评估（使用 LLM 作为评判者）、人工标注（支持团队协作标注）。Phoenix 还提供了丰富的可视化图表，帮助开发者直观地理解 Agent 的行为模式。</p>
+
+    <h3>4.1 Phoenix 集成示例</h3>
+    <div class="code-file">Python（Phoenix 集成）</div>
+<pre><code class="language-python">import phoenix as px
+import pandas as pd
+from phoenix.evals import run_evals
+
+# 启动 Phoenix
+session = px.launch_app()
+
+# 准备评估数据
+data = pd.DataFrame({
+    "query": ["问题 1", "问题 2"],
+    "response": ["回答 1", "回答 2"],
+    "reference": ["参考答案 1", "参考答案 2"]
+})
+
+# 运行评估
+evals = run_evals(
+    dataframe=data,
+    evaluators=["accuracy", "relevance"],
+    display_progress=True
+)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Phoenix 评估流程</text>
+            
+            <rect x="30" y="55" width="120" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">收集数据</text>
+            
+            <line x1="150" y1="80" x2="190" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="55" width="120" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="250" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">定义评估器</text>
+            
+            <line x1="310" y1="80" x2="350" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="55" width="120" height="50" rx="8" fill="#3b82f6"/>
+            <text x="410" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">运行评估</text>
+            
+            <line x1="470" y1="80" x2="510" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="120" height="50" rx="8" fill="#10b981"/>
+            <text x="570" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">可视化分析</text>
+            
+            <line x1="630" y1="80" x2="670" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="50" rx="8" fill="#f59e0b"/>
+            <text x="710" y="85" text-anchor="middle" fill="white" font-size="11" font-weight="bold">优化迭代</text>
+        </svg>
+    </div>
+
+    <h2>五、三大平台对比</h2>
+    <p>LangSmith、LangFuse 和 Phoenix 是目前最流行的三大 Agent 可观测性平台。它们各有侧重，适用于不同的开发场景和需求。理解它们的差异，有助于选择最适合自己项目的工具。</p>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>LangSmith</th><th>LangFuse</th><th>Phoenix</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>定位</strong></td><td>追踪调试</td><td>监控评估</td><td>评估分析</td></tr>
+            <tr><td><strong>部署方式</strong></td><td>SaaS</td><td>开源 / 自托管</td><td>开源 / 自托管</td></tr>
+            <tr><td><strong>生态集成</strong></td><td>LangChain 深度集成</td><td>多框架支持</td><td>多框架支持</td></tr>
+            <tr><td><strong>核心功能</strong></td><td>调用链追踪</td><td>评分 + 成本管理</td><td>评估 + 可视化</td></tr>
+            <tr><td><strong>学习曲线</strong></td><td>低</td><td>中</td><td>中</td></tr>
+            <tr><td><strong>费用</strong></td><td>免费 + 付费</td><td>开源免费</td><td>开源免费</td></tr>
+            <tr><td><strong>数据隐私</strong></td><td>云端托管</td><td>可自托管</td><td>可自托管</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">平台选择决策指南</text>
+            
+            <rect x="30" y="55" width="220" height="65" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="140" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">使用 LangChain？</text>
+            <text x="140" y="100" text-anchor="middle" fill="#1e40af" font-size="10">→ 选择 LangSmith</text>
+            <text x="140" y="115" text-anchor="middle" fill="#1e40af" font-size="9">无缝集成，开箱即用</text>
+            
+            <rect x="280" y="55" width="220" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="390" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">需要自托管？</text>
+            <text x="390" y="100" text-anchor="middle" fill="#92400e" font-size="10">→ 选择 LangFuse</text>
+            <text x="390" y="115" text-anchor="middle" fill="#92400e" font-size="9">开源免费，数据可控</text>
+            
+            <rect x="530" y="55" width="220" height="65" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="640" y="80" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">重视评估？</text>
+            <text x="640" y="100" text-anchor="middle" fill="#065f46" font-size="10">→ 选择 Phoenix</text>
+            <text x="640" y="115" text-anchor="middle" fill="#065f46" font-size="9">强大的评估和可视化</text>
+        </svg>
+    </div>
+
+    <h2>六、自建可观测性系统</h2>
+    <p>虽然现成的可观测性平台功能强大，但在某些场景下，开发者可能需要自建可观测性系统。自建系统的优势在于：完全可控（根据业务需求定制功能）、数据自主（所有数据保留在自有服务器上）、成本可控（避免平台订阅费用）。但自建系统也需要投入更多的开发和维护成本。</p>
+
+    <p>自建可观测性系统的核心组件包括：追踪器（记录执行路径和时间线）、指标收集器（收集性能指标）、评估器（评估输出质量）、数据存储（持久化追踪和指标数据）、可视化界面（展示分析结果）。通过组合这些组件，可以构建出满足特定需求的可观测性系统。</p>
+
+    <h3>6.1 自建追踪器实现</h3>
+    <div class="code-file">Python（自建追踪器）</div>
+<pre><code class="language-python">import uuid
+import time
+from dataclasses import dataclass
+
+@dataclass
+class TraceSpan:
+    span_id: str
+    name: str
+    start_time: float
+    end_time: float = None
+    status: str = "pending"
+    metadata: dict = None
+
+class AgentTracer:
+    """自建 Agent 追踪器"""
+    
+    def __init__(self):
+        self.spans = []
+    
+    def start_span(self, name):
+        span = TraceSpan(
+            span_id=str(uuid.uuid4()),
+            name=name,
+            start_time=time.time()
+        )
+        self.spans.append(span)
+        return span
+    
+    def end_span(self, span, status="success"):
+        span.end_time = time.time()
+        span.status = status</code></pre>
+
+    <h2>七、可观测性最佳实践</h2>
+    <p>在实施 Agent 可观测性时，建议遵循以下最佳实践：首先在开发阶段就集成追踪功能，而不是等到出现问题后再添加；其次选择合适的采样策略，在数据量和成本之间取得平衡；然后建立清晰的指标定义和告警规则，确保关键问题能够及时被发现；最后定期回顾和分析可观测性数据，持续优化 Agent 的性能和可靠性。</p>
+
+    <p>可观测性数据的价值不仅在于问题排查，更在于持续改进。通过分析 Agent 的执行数据，可以发现性能瓶颈、优化提示词设计、改进工具调用策略。建议将可观测性数据的分析纳入日常开发流程，使其成为 Agent 迭代优化的重要依据。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">可观测性数据驱动优化循环</text>
+            
+            <rect x="30" y="55" width="160" height="60" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">收集数据</text>
+            <text x="110" y="100" text-anchor="middle" fill="white" font-size="8">追踪 / 指标 / 评估</text>
+            
+            <line x1="190" y1="85" x2="230" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="55" width="160" height="60" rx="8" fill="#8b5cf6"/>
+            <text x="310" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">分析洞察</text>
+            <text x="310" y="100" text-anchor="middle" fill="white" font-size="8">识别问题 / 发现模式</text>
+            
+            <line x1="390" y1="85" x2="430" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="430" y="55" width="160" height="60" rx="8" fill="#3b82f6"/>
+            <text x="510" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">实施优化</text>
+            <text x="510" y="100" text-anchor="middle" fill="white" font-size="8">调整提示词 / 工具</text>
+            
+            <line x1="590" y1="85" x2="630" y2="85" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="630" y="55" width="120" height="60" rx="8" fill="#10b981"/>
+            <text x="690" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">验证效果</text>
+            <text x="690" y="100" text-anchor="middle" fill="white" font-size="8">A/B 测试对比</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>对于新项目，建议先使用 LangSmith（如果使用 LangChain）或 LangFuse（如果需要自托管）快速建立基础的可观测性能力。随着项目复杂度增加，再逐步引入 Phoenix 进行深度评估。不要等到出现问题才想起添加可观测性——从项目第一天起就集成追踪和监控，是确保 Agent 系统长期稳定运行的关键。</p>
+    </div>
+
+    <h2>八、小结</h2>
+    <p>Agent 可观测性是确保 Agent 系统可靠运行的关键基础设施。LangSmith 提供了开箱即用的追踪调试能力，LangFuse 提供了灵活的监控和评估平台，Phoenix 则专注于深度的评估分析。通过合理选择和组合这些工具，可以构建出全面的可观测性体系，帮助开发者理解、监控和持续优化 Agent 的行为。</p>
+
+    <p>在下一节 10.8 中，我们将通过实战项目，综合运用前面学习的所有知识，构建一个完整的数据分析 Agent，将理论知识转化为实际编码能力。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

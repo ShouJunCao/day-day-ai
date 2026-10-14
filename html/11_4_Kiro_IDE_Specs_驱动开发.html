@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11.4 Kiro IDE：Specs 驱动开发 / Agent 模式 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>11.4 Kiro IDE：Specs 驱动开发 / Agent 模式</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十一：AI Agent 开发工具与 IDE</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 Kiro IDE 的 Specs 驱动开发方法论</li>
+        <li>掌握 Spec 定义、任务生成和进度跟踪</li>
+        <li>学会使用 Agent 模式进行代码生成和项目管理</li>
+        <li>能够将 Specs 驱动方法应用到实际项目中</li>
+    </ul>
+
+    <h2>一、Kiro IDE 概述</h2>
+    <p>Kiro IDE 是由 AWS 开发的新一代 AI 驱动代码编辑器。它的核心理念是 Specs 驱动开发（Specification-Driven Development）——开发者首先定义清晰的规格说明（Spec），然后 AI Agent 根据 Spec 自主实现代码。这种方法将传统的需求分析和代码实现两个阶段紧密集成，使得开发过程更加结构化和可控。与其他 AI 编辑器不同，Kiro 不只是提供代码补全建议，而是能够理解整个项目的架构和需求，自主完成从需求到代码的完整转换。</p>
+
+    <p>与传统的需求文档不同，Kiro 的 Spec 不仅仅是文字描述——它包含了结构化的需求条目、验收标准、技术架构定义，以及与代码实现的直接映射关系。当 Spec 被定义完成后，Kiro 的 Agent 能够读取 Spec 中的每一个需求，自动规划实现方案，生成相应的代码文件，并运行测试验证是否满足验收标准。这种端到端的自动化能力大大减少了开发者的手动编码工作量，使他们能够将更多精力投入到需求定义和架构设计上。</p>
+
+    <p>Specs 驱动开发的核心优势在于需求的可追踪性。每个需求都有唯一的标识符，每个生成的代码文件都关联到特定的需求条目。这种追踪关系使得开发者可以随时了解项目的完成状态：哪些需求已经实现、哪些还在开发中、哪些需要进一步调整。同时，当需求变更时，Spec 的更新会自动反映到 Agent 的执行计划中，确保代码与需求始终同步。这种可追踪性在传统开发中需要手动维护，而在 Kiro 中是自动完成的。</p>
+
+    <h3>1.1 Specs 驱动开发流程</h3>
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Kiro Specs 驱动开发流程</text>
+            
+            <!-- 定义 Spec -->
+            <rect x="30" y="50" width="140" height="55" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="72" text-anchor="middle" fill="white" font-size="11" font-weight="bold">1. 定义 Spec</text>
+            <text x="100" y="92" text-anchor="middle" fill="white" font-size="8">需求 + 验收标准</text>
+            
+            <line x1="170" y1="78" x2="210" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 生成任务 -->
+            <rect x="210" y="50" width="140" height="55" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="72" text-anchor="middle" fill="white" font-size="11" font-weight="bold">2. 生成任务</text>
+            <text x="280" y="92" text-anchor="middle" fill="white" font-size="8">需求 → 开发任务</text>
+            
+            <line x1="350" y1="78" x2="390" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Agent 执行 -->
+            <rect x="390" y="50" width="140" height="55" rx="8" fill="#3b82f6"/>
+            <text x="460" y="72" text-anchor="middle" fill="white" font-size="11" font-weight="bold">3. Agent 执行</text>
+            <text x="460" y="92" text-anchor="middle" fill="white" font-size="8">生成代码 + 测试</text>
+            
+            <line x1="530" y1="78" x2="570" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 验收验证 -->
+            <rect x="570" y="50" width="140" height="55" rx="8" fill="#10b981"/>
+            <text x="640" y="72" text-anchor="middle" fill="white" font-size="11" font-weight="bold">4. 验收验证</text>
+            <text x="640" y="92" text-anchor="middle" fill="white" font-size="8">自动检查标准</text>
+            
+            <!-- 完成标记 -->
+            <path d="M 640 105 L 640 135 L 310 135 L 310 105" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <text x="475" y="150" text-anchor="middle" fill="#f59e0b" font-size="9">未通过 → 修复 → 重新验证</text>
+            
+            <text x="660" y="135" text-anchor="start" fill="#10b981" font-size="9">通过 → 标记完成</text>
+        </svg>
+    </div>
+
+    <h2>二、Spec 定义</h2>
+    <p>Spec 是 Kiro 开发流程的核心文档。一个完整的 Spec 包含三个部分：基本信息（名称、版本、描述）、需求列表（每个需求包含 ID、描述、优先级、验收标准）和架构定义（技术栈、框架选择、依赖关系）。Spec 的质量直接影响 Agent 生成的代码质量，因此定义清晰、完整的 Spec 是使用 Kiro 的关键技能。</p>
+
+    <p>需求条目的编写有几个重要原则：原子性（每个需求应该是不可再分的最小功能单元）、可测试性（验收标准应该是可以通过自动化测试验证的）、明确性（描述应该足够清晰，避免歧义）。好的需求条目应该像测试用例一样精确——它不仅描述了"要做什么"，还明确了"怎样算完成"。</p>
+
+    <p>在实际项目中，建议先定义核心功能的 Spec，然后逐步扩展。不需要在一开始就定义所有需求的完整 Spec——可以根据开发进度和反馈逐步细化。这种增量式的 Spec 定义方式既保证了开发的结构化，又保留了足够的灵活性。</p>
+
+    <h3>2.1 Spec 结构示例</h3>
+    <div class="code-file">Python（Spec 定义）</div>
+<pre><code class="language-python">@dataclass
+class SpecRequirement:
+    """Spec 需求项"""
+    id: str                  # 需求 ID（如 REQ-001）
+    description: str         # 需求描述
+    priority: str            # must / should / could
+    acceptance_criteria: str # 验收标准
+
+@dataclass
+class Spec:
+    """Spec 定义"""
+    name: str                # 规格名称
+    version: str             # 版本号
+    description: str         # 总体描述
+    requirements: List[SpecRequirement]  # 需求列表
+    architecture: str        # 技术架构
+    status: str              # draft / active / done
+
+# 示例: 用户管理 API 的 Spec
+SPEC = Spec(
+    name="用户管理 API",
+    version="1.0",
+    description="实现用户注册、登录、查询、更新的 REST API",
+    requirements=[
+        SpecRequirement(
+            id="REQ-001",
+            description="用户注册接口",
+            priority="must",
+            acceptance_criteria="POST /api/register 接受用户名、邮箱、密码"
+        ),
+        # ... 更多需求
+    ],
+    architecture="FastAPI + SQLAlchemy + PostgreSQL",
+    status="active"
+)</code></pre>
+
+    <h2>二、任务生成与进度跟踪</h2>
+    <p>当 Spec 定义完成后，Kiro 会自动将每个需求条目转换为开发任务。每个任务包含需求 ID、描述和验收标准，Agent 会根据这些信息规划实现方案。任务生成后，Kiro 会显示整体的项目进度，包括总任务数、已完成任务数、待处理任务数等信息。</p>
+
+    <p>随着 Agent 逐步完成任务，进度信息会实时更新。每个任务完成后，Agent 会标记相关的代码文件、运行测试并验证验收标准。如果测试通过，任务被标记为完成；如果测试失败，Agent 会分析问题原因并尝试修复。这种自动化的进度跟踪使得开发者可以随时了解项目的当前状态。</p>
+
+    <h3>2.1 任务管理</h3>
+    <div class="code-file">Python（任务生成与进度）</div>
+<pre><code class="language-python">class SpecManager:
+    """Spec 管理器"""
+    
+    def generate_tasks(self, spec_name: str) -> List[SpecTask]:
+        """根据 Spec 生成任务"""
+        spec = self.specs.get(spec_name)
+        tasks = []
+        for req in spec.requirements:
+            task = SpecTask(
+                spec_name=spec_name,
+                requirement_id=req.id,
+                description=f"实现: {req.description}"
+            )
+            tasks.append(task)
+        return tasks
+    
+    def complete_task(self, index: int, files: List[str]):
+        """完成任务"""
+        self.tasks[index].status = "done"
+        self.tasks[index].files_created = files
+        self.tasks[index].tests_passed = True
+    
+    def get_progress(self, spec_name: str) -> Dict:
+        """获取进度"""
+        total = len(tasks)
+        done = sum(1 for t in tasks if t.status == "done")
+        return {"total": total, "done": done, "progress": f"{done}/{total}"}</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Spec 任务进度可视化</text>
+            
+            <!-- Spec 标题 -->
+            <rect x="30" y="55" width="720" height="30" rx="6" fill="#1a1a2e"/>
+            <text x="40" y="75" fill="white" font-size="11" font-weight="bold">用户管理 API v1.0</text>
+            <text x="650" y="75" text-anchor="end" fill="white" font-size="10">进度: 2/4 (50%)</text>
+            
+            <!-- 进度条 -->
+            <rect x="30" y="90" width="720" height="12" rx="6" fill="#e2e8f0"/>
+            <rect x="30" y="90" width="360" height="12" rx="6" fill="#10b981"/>
+            
+            <!-- 任务项 -->
+            <rect x="30" y="110" width="30" height="8" rx="4" fill="#10b981"/>
+            <text x="65" y="118" fill="#10b981" font-size="8">REQ-001 ✅ 用户注册</text>
+            
+            <rect x="200" y="110" width="30" height="8" rx="4" fill="#10b981"/>
+            <text x="235" y="118" fill="#10b981" font-size="8">REQ-002 ✅ 用户登录</text>
+            
+            <rect x="370" y="110" width="30" height="8" rx="4" fill="#f59e0b"/>
+            <text x="405" y="118" fill="#f59e0b" font-size="8">REQ-003 ⏳ 用户查询</text>
+            
+            <rect x="540" y="110" width="30" height="8" rx="4" fill="#ef4444"/>
+            <text x="575" y="118" fill="#ef4444" font-size="8">REQ-004 ❌ 密码加密</text>
+        </svg>
+    </div>
+
+    <h2>三、Agent 模式代码生成</h2>
+    <p>Kiro 的 Agent 模式是其最强大的功能之一。在 Agent 模式下，Kiro 不仅生成代码，还能理解项目的整体架构和上下文。它能够根据 Spec 中的技术架构定义，选择合适的框架、库和设计模式，生成与项目风格一致的代码。</p>
+
+    <p>Agent 生成的代码包括多个层面：数据模型（Pydantic 模型、SQLAlchemy ORM）、业务逻辑（路由、服务层）、测试用例（pytest）、配置文件（依赖、环境变量）。每一层代码都关联到特定的需求条目，确保代码的可追踪性。同时，Agent 会遵循项目的编码规范，包括命名约定、类型注解、文档字符串格式等。</p>
+
+    <h3>3.1 代码生成示例</h3>
+    <div class="code-file">Python（Agent 生成的 Pydantic 模型）</div>
+<pre><code class="language-python">from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
+
+class UserRegister(BaseModel):
+    """用户注册请求"""
+    username: str = Field(min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(min_length=8)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Agent 代码生成质量保障</text>
+            
+            <rect x="30" y="50" width="160" height="50" rx="8" fill="#10b981"/>
+            <text x="110" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">类型注解</text>
+            <text x="110" y="90" text-anchor="middle" fill="white" font-size="8">类型安全保证</text>
+            
+            <rect x="210" y="50" width="160" height="50" rx="8" fill="#3b82f6"/>
+            <text x="290" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">文档字符串</text>
+            <text x="290" y="90" text-anchor="middle" fill="white" font-size="8">自动文档生成</text>
+            
+            <rect x="390" y="50" width="160" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="470" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">命名规范</text>
+            <text x="470" y="90" text-anchor="middle" fill="white" font-size="8">PEP 8 遵循</text>
+            
+            <rect x="570" y="50" width="180" height="50" rx="8" fill="#f59e0b"/>
+            <text x="660" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">错误处理</text>
+            <text x="660" y="90" text-anchor="middle" fill="white" font-size="8">异常捕获与返回</text>
+        </svg>
+    </div>
+
+    <div class="code-file">Python（Agent 生成的 FastAPI 路由）</div>
+<pre><code class="language-python">from fastapi import APIRouter, HTTPException
+
+router = APIRouter()
+
+@router.post("/api/register")
+async def register_user(request: UserRegister):
+    """用户注册接口"""
+    if not request.username.strip():
+        raise HTTPException(400, "用户名不能为空")
+    # 实现注册逻辑
+    return {"message": "用户注册成功", "id": 1}</code></pre>
+
+    <div class="code-file">Python（Agent 生成的测试用例）</div>
+<pre><code class="language-python">import pytest
+from fastapi.testclient import TestClient
+
+def test_register_success():
+    """测试用户注册成功"""
+    response = client.post("/api/register", json={
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "securepass123"
+    })
+    assert response.status_code == 200
+    assert "id" in response.json()</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Agent 代码生成层级</text>
+            
+            <!-- 数据模型层 -->
+            <rect x="30" y="55" width="230" height="85" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="145" y="78" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">数据模型层</text>
+            <text x="50" y="98" fill="#b45309" font-size="9">• Pydantic 模型</text>
+            <text x="50" y="114" fill="#b45309" font-size="9">• SQLAlchemy ORM</text>
+            <text x="50" y="130" fill="#b45309" font-size="9">• 数据验证规则</text>
+            
+            <!-- 业务逻辑层 -->
+            <rect x="275" y="55" width="230" height="85" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="390" y="78" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">业务逻辑层</text>
+            <text x="295" y="98" fill="#2563eb" font-size="9">• FastAPI 路由</text>
+            <text x="295" y="114" fill="#2563eb" font-size="9">• 服务层函数</text>
+            <text x="295" y="130" fill="#2563eb" font-size="9">• 错误处理</text>
+            
+            <!-- 测试层 -->
+            <rect x="520" y="55" width="230" height="85" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="635" y="78" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">测试层</text>
+            <text x="540" y="98" fill="#059669" font-size="9">• pytest 用例</text>
+            <text x="540" y="114" fill="#059669" font-size="9">• 集成测试</text>
+            <text x="540" y="130" fill="#059669" font-size="9">• 验收验证</text>
+        </svg>
+    </div>
+
+    <h2>四、实战：Specs 驱动用户管理 API</h2>
+    <p>让我们通过一个完整的示例来演示 Specs 驱动开发的流程。我们将定义一个用户管理 API 的 Spec，然后跟踪 Agent 如何根据 Spec 生成代码。这个示例涵盖了 Spec 定义、任务生成、代码实现和进度跟踪的完整流程。通过这个实战示例，你将深入了解 Kiro Agent 是如何理解需求、规划方案、生成代码并验证结果的。</p>
+
+    <p>在实际项目中，建议从简单的项目开始练习 Specs 驱动开发。首先定义一个小的 Spec（如单一功能的 API），观察 Agent 如何理解和实现需求。随着对流程的熟悉，逐步增加 Spec 的复杂度，引入更多的需求和更复杂的架构。通过不断的实践，你会逐渐掌握如何编写清晰、完整的 Spec，从而充分发挥 Kiro Agent 的能力。同时，建议在项目初期就建立 Spec 模板和规范，确保团队成员编写的 Spec 风格一致，便于 Agent 理解。</p>
+
+    <table>
+        <thead>
+            <tr><th>需求 ID</th><th>描述</th><th>优先级</th><th>验收标准</th><th>状态</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>REQ-001</strong></td><td>用户注册接口</td><td>must</td><td>POST /api/register 返回用户 ID</td><td>✅ 完成</td></tr>
+            <tr><td><strong>REQ-002</strong></td><td>用户登录接口</td><td>must</td><td>POST /api/login 返回 JWT Token</td><td>✅ 完成</td></tr>
+            <tr><td><strong>REQ-003</strong></td><td>用户信息查询</td><td>should</td><td>GET /api/users/:id 返回详细信息</td><td>⏳ 进行中</td></tr>
+            <tr><td><strong>REQ-004</strong></td><td>密码加密存储</td><td>must</td><td>使用 bcrypt 加密</td><td>❌ 待处理</td></tr>
+        </tbody>
+    </table>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在编写 Spec 时，建议遵循"最小可行 Spec"原则——先定义核心需求的完整 Spec，然后逐步扩展。不要试图在一开始就定义所有需求的完整细节。同时，验收标准应该尽可能量化和可测试——使用具体的状态码、数据格式和响应时间作为验收标准，而不是模糊的描述。这样可以确保 Agent 生成的代码真正满足需求。</p>
+    </div>
+
+    <div class="diagram-container">
+        <svg width="780" height="100" viewBox="0 0 780 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Kiro Specs 驱动核心优势总结</text>
+            
+            <rect x="30" y="45" width="160" height="40" rx="20" fill="#10b981"/>
+            <text x="110" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">可追踪性 ✅</text>
+            
+            <rect x="210" y="45" width="160" height="40" rx="20" fill="#3b82f6"/>
+            <text x="290" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">结构化 ✅</text>
+            
+            <rect x="390" y="45" width="160" height="40" rx="20" fill="#8b5cf6"/>
+            <text x="470" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">自动化 ✅</text>
+            
+            <rect x="570" y="45" width="180" height="40" rx="20" fill="#f59e0b"/>
+            <text x="660" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">可维护性 ✅</text>
+        </svg>
+    </div>
+
+    <h2>五、小结</h2>
+    <p>Kiro IDE 的 Specs 驱动开发方法论代表了 AI 辅助编程的一个新方向。通过将需求定义和代码实现紧密集成，Specs 驱动方法使得开发过程更加结构化和可控。Spec 不仅是需求文档，更是 Agent 的执行蓝图——每个需求条目都有对应的开发任务、代码文件和测试用例。这种可追踪的开发方式特别适合团队协作和复杂项目的管理。在实际应用中，开发者可以将 Specs 驱动方法与敏捷开发流程结合，实现需求的快速迭代和验证。</p>
+
+    <p>至此，模块十一的全部内容已完成。从 AI 编码助手到编码 Agent，从 Hermes Agent 的核心功能到 Kiro 的 Specs 驱动开发，我们系统地学习了当前主流的 AI 开发工具和 IDE。这些工具正在快速改变软件开发的方式，掌握它们的使用方法对于提升开发效率至关重要。建议在实际项目中尝试使用这些工具，通过实践来加深对它们的理解和应用能力，从而更好地应对未来的开发挑战。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

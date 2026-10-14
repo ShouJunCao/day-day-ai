@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11.6 实战：用 Hermes + Kiro 构建 AI 应用 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>11.6 实战：用 Hermes + Kiro 构建 AI 应用</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十一：AI Agent 开发工具与 IDE</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>综合运用 Hermes Agent 和 Kiro IDE 构建完整的 AI 应用</li>
+        <li>掌握 Specs 驱动开发、Skills、Memory、Cron 的集成方法</li>
+        <li>学会设计应用架构、生成代码结构和配置部署流程</li>
+        <li>能够将前面学习的所有知识应用到实际项目中</li>
+    </ul>
+
+    <h2>一、项目概述</h2>
+    <p>本实战项目将综合运用模块十一学习的所有技术，构建一个"AI 编码助手平台"。这个平台整合了 Hermes Agent 的核心功能（Skills、Memory、Cron、多平台集成）和 Kiro IDE 的 Specs 驱动开发方法，形成一个人机协作的完整开发环境。通过这个项目，你将看到如何将分散的技术组件有机组合在一起，构建出功能强大的实际应用。</p>
+
+    <p>项目采用模块化架构设计，包含五个核心组件：Skills 管理（AI 技能库管理）、Memory 系统（持久化记忆存储）、Cron 调度器（定时任务管理）、平台集成（多平台消息路由）和代码生成器（Specs 驱动代码生成）。每个组件都有清晰的职责边界和接口定义，便于独立开发和测试。</p>
+
+    <p>在技术选型方面，项目使用 FastAPI 作为 Web 框架，SQLite/Redis 作为数据存储，APScheduler 作为定时任务调度器，OpenAI SDK 作为 LLM 调用接口，Docker 作为部署方案。这种技术栈既保证了开发效率，又满足了生产环境的性能和可扩展性要求。</p>
+
+    <h3>1.1 应用架构</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">AI 编码助手平台架构</text>
+            
+            <!-- 用户层 -->
+            <rect x="250" y="45" width="280" height="30" rx="6" fill="#1a1a2e"/>
+            <text x="390" y="65" text-anchor="middle" fill="white" font-size="11" font-weight="bold">用户（Telegram / WhatsApp / Discord / Web）</text>
+            
+            <line x1="390" y1="75" x2="390" y2="95" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- API 层 -->
+            <rect x="250" y="95" width="280" height="30" rx="6" fill="#4361ee"/>
+            <text x="390" y="115" text-anchor="middle" fill="white" font-size="11" font-weight="bold">FastAPI API 层</text>
+            
+            <!-- 核心组件层 -->
+            <line x1="280" y1="125" x2="280" y2="145" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="125" x2="390" y2="145" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="500" y1="125" x2="500" y2="145" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="30" y="145" width="140" height="40" rx="6" fill="#f59e0b"/>
+            <text x="100" y="170" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Skills 管理</text>
+            
+            <rect x="190" y="145" width="140" height="40" rx="6" fill="#3b82f6"/>
+            <text x="260" y="170" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Memory 系统</text>
+            
+            <rect x="350" y="145" width="140" height="40" rx="6" fill="#10b981"/>
+            <text x="420" y="170" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Cron 调度器</text>
+            
+            <rect x="510" y="145" width="140" height="40" rx="6" fill="#8b5cf6"/>
+            <text x="580" y="170" text-anchor="middle" fill="white" font-size="10" font-weight="bold">代码生成器</text>
+            
+            <rect x="670" y="145" width="80" height="40" rx="6" fill="#ef4444"/>
+            <text x="710" y="170" text-anchor="middle" fill="white" font-size="10" font-weight="bold">平台集成</text>
+        </svg>
+    </div>
+
+    <h2>二、Specs 驱动开发</h2>
+    <p>项目的第一步是使用 Kiro IDE 的 Specs 驱动方法定义应用的规格说明。我们为每个核心组件定义清晰的 Spec，包含需求条目、验收标准和技术架构。这些 Spec 将作为 Agent 生成代码的依据，确保生成的代码满足功能需求和代码质量标准。在实际操作中，建议先与项目相关方确认需求条目的准确性和完整性，避免后续返工。每个 Spec 应该包含明确的验收标准，便于 Agent 在生成代码后进行自我验证。</p>
+
+    <p>每个 Spec 包含三个核心需求：实现核心功能、编写单元测试、添加 API 接口。这种简化的需求结构既保证了功能的完整性，又避免了过度设计。在实际项目中，可以根据需要添加更多的需求条目和验收标准。例如，对于安全性要求较高的组件，可以添加安全审计、权限控制、数据加密等额外需求；对于性能要求较高的组件，可以添加响应时间、吞吐量、并发数等性能指标。</p>
+
+    <p>Specs 驱动开发的另一个优势是需求变更的可追踪性。当需求发生变化时，只需要更新对应的 Spec 条目，Agent 会自动根据新的 Spec 重新生成代码。这种机制确保了代码与需求的始终同步，避免了传统开发中常见的"代码与需求脱节"问题。同时，Spec 的历史变更记录也为项目复盘和经验总结提供了有价值的参考数据。</p>
+
+    <h3>2.1 Specs 生成示例</h3>
+    <div class="code-file">Python（Specs 生成器）</div>
+<pre><code class="language-python">from dataclasses import dataclass, field
+from typing import List, Dict
+
+@dataclass
+class AppSpec:
+    """应用规格说明"""
+    id: str
+    name: str
+    description: str
+    requirements: List[Dict[str, str]] = field(default_factory=list)
+
+class AppSpecGenerator:
+    """应用规格生成器"""
+    
+    def generate_from_template(self, app):
+        """从应用模板生成 Specs"""
+        specs = []
+        for comp in app.components:
+            spec = AppSpec(
+                id=f"SPEC-{comp.name[:3].upper()}",
+                name=comp.name,
+                description=comp.description,
+                requirements=[
+                    {"id": "REQ-001", "desc": f"实现 {comp.name} 核心功能", "priority": "must"},
+                    {"id": "REQ-002", "desc": f"编写 {comp.name} 单元测试", "priority": "must"},
+                    {"id": "REQ-003", "desc": f"添加 {comp.name} API 接口", "priority": "should"},
+                ]
+            )
+            specs.append(spec)
+        return specs</code></pre>
+
+    <h2>三、Hermes 核心组件配置</h2>
+    <p>应用的核心配置包括 Memory 初始化和 Cron 任务设置。Memory 系统存储了项目的技术栈、代码规范、测试框架等关键信息，使 Agent 能够在开发过程中自动参考这些配置。Cron 系统设置了代码审查、测试运行、文档生成和性能监控等自动化任务，确保项目的持续质量和稳定性。</p>
+
+    <h3>3.1 Memory 配置</h3>
+    <div class="code-file">Python（Memory 初始化）</div>
+<pre><code class="language-python">class AppMemoryConfig:
+    """应用 Memory 配置"""
+    
+    DEFAULT_ENTRIES = [
+        {"content": "项目使用 FastAPI 框架", "target": "memory"},
+        {"content": "代码规范：PEP 8 + 类型注解", "target": "memory"},
+        {"content": "测试框架：pytest", "target": "memory"},
+        {"content": "部署目标：Docker 容器", "target": "memory"},
+        {"content": "API 文档：OpenAPI/Swagger", "target": "memory"},
+    ]
+    
+    @classmethod
+    def init_memory(cls):
+        """初始化应用记忆"""
+        return cls.DEFAULT_ENTRIES.copy()</code></pre>
+
+    <h3>3.2 Cron 配置</h3>
+    <div class="code-file">Python（Cron 任务配置）</div>
+<pre><code class="language-python">class AppCronConfig:
+    """应用 Cron 配置"""
+    
+    DEFAULT_JOBS = [
+        {"name": "代码审查", "schedule": "every 4h",
+         "desc": "自动审查新提交的代码"},
+        {"name": "测试运行", "schedule": "every 1h",
+         "desc": "运行全量测试套件"},
+        {"name": "文档生成", "schedule": "0 9 * * *",
+         "desc": "每日生成 API 文档"},
+        {"name": "性能监控", "schedule": "30m",
+         "desc": "检查系统性能指标"},
+    ]
+    
+    @classmethod
+    def init_cron(cls):
+        """初始化 Cron 任务"""
+        return cls.DEFAULT_JOBS.copy()</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">应用配置初始化流程</text>
+            
+            <rect x="30" y="55" width="160" height="65" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">应用模板</text>
+            <text x="110" y="98" text-anchor="middle" fill="white" font-size="8">架构定义</text>
+            
+            <line x1="190" y1="88" x2="230" y2="88" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="55" width="160" height="65" rx="8" fill="#8b5cf6"/>
+            <text x="310" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Specs 生成</text>
+            <text x="310" y="98" text-anchor="middle" fill="white" font-size="8">需求条目</text>
+            
+            <line x1="390" y1="88" x2="430" y2="88" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="430" y="55" width="160" height="65" rx="8" fill="#3b82f6"/>
+            <text x="510" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Memory 配置</text>
+            <text x="510" y="98" text-anchor="middle" fill="white" font-size="8">项目知识</text>
+            
+            <line x1="590" y1="88" x2="630" y2="88" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="630" y="55" width="120" height="65" rx="8" fill="#10b981"/>
+            <text x="690" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Cron 配置</text>
+            <text x="690" y="98" text-anchor="middle" fill="white" font-size="8">自动化任务</text>
+        </svg>
+    </div>
+
+    <h2>四、代码结构与实现</h2>
+    <p>根据 Specs 定义，应用被分为五个模块，每个模块包含核心逻辑、API 接口和测试文件。这种模块化的结构便于并行开发和独立测试。每个模块的代码都遵循 PEP 8 规范，包含类型注解和文档字符串，确保代码的可读性和可维护性。在实际开发中，建议为每个模块创建独立的 Git 分支，完成开发和测试后再合并到主分支。这种分支策略可以有效减少代码冲突，提高团队协作效率。</p>
+
+    <p>代码实现过程中，建议充分利用 AI 编码工具的代码生成能力。对于数据模型、API 路由、测试用例等标准化程度较高的代码，可以让 AI 工具自动生成初稿，然后人工进行审查和调整。对于业务逻辑复杂、创新性强的代码，则建议以人工编写为主，AI 工具为辅。这种"AI 生成 + 人工审查"的模式既提高了编码效率，又保证了代码质量。</p>
+
+    <h3>4.1 代码生成示例</h3>
+    <div class="code-file">Python（FastAPI 应用主入口）</div>
+<pre><code class="language-python">from fastapi import FastAPI
+from skills_manager.api import router as skills_router
+from memory_system.api import router as memory_router
+from cron_scheduler.api import router as cron_router
+
+app = FastAPI(
+    title="AI 编码助手平台",
+    version="1.0.0",
+    description="集成多种 AI 编码工具的辅助开发平台"
+)
+
+app.include_router(skills_router, prefix="/skills")
+app.include_router(memory_router, prefix="/memory")
+app.include_router(cron_router, prefix="/cron")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">代码实现质量保障</text>
+            
+            <rect x="30" y="55" width="140" height="45" rx="8" fill="#10b981"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">PEP 8 规范</text>
+            <text x="100" y="90" text-anchor="middle" fill="white" font-size="8">命名 / 缩进</text>
+            
+            <rect x="190" y="55" width="140" height="45" rx="8" fill="#3b82f6"/>
+            <text x="260" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">类型注解</text>
+            <text x="260" y="90" text-anchor="middle" fill="white" font-size="8">类型安全</text>
+            
+            <rect x="350" y="55" width="140" height="45" rx="8" fill="#8b5cf6"/>
+            <text x="420" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">文档字符串</text>
+            <text x="420" y="90" text-anchor="middle" fill="white" font-size="8">自动文档</text>
+            
+            <rect x="510" y="55" width="120" height="45" rx="8" fill="#f59e0b"/>
+            <text x="570" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">单元测试</text>
+            <text x="570" y="90" text-anchor="middle" fill="white" font-size="8">pytest</text>
+            
+            <rect x="650" y="55" width="100" height="45" rx="8" fill="#ef4444"/>
+            <text x="700" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">CI/CD</text>
+            <text x="700" y="90" text-anchor="middle" fill="white" font-size="8">自动化</text>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>模块</th><th>核心文件</th><th>技术</th><th>AI 辅助</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Skills 管理</strong></td><td>core.py / api.py</td><td>Python</td><td>✅</td></tr>
+            <tr><td><strong>Memory 系统</strong></td><td>core.py / api.py</td><td>SQLite/Redis</td><td>❌</td></tr>
+            <tr><td><strong>Cron 调度器</strong></td><td>core.py / api.py</td><td>APScheduler</td><td>❌</td></tr>
+            <tr><td><strong>平台集成</strong></td><td>core.py / api.py</td><td>FastAPI</td><td>✅</td></tr>
+            <tr><td><strong>代码生成器</strong></td><td>core.py / api.py</td><td>Python + LLM</td><td>✅</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">应用目录结构</text>
+            
+            <rect x="30" y="45" width="720" height="75" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="50" y="68" fill="#1a1a2e" font-size="11" font-weight="bold">ai_coding_platform/</text>
+            <text x="70" y="88" fill="#666" font-size="9">├── skills_manager/  ── core.py, api.py, tests/</text>
+            <text x="70" y="104" fill="#666" font-size="9">├── memory_system/   ── core.py, api.py, tests/</text>
+            
+            <text x="350" y="88" fill="#666" font-size="9">├── cron_scheduler/  ── core.py, api.py, tests/</text>
+            <text x="350" y="104" fill="#666" font-size="9">├── platform_integration/ ── core.py, api.py, tests/</text>
+            
+            <text x="350" y="68" fill="#666" font-size="9">├── code_generator/  ── core.py, api.py, tests/</text>
+            <text x="350" y="120" fill="#666" font-size="9">├── docker-compose.yml</text>
+            
+            <text x="580" y="88" fill="#666" font-size="9">├── requirements.txt</text>
+            <text x="580" y="104" fill="#666" font-size="9">├── Dockerfile</text>
+            <text x="580" y="120" fill="#666" font-size="9">└── specs/</text>
+        </svg>
+    </div>
+
+    <h2>五、部署与运维</h2>
+    <p>项目使用 Docker 容器化部署，通过 docker-compose.yml 定义所有服务（API、Redis、数据库）。这种部署方式保证了环境的一致性，简化了部署和扩展流程。Docker 容器化不仅解决了"在我机器上能跑"的经典问题，还使得水平扩展变得异常简单——只需要增加容器实例即可。同时，容器化的部署方式也便于实现蓝绿部署和滚动更新，最大程度地减少部署对用户的影响。</p>
+
+    <p>同时，项目集成了 Prometheus 监控和 Grafana 可视化，实现了实时的性能监控和告警。Prometheus 负责收集和存储系统的各项性能指标（如 CPU 使用率、内存消耗、请求延迟、错误率等），Grafana 则提供直观的可视化仪表板，帮助运维人员快速了解系统的运行状态。当系统出现异常时，告警规则会自动触发通知，确保问题能够被及时发现和处理。此外，建议设置日志收集系统（如 ELK Stack），将分散在各容器中的日志集中存储和分析，便于问题排查和审计追踪。</p>
+
+    <h3>5.1 部署配置</h3>
+    <div class="code-file">YAML（Docker Compose 配置）</div>
+<pre><code class="language-python">version: '3.8'
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///app.db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">部署架构</text>
+            
+            <rect x="30" y="50" width="160" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Nginx 反向代理</text>
+            <text x="110" y="88" text-anchor="middle" fill="white" font-size="8">:80 / :443</text>
+            
+            <line x1="190" y1="75" x2="230" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="230" y="50" width="160" height="50" rx="8" fill="#4361ee"/>
+            <text x="310" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">FastAPI 容器</text>
+            <text x="310" y="88" text-anchor="middle" fill="white" font-size="8">:8000</text>
+            
+            <line x1="390" y1="75" x2="430" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="430" y="50" width="160" height="50" rx="8" fill="#ef4444"/>
+            <text x="510" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Redis 容器</text>
+            <text x="510" y="88" text-anchor="middle" fill="white" font-size="8">:6379</text>
+            
+            <line x1="590" y1="75" x2="630" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="630" y="50" width="120" height="50" rx="8" fill="#f59e0b"/>
+            <text x="690" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Prometheus</text>
+            <text x="690" y="88" text-anchor="middle" fill="white" font-size="8">:9090</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战总结</div>
+        <p>通过这个项目，我们展示了如何将 Hermes Agent 和 Kiro IDE 的核心功能整合到一个完整的应用中。Specs 驱动方法确保了需求的可追踪性，Memory 系统保存了项目知识，Cron 调度器实现了自动化运维，而 AI 编码工具则大幅提升了开发效率。这种人机协作的开发模式代表了软件开发的未来方向——AI 负责重复性工作，人类负责创造性决策，两者优势互补，共同构建高质量的应用。</p>
+    </div>
+
+    <h2>六、模块十一总结</h2>
+    <p>模块十一系统地介绍了当前主流的 AI 开发工具和 IDE。从 GitHub Copilot 到 Cursor，从 Claude Code 到 Kiro Agent，我们了解了每一款工具的定位和优势。同时，我们学习了 Hermes Agent 的核心架构和配置方法，掌握了 Skills、Memory、Cron 和多平台集成的使用技巧。最后，通过 Specs 驱动开发和 AI 辅助工作流的实战项目，我们将理论知识转化为实际编码能力。</p>
+
+    <p>AI 开发工具正在快速演进，掌握这些工具的使用方法对于提升开发效率至关重要。建议持续关注社区动态，及时学习和应用新的工具和技术。同时，也要认识到工具只是手段——真正的核心竞争力是对问题的理解和解决能力。AI 工具可以加速代码的生成和测试，但需求的分析、架构的设计和关键决策仍然需要人类的智慧和经验。</p>
+
+    <p>至此，整个学习大纲的十一个模块已全部完成。从 Python 基础到进阶特性，从函数式编程到面向对象，从设计模式到并发编程，从 Web 开发到 MCP 协议，从 AI Agent 开发到开发工具与 IDE，我们系统地学习了现代软件开发的核心知识。希望这些学习资料能够帮助你在技术成长的道路上走得更远。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

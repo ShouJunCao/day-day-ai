@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11.5 AI 开发工作流最佳实践 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>11.5 AI 开发工作流最佳实践</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十一：AI Agent 开发工具与 IDE</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 AI 辅助开发的六阶段工作流</li>
+        <li>掌握需求分析、架构设计、编码实现的最佳实践</li>
+        <li>学会使用 AI 工具进行测试验证和代码审查</li>
+        <li>能够构建完整的 AI 辅助开发工作流</li>
+    </ul>
+
+    <h2>一、AI 辅助开发工作流概述</h2>
+    <p>AI 辅助开发工作流将传统的软件开发流程与 AI 工具深度集成，形成一个人机协作的开发模式。在这个工作流中，AI 工具不仅仅是代码补全助手，而是贯穿需求分析、架构设计、编码实现、测试验证、代码审查和部署上线的全流程协作者。通过合理的分工和协作，可以显著提升开发效率和代码质量。</p>
+
+    <p>在 AI 辅助工作流中，人类开发者负责需求定义、架构决策、逻辑确认和最终审批等创造性工作，而 AI 工具负责代码补全、测试生成、静态分析、文档生成等重复性工作。这种分工模式既发挥了人类的创造力和判断力，又利用了 AI 的效率和一致性，实现了"人机协同"的最佳效果。</p>
+
+    <p>AI 辅助开发的核心原则是"人在回路"（Human-in-the-Loop）——AI 负责生成和建议，人类负责审查和确认。AI 可以快速生成大量代码和文档，但最终的决策权和责任仍然在人类手中。这种模式既保证了开发效率，又确保了代码质量和安全性。</p>
+
+    <h3>1.1 六阶段工作流</h3>
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">AI 辅助开发六阶段工作流</text>
+            
+            <rect x="20" y="50" width="110" height="55" rx="8" fill="#1a1a2e"/>
+            <text x="75" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">1. 需求分析</text>
+            <text x="75" y="90" text-anchor="middle" fill="white" font-size="8">AI: 文档生成</text>
+            <text x="75" y="102" text-anchor="middle" fill="white" font-size="8">人: 需求确认</text>
+            
+            <line x1="130" y1="78" x2="155" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="155" y="50" width="110" height="55" rx="8" fill="#8b5cf6"/>
+            <text x="210" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">2. 架构设计</text>
+            <text x="210" y="90" text-anchor="middle" fill="white" font-size="8">AI: 架构图</text>
+            <text x="210" y="102" text-anchor="middle" fill="white" font-size="8">人: 架构评审</text>
+            
+            <line x1="265" y1="78" x2="290" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="290" y="50" width="110" height="55" rx="8" fill="#3b82f6"/>
+            <text x="345" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">3. 编码实现</text>
+            <text x="345" y="90" text-anchor="middle" fill="white" font-size="8">AI: 代码生成</text>
+            <text x="345" y="102" text-anchor="middle" fill="white" font-size="8">人: 逻辑确认</text>
+            
+            <line x1="400" y1="78" x2="425" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="425" y="50" width="110" height="55" rx="8" fill="#10b981"/>
+            <text x="480" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">4. 测试验证</text>
+            <text x="480" y="90" text-anchor="middle" fill="white" font-size="8">AI: 测试生成</text>
+            <text x="480" y="102" text-anchor="middle" fill="white" font-size="8">人: 验收测试</text>
+            
+            <line x1="535" y1="78" x2="560" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="560" y="50" width="110" height="55" rx="8" fill="#f59e0b"/>
+            <text x="615" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">5. 代码审查</text>
+            <text x="615" y="90" text-anchor="middle" fill="white" font-size="8">AI: 静态分析</text>
+            <text x="615" y="102" text-anchor="middle" fill="white" font-size="8">人: 逻辑审查</text>
+            
+            <line x1="670" y1="78" x2="695" y2="78" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="695" y="50" width="65" height="55" rx="8" fill="#ef4444"/>
+            <text x="728" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">6. 部署</text>
+            <text x="728" y="90" text-anchor="middle" fill="white" font-size="8">AI: 脚本生成</text>
+            <text x="728" y="102" text-anchor="middle" fill="white" font-size="8">人: 审批</text>
+        </svg>
+    </div>
+
+    <h2>二、需求分析与架构设计</h2>
+    <p>需求分析是开发流程的起点，也是决定项目成败的关键阶段。在 AI 辅助工作流中，AI 工具可以帮助将模糊的需求描述转化为结构化的用户故事和验收标准。开发者只需要提供高层次的需求描述，AI 就能生成详细的 PRD 文档、用户故事列表和验收测试用例。这种自动化能力可以大幅缩短需求分析的时间，同时确保需求的完整性和可测试性。在实际应用中，建议开发者先与产品经理和利益相关者充分沟通，明确核心需求和优先级，然后再使用 AI 工具生成结构化的需求文档。</p>
+
+    <p>架构设计阶段需要开发者做出关键的技术决策。AI 工具可以提供技术栈推荐、架构图生成和架构模式建议。例如，当开发者描述了一个"需要处理高并发请求的 Web 服务"的需求后，AI 可以推荐合适的技术栈（如 FastAPI + Redis + PostgreSQL），并生成相应的架构图。开发者可以在此基础上进行调整和优化，确保架构方案满足项目需求。同时，架构设计还应该考虑系统的可扩展性、可维护性和安全性，为后续的开发和运维工作奠定坚实的基础。</p>
+
+    <h3>2.1 需求分析示例</h3>
+    <div class="code-file">Python（需求分析工作流）</div>
+<pre><code class="language-python">from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class WorkflowStage:
+    """工作流阶段"""
+    name: str
+    description: str
+    ai_tools: List[str] = field(default_factory=list)
+    human_tasks: List[str] = field(default_factory=list)
+    deliverables: List[str] = field(default_factory=list)
+
+# 需求分析阶段
+stage = WorkflowStage(
+    name="需求分析",
+    description="明确功能需求和验收标准",
+    ai_tools=["需求文档生成", "用户故事转换"],
+    human_tasks=["需求确认", "优先级排序"],
+    deliverables=["PRD", "用户故事", "验收标准"]
+)</code></pre>
+
+    <h2>三、编码实现与测试验证</h2>
+    <p>编码实现是 AI 工具发挥最大价值的阶段。现代 AI 编码助手（如 Copilot、Cursor）能够在开发者编写代码时提供实时的补全建议，大幅提高编码速度。更先进的 AI 编码 Agent（如 Claude Code、Cline）甚至能够根据需求描述自主生成完整的代码文件，包括数据模型、业务逻辑和测试用例。</p>
+
+    <p>测试验证是确保代码质量的关键环节。AI 工具可以根据代码和业务逻辑自动生成测试用例，覆盖正常路径和异常路径。同时，AI 还能帮助定位 Bug——当测试失败时，AI 可以分析错误堆栈、变量状态和代码逻辑，提供可能的修复建议。这种"生成-测试-修复"的闭环大大缩短了开发周期。</p>
+
+    <h3>3.1 代码质量检查</h3>
+    <div class="code-file">Python（代码质量检查器）</div>
+<pre><code class="language-python">import re
+
+class CodeQualityChecker:
+    """代码质量检查"""
+    
+    RULES = {
+        "naming": "遵循 PEP 8 命名规范",
+        "typing": "函数签名包含类型注解",
+        "docstring": "所有公开函数有文档字符串",
+        "complexity": "圈复杂度 <= 10",
+        "coverage": "测试覆盖率 >= 80%",
+    }
+    
+    def check(self, code: str):
+        results = {}
+        
+        has_snake = bool(re.search(
+            r'def [a-z_]+\(', code))
+        results["naming"] = {"passed": has_snake}
+        
+        has_type_hints = bool(re.search(
+            r'def \w+\([^)]*:\s*\w+', code))
+        results["typing"] = {"passed": has_type_hints}
+        
+        has_docstring = bool(re.search(
+            r'""".*?"""', code, re.DOTALL))
+        results["docstring"] = {"passed": has_docstring}
+        
+        return results</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">代码质量检查维度</text>
+            
+            <rect x="30" y="50" width="140" height="50" rx="8" fill="#10b981"/>
+            <text x="100" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">命名规范</text>
+            <text x="100" y="88" text-anchor="middle" fill="white" font-size="8">PEP 8 snake_case</text>
+            
+            <rect x="190" y="50" width="140" height="50" rx="8" fill="#3b82f6"/>
+            <text x="260" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">类型注解</text>
+            <text x="260" y="88" text-anchor="middle" fill="white" font-size="8">函数签名完整</text>
+            
+            <rect x="350" y="50" width="140" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="420" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">文档字符串</text>
+            <text x="420" y="88" text-anchor="middle" fill="white" font-size="8">函数有 docstring</text>
+            
+            <rect x="510" y="50" width="120" height="50" rx="8" fill="#f59e0b"/>
+            <text x="570" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">圈复杂度</text>
+            <text x="570" y="88" text-anchor="middle" fill="white" font-size="8"><= 10</text>
+            
+            <rect x="650" y="50" width="100" height="50" rx="8" fill="#ef4444"/>
+            <text x="700" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">测试覆盖</text>
+            <text x="700" y="88" text-anchor="middle" fill="white" font-size="8">>= 80%</text>
+        </svg>
+    </div>
+
+    <h2>四、代码审查与部署上线</h2>
+    <p>代码审查是确保代码质量的最后一道防线。在 AI 辅助工作流中，代码审查分为两个层次：AI 自动审查和人工审查。AI 自动审查包括静态分析、代码规范检查、安全漏洞扫描等，可以自动发现常见的问题。人工审查则关注业务逻辑的正确性、架构设计的一致性和代码可读性等方面。通过 AI + 人工的双重审查机制，可以在保证审查效率的同时，确保代码的质量和安全性。在实际操作中，建议将 AI 审查作为第一道关卡，只有通过 AI 审查的代码才能进入人工审查环节，这样可以大幅提高审查效率。</p>
+
+    <p>部署上线阶段，AI 工具可以帮助生成部署脚本、配置监控告警、编写运维文档等。结合 CI/CD 流水线，可以实现从代码提交到部署上线的全自动化流程。在这个流程中，AI 负责生成配置和脚本，人类负责审批和监控，确保部署的安全性和可靠性。同时，建议设置灰度发布策略，先在小范围内验证新版本的功能和性能，确认无误后再逐步扩大发布范围，降低部署风险。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="100" viewBox="0 0 780 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">双重代码审查流程</text>
+            
+            <rect x="30" y="50" width="160" height="35" rx="6" fill="#3b82f6"/>
+            <text x="110" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AI 自动审查</text>
+            
+            <line x1="190" y1="67" x2="250" y2="67" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="250" y="50" width="160" height="35" rx="6" fill="#8b5cf6"/>
+            <text x="330" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AI 通过？</text>
+            
+            <line x1="410" y1="67" x2="470" y2="67" stroke="#10b981" stroke-width="2"/>
+            <text x="440" y="60" text-anchor="middle" fill="#10b981" font-size="8">是</text>
+            
+            <rect x="470" y="50" width="160" height="35" rx="6" fill="#10b981"/>
+            <text x="550" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">人工审查</text>
+            
+            <line x1="630" y1="67" x2="690" y2="67" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="690" y="50" width="70" height="35" rx="6" fill="#f59e0b"/>
+            <text x="725" y="72" text-anchor="middle" fill="white" font-size="10" font-weight="bold">合并</text>
+        </svg>
+    </div>
+
+    <h3>4.1 部署工作流</h3>
+    <div class="code-file">YAML（CI/CD 配置示例）</div>
+<pre><code class="language-python">name: CI/CD Pipeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Tests
+        run: pytest --cov=src
+        
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Production
+        run: ./deploy.sh</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">CI/CD 自动化部署流程</text>
+            
+            <rect x="30" y="50" width="120" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="90" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">代码提交</text>
+            <text x="90" y="86" text-anchor="middle" fill="white" font-size="8">Git push</text>
+            
+            <line x1="150" y1="75" x2="190" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="50" width="120" height="50" rx="8" fill="#3b82f6"/>
+            <text x="250" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">自动化测试</text>
+            <text x="250" y="86" text-anchor="middle" fill="white" font-size="8">pytest + coverage</text>
+            
+            <line x1="310" y1="75" x2="350" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="50" width="120" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="410" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">代码审查</text>
+            <text x="410" y="86" text-anchor="middle" fill="white" font-size="8">AI + 人工</text>
+            
+            <line x1="470" y1="75" x2="510" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="50" width="120" height="50" rx="8" fill="#f59e0b"/>
+            <text x="570" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">构建打包</text>
+            <text x="570" y="86" text-anchor="middle" fill="white" font-size="8">Docker image</text>
+            
+            <line x1="630" y1="75" x2="670" y2="75" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="50" width="80" height="50" rx="8" fill="#10b981"/>
+            <text x="710" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">部署</text>
+            <text x="710" y="86" text-anchor="middle" fill="white" font-size="8">灰度发布</text>
+        </svg>
+    </div>
+
+    <h2>五、AI 辅助开发最佳实践</h2>
+    <p>在 AI 辅助开发工作流中，有几条核心的最佳实践值得遵循：需求驱动（先明确需求再开始编码）、AI 辅助编码（使用 Copilot/Cursor 补全代码）、代码审查（AI + 人工双重审查）、测试先行（先写测试再写实现）、小步提交（频繁提交，快速集成）、持续集成（自动化构建和测试）、可观测性（日志、监控、告警）、文档同步（代码和文档同步更新）。</p>
+
+    <table>
+        <thead>
+            <tr><th>最佳实践</th><th>描述</th><th>AI 工具</th><th>人工角色</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>需求驱动</strong></td><td>先明确需求再编码</td><td>需求文档生成</td><td>需求确认</td></tr>
+            <tr><td><strong>AI 辅助编码</strong></td><td>使用 AI 补全和生成代码</td><td>Copilot/Cursor</td><td>逻辑确认</td></tr>
+            <tr><td><strong>代码审查</strong></td><td>AI + 人工双重审查</td><td>静态分析</td><td>逻辑审查</td></tr>
+            <tr><td><strong>测试先行</strong></td><td>先写测试再写实现</td><td>测试用例生成</td><td>场景设计</td></tr>
+            <tr><td><strong>小步提交</strong></td><td>频繁提交，快速集成</td><td>Commit 消息生成</td><td>代码审查</td></tr>
+            <tr><td><strong>持续集成</strong></td><td>自动化构建和测试</td><td>CI/CD 配置</td><td>流程监控</td></tr>
+            <tr><td><strong>可观测性</strong></td><td>日志、监控、告警</td><td>监控配置</td><td>告警响应</td></tr>
+            <tr><td><strong>文档同步</strong></td><td>代码和文档同步更新</td><td>文档生成</td><td>内容审核</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="100" viewBox="0 0 780 100" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">AI 辅助开发核心原则</text>
+            
+            <rect x="30" y="45" width="160" height="40" rx="20" fill="#10b981"/>
+            <text x="110" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">人在回路 ✅</text>
+            
+            <rect x="210" y="45" width="160" height="40" rx="20" fill="#3b82f6"/>
+            <text x="290" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AI 建议 + 人确认</text>
+            
+            <rect x="390" y="45" width="160" height="40" rx="20" fill="#8b5cf6"/>
+            <text x="470" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">持续反馈 ✅</text>
+            
+            <rect x="570" y="45" width="180" height="40" rx="20" fill="#f59e0b"/>
+            <text x="660" y="70" text-anchor="middle" fill="white" font-size="10" font-weight="bold">自动化优先 ✅</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在实施 AI 辅助开发工作流时，建议从小处开始，逐步扩展。先从需求分析和编码实现两个阶段引入 AI 工具，验证效果后再扩展到测试验证和代码审查阶段。同时，建议建立团队的 AI 使用规范和最佳实践文档，确保团队成员对 AI 工具的使用有一致的理解和标准。定期回顾和优化工作流，根据团队反馈和工具更新持续改进。</p>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>AI 辅助开发工作流将传统的软件开发流程与 AI 工具深度集成，形成一个人机协作的开发模式。通过合理的分工——AI 负责重复性工作，人类负责创造性决策——可以显著提升开发效率和代码质量。六阶段工作流（需求分析、架构设计、编码实现、测试验证、代码审查、部署上线）提供了一个完整的框架，开发者可以根据项目需求灵活调整和应用。在实际项目中，建议逐步引入 AI 工具，从简单的代码补全开始，逐步扩展到测试生成、代码审查和自动化部署。通过持续的实践和优化，团队可以建立起高效的 AI 辅助开发体系，从而更好地应对未来的开发挑战。</p>
+
+    <p>在下一节 11.6 中，我们将通过实战项目，综合运用 Hermes Agent 和 Kiro IDE 构建一个完整的 AI 应用，将理论知识转化为实际编码能力。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

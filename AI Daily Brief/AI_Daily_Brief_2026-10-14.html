@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 行业资讯简报 2026年10月14日</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --heading: #f0f6fc;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #f0883e;
+  --accent4: #bc8cff;
+  --tag-domestic: #238636;
+  --tag-foreign: #1f6feb;
+  --tag-app: #f0883e;
+  --muted: #8b949e;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.65;
+  padding: 24px 16px;
+}
+.container { max-width: 860px; margin: 0 auto; }
+
+.header {
+  text-align: center;
+  padding: 32px 24px 24px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 28px;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+.header h1 { font-size: 28px; color: var(--heading); margin-bottom: 6px; letter-spacing: 1px; }
+.header .date { font-size: 15px; color: var(--accent); font-weight: 500; }
+.header .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.section { margin-bottom: 28px; }
+.section-title {
+  font-size: 20px; color: var(--heading); padding-bottom: 8px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+}
+.section-title .icon { font-size: 22px; }
+
+.today-brief {
+  background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--accent);
+  border-radius: 8px; padding: 16px 20px; margin-bottom: 28px; font-size: 15px;
+  line-height: 1.8; color: var(--text);
+}
+.today-brief strong { color: var(--heading); }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 18px 20px; margin-bottom: 14px; transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--accent); }
+.card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.card-header h3 { font-size: 16px; color: var(--heading); flex: 1; }
+.card-header .num {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  background: rgba(88,166,255,0.12); padding: 2px 8px; border-radius: 4px;
+}
+
+.tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; color: #fff; letter-spacing: 0.5px; }
+.tag.domestic { background: var(--tag-domestic); }
+.tag.foreign { background: var(--tag-foreign); }
+.tag.app-tag { background: var(--tag-app); }
+
+.keywords { font-size: 13px; color: var(--accent4); margin-bottom: 6px; }
+.keywords span { color: var(--muted); }
+
+.info { font-size: 14px; margin-bottom: 4px; padding-left: 2px; }
+.info-label { color: var(--muted); font-weight: 500; min-width: 48px; display: inline-block; }
+.info-content { color: var(--text); }
+
+.card-link {
+  display: inline-block; margin-top: 8px; font-size: 13px; color: var(--accent);
+  text-decoration: none; word-break: break-all;
+}
+.card-link:hover { text-decoration: underline; }
+
+.card.app-card { border-left: 3px solid var(--accent3); }
+
+.footer {
+  text-align: center; padding: 20px; margin-top: 24px;
+  border-top: 1px solid var(--border); font-size: 12px; color: var(--muted);
+}
+
+@media (max-width: 600px) { .header h1 { font-size: 22px; } .card { padding: 14px 16px; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>🤖 AI 行业资讯简报</h1>
+  <div class="date">2026 年 10 月 14 日 · 星期二</div>
+  <div class="subtitle">覆盖过去 24 小时全球 AI 重大动态 | 国内/国外 1:1 平衡</div>
+</div>
+
+<div class="today-brief">
+  <strong>📌 今日速览：</strong>
+Google 正式发布 Gemini 4 Argon 模型，输出上限突破 100 万词元，同步将 Antigravity AI 编程工具嵌入 Gemini 桌面端；OpenAI 一名沙特籍工程师因涉嫌在高管会议室秘密安装录音设备被 FBI 逮捕。国内方面，OPPO 与 Manus 达成合作，Find X10 系列将首发搭载 AI 智能体；英伟达拟再砸 20 亿美元加码欧洲 AI 基础设施。
+</div>
+
+<!-- Section 1: Models & Technology -->
+<div class="section">
+  <div class="section-title"><span class="icon">🧠</span> 一、大模型 & 技术</div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">1</span>
+      <span class="tag foreign">国外</span>
+      <h3>Google 发布 Gemini 4 Argon 模型，100 万词元输出上限</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>Gemini 4、超长输出、复杂推理</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">10 月 13 日 Google 正式发布 Gemini 4 Argon，为当前 Google 最强 AI 模型，支持最高 100 万词元输出，专攻最棘手复杂推理与代码任务。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">巩固 Google 在长上下文推理领域的领先地位，直接对标 OpenAI o 系列深度推理能力。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/601.htm" target="_blank">📎 https://www.ithome.com/1/012/601.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">2</span>
+      <span class="tag foreign">国外</span>
+      <h3>OpenAI 工程师因涉嫌秘密录制高管会议被 FBI 逮捕</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>OpenAI、安全事件、FBI</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">10 月 13 日，OpenAI 一名沙特籍工程师因涉嫌在高管会议室的电视 USB 端口插入录音设备被 FBI 逮捕，最高面临 5 年监禁。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">暴露 AI 头部企业内部安全管控漏洞，可能引发科技行业对内部威胁和保密协议合规的重新审视。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/653.htm" target="_blank">📎 https://www.ithome.com/1/012/653.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">3</span>
+      <span class="tag foreign">国外</span>
+      <h3>OpenAI GPT-6 Astra 视频生成长度从 1 分钟提升到 10 分钟</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>GPT-6 Astra、视频生成、长视频</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">OpenAI GPT-6 Astra 将 AI 视频生成时长从 1 分钟大幅提升至 10 分钟，标志着 AI 长视频生成进入实用阶段。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">10 分钟长视频能力使 AI 生成内容可覆盖短视频完整叙事，为影视、广告、教育等行业带来新生产力工具。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/639.htm" target="_blank">📎 https://www.ithome.com/1/012/639.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">4</span>
+      <span class="tag foreign">国外</span>
+      <h3>Google Antigravity AI 编程工具正式嵌入 Gemini 桌面应用</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>Google Antigravity、AI 编程、Gemini 应用</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">Google 将 Antigravity 的 Agentic 编码界面直接嵌入 macOS 版 Gemini 应用，仅面向 AI Ultra 订阅用户开放。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">Google 将 AI 编程工具产品化并捆绑订阅，直接对标 GitHub Copilot 和 Cursor 的 AI 编程体验。</span></div>
+    <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">📎 The Verge · AI 频道页</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">5</span>
+      <span class="tag domestic">国内</span>
+      <h3>OPPO 携手 Manus，Find X10 首发搭载下一代 AI 智能体</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>OPPO、Manus、AI 智能体、ColorOS 17</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">10 月 13 日 OPPO 宣布与 Manus 达成合作，将 Manus 智能体能力集成至 AI Mind Pilot，首发搭载于 Find X10 系列（预装 ColorOS 17），支持多步骤任务拆解与本地文件处理。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">标志国产手机从 AI 问答助手向真正 Agentic AI 跃迁，Manus 借 OEM 渠道加速落地消费端。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/656.htm" target="_blank">📎 https://www.ithome.com/1/012/656.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">6</span>
+      <span class="tag domestic">国内</span>
+      <h3>黄仁勋加码欧洲 AI：英伟达拟再投资 20 亿美元</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>英伟达、欧洲、AI 基建、20 亿美元</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">英伟达计划再向欧洲 AI 基础设施投资 20 亿美元，持续扩大欧洲算力布局。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">在中美 AI 竞争加剧背景下，英伟达通过欧洲投资对冲地缘风险，同时拓展数据中心与 GPU 需求增量市场。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/651.htm" target="_blank">📎 https://www.ithome.com/1/012/651.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">7</span>
+      <span class="tag domestic">国内</span>
+      <h3>微信上线"绿泡泡短剧"，内置 AI 剧栏目</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>微信、AI 短剧、腾讯、免费内容</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">腾讯在微信小程序上线"绿泡泡短剧"，主打"免费好剧"，设有"AI 剧""真人剧"等栏目，剧集全部免费但插播广告。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">腾讯将 AI 生成内容纳入微信内容生态，AI 短剧成为新的流量入口。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/670.htm" target="_blank">📎 https://www.ithome.com/1/012/670.htm</a>
+  </div>
+</div>
+
+<!-- Section 2: Products & Business -->
+<div class="section">
+  <div class="section-title"><span class="icon">💼</span> 二、产品 & 商业</div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">8</span>
+      <span class="tag foreign">国外</span>
+      <h3>扎克伯格：Meta 承诺数千亿美元豪赌 AI，却一度对能否成功完全没把握</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>Meta、AI 投资、扎克伯格、不确定性</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">扎克伯格公开承认 Meta 曾对数千亿美元 AI 投资的成败"完全没把握"，但仍坚持投入。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">科技巨头在 AI 竞赛中的"不敢掉队"心态进一步公开化，资本开支压力可能持续推高行业估值泡沫。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/640.htm" target="_blank">📎 https://www.ithome.com/1/012/640.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">9</span>
+      <span class="tag foreign">国外</span>
+      <h3>Anthropic 硬刚美国政府 AI"供应链风险"认定，不服判决</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>Anthropic、供应链风险、政府监管</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">Anthropic 对美国政府将其 AI 系统认定为"供应链风险"的判决表示不服，正在积极抗争。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">AI 安全审查的独立性与企业自主权之争升级，可能推动行业建立更透明的第三方评估框架。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/630.htm" target="_blank">📎 https://www.ithome.com/1/012/630.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">10</span>
+      <span class="tag foreign">国外</span>
+      <h3>德勤调查：英国过半大企业未来一年打算用 AI 替代员工</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>AI 就业替代、德勤、英国企业</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">德勤最新调查显示，超过 50% 的英国大企业在未来一年内计划使用 AI 替代人类员工。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">AI 对就业市场的替代效应从技术讨论走向大规模企业决策，可能加速相关劳动法规改革。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/647.htm" target="_blank">📎 https://www.ithome.com/1/012/647.htm</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="num">11</span>
+      <span class="tag foreign">国外</span>
+      <h3>微软成立 XBOX Labs 新团队，AI 重新编译修改游戏获官方认可</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>微软 XBOX、AI 游戏、游戏编译</div>
+    <div class="info"><span class="info-label">核心：</span><span class="info-content">微软正式成立 XBOX Labs 新团队，利用 AI 技术重新编译和修改游戏，获高管公开支持。</span></div>
+    <div class="info"><span class="info-label">影响：</span><span class="info-content">AI 辅助游戏移植与优化可能大幅降低老游戏适配新平台的成本，加速跨平台发行。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/633.htm" target="_blank">📎 https://www.ithome.com/1/012/633.htm</a>
+  </div>
+</div>
+
+<!-- Section 3: AI Application Cases -->
+<div class="section">
+  <div class="section-title"><span class="icon">🚀</span> 三、AI 应用案例</div>
+
+  <div class="card app-card">
+    <div class="card-header">
+      <span class="tag app-tag">国内</span>
+      <h3>OPPO × Manus：手机端 AI 智能体落地，从问答到行动</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>Agentic AI、手机集成、多步任务、端侧推理</div>
+    <div class="info"><span class="info-label">场景：</span><span class="info-content"><strong>企业 AI 部署 / AI 产品商业化</strong> — OPPO 将 Manus AI 智能体集成至手机系统级 AI Mind Pilot，用户只需一句指令即可拆解多步任务（如从各 App 提取机票酒店信息生成旅行方案），本地文件直接处理，云端处理需用户授权。端侧模型保障数据不出设备。</span></div>
+    <div class="info"><span class="info-label">意义：</span><span class="info-content">这是 AI Agent 首次大规模落地消费级手机，将"AI 助手"升级为"AI 执行者"。端侧+云端混合架构兼顾隐私与能力。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/656.htm" target="_blank">📎 https://www.ithome.com/1/012/656.htm</a>
+  </div>
+
+  <div class="card app-card">
+    <div class="card-header">
+      <span class="tag app-tag">国内</span>
+      <h3>腾讯微信"绿泡泡短剧"：AI 生成内容进入国民级 App 内容生态</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>AI 短剧、内容生态、微信入口</div>
+    <div class="info"><span class="info-label">场景：</span><span class="info-content"><strong>AI+本地生活 / 内容商业化</strong> — 腾讯在微信小程序上线"绿泡泡短剧"，专门设置"AI 剧"栏目，与真人剧并列。剧集全部免费、插播广告，采用 AI 生成视频+AI 编排叙事模式。</span></div>
+    <div class="info"><span class="info-label">意义：</span><span class="info-content">AI 生成视频内容首次进入微信亿级用户入口，从"技术演示"走向"商业内容产品"，验证了 AI 内容在消费端的可规模化生产与变现路径。</span></div>
+    <a class="card-link" href="https://www.ithome.com/1/012/670.htm" target="_blank">📎 https://www.ithome.com/1/012/670.htm</a>
+  </div>
+
+  <div class="card app-card">
+    <div class="card-header">
+      <span class="tag app-tag">国外</span>
+      <h3>Deezer 上线 AI 音乐过滤开关：用户自主选择是否听 AI 歌</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>AI 音乐、用户控制、内容筛选</div>
+    <div class="info"><span class="info-label">场景：</span><span class="info-content"><strong>AI 替代/增强人力</strong> — 流媒体平台 Deezer 将在年内上线"AI 音乐过滤"开关，用户可一键排除 AI 生成的曲目、专辑及相关艺术家。此前 Deezer 已上线 AI 音乐检测工具应对平台 AI 歌曲激增。</span></div>
+    <div class="info"><span class="info-label">意义：</span><span class="info-content">首家主流流媒体平台将 AI 内容选择权交给用户，标志着 AI 生成内容从"被动接受"走向"用户主动筛选"，可能成为行业标配功能。</span></div>
+    <a class="card-link" href="https://newsroom-deezer.com/2026/10/deezer-ai-music-toggle/" target="_blank">📎 Deezer Newsroom · AI Music Toggle</a>
+  </div>
+
+  <div class="card app-card">
+    <div class="card-header">
+      <span class="tag app-tag">国外</span>
+      <h3>Shopify 开放 AI Agent 购物：更多 AI 智能体可访问商品目录并完成交易</h3>
+    </div>
+    <div class="keywords"><span>关键词：</span>AI Agent、电商、自动化购物</div>
+    <div class="info"><span class="info-label">场景：</span><span class="info-content"><strong>AI 产品商业化 / 企业 AI 部署</strong> — Shopify 宣布向更多 AI Agent 开放其商品目录和结账能力，此前已与 Meta Muse 合作推出 AI 购物功能。AI 代理可直接浏览商品、完成购买流程，无需人工干预。</span></div>
+    <div class="info"><span class="info-label">意义：</span><span class="info-content">电商从"人类消费"扩展到"AI Agent 消费"，开辟新的交易维度。随着 AI Agent 数量增长，Shopify 可能成为 AI 自主购物的基础设施层。</span></div>
+    <a class="card-link" href="https://www.theverge.com/ai-artificial-intelligence" target="_blank">📎 The Verge · Shopify AI Agents</a>
+  </div>
+</div>
+
+<div class="footer">
+  <p>📰 数据来源：IT之家、The Verge、Deezer Newsroom | 所有链接已通过 curl 验证 (HTTP 200) | 新闻时间范围：2026-10-13 至 2026-10-14</p>
+  <p style="margin-top: 6px;">AI 行业资讯简报 · 每日更新 · 国内/国外 1:1 平衡</p>
+</div>
+
+</div>
+</body>
+</html>

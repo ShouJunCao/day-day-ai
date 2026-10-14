@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11.2 AI 编码 Agent（Claude Code、Codex CLI、OpenCode、Kiro） — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>11.2 AI 编码 Agent（Claude Code、Codex CLI、OpenCode、Kiro）</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十一：AI Agent 开发工具与 IDE</span>
+        <span class="tag tag-time">预计学习：50 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>了解 Claude Code、Codex CLI、OpenCode、Kiro 四大编码 Agent</li>
+        <li>掌握终端驱动型 Agent 的工作原理和使用方法</li>
+        <li>学会根据安全需求和开发场景选择合适的编码 Agent</li>
+        <li>理解 Agent 编码与传统编码助手的本质差异</li>
+    </ul>
+
+    <h2>一、从编码助手到编码 Agent</h2>
+    <p>AI 编码工具正在经历从"助手"到"Agent"的根本性转变。传统的编码助手（如 GitHub Copilot 的补全模式）是被动式的——开发者输入代码，助手提供建议，开发者决定是否接受。而编码 Agent 是主动式的——开发者给出任务描述，Agent 自主规划、执行、验证，最终交付结果。这种转变代表了 AI 在软件开发中参与程度的质的飞跃，从辅助工具升级为协作者。</p>
+
+    <p>这种转变的核心在于 Agent 获得了操作系统的控制权。编码 Agent 不仅可以生成代码，还能读写文件、运行终端命令、执行测试、提交 Git 变更。这使得 Agent 能够独立完成完整的开发任务，而不只是提供行级建议。Claude Code、Codex CLI、OpenCode 和 Kiro Agent 代表了这一波编码 Agent 浪潮中的主要产品，它们各自有不同的设计理念和功能侧重。</p>
+
+    <p>编码 Agent 的工作流程通常包括四个阶段：理解需求（分析用户的任务描述）、规划方案（制定实现步骤）、执行代码（读写文件、运行命令）、验证结果（运行测试、检查输出）。每个阶段都可能需要多次迭代，Agent 会根据验证结果调整实现方案。这种迭代式的开发方式与人类的编程思维非常相似，使得 Agent 能够处理越来越复杂的开发任务。</p>
+
+    <h3>1.1 Agent 编码工作流</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">编码 Agent 四阶段工作流</text>
+            
+            <!-- 理解 -->
+            <rect x="30" y="55" width="160" height="55" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">1. 理解需求</text>
+            <text x="110" y="100" text-anchor="middle" fill="white" font-size="9">分析任务描述</text>
+            
+            <line x1="190" y1="82" x2="230" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 规划 -->
+            <rect x="230" y="55" width="160" height="55" rx="8" fill="#8b5cf6"/>
+            <text x="310" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">2. 规划方案</text>
+            <text x="310" y="100" text-anchor="middle" fill="white" font-size="9">制定实现步骤</text>
+            
+            <line x1="390" y1="82" x2="430" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 执行 -->
+            <rect x="430" y="55" width="160" height="55" rx="8" fill="#3b82f6"/>
+            <text x="510" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">3. 执行代码</text>
+            <text x="510" y="100" text-anchor="middle" fill="white" font-size="9">文件读写/运行</text>
+            
+            <line x1="590" y1="82" x2="630" y2="82" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 验证 -->
+            <rect x="630" y="55" width="120" height="55" rx="8" fill="#10b981"/>
+            <text x="690" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="bold">4. 验证结果</text>
+            <text x="690" y="100" text-anchor="middle" fill="white" font-size="9">测试/检查</text>
+            
+            <!-- 循环 -->
+            <path d="M 690 110 L 690 150 L 310 150 L 310 110" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <text x="500" y="160" text-anchor="middle" fill="#ef4444" font-size="9">失败 → 调整方案 → 重新执行</text>
+            
+            <!-- 成功 -->
+            <line x1="690" y1="110" x2="690" y2="130" stroke="#10b981" stroke-width="2"/>
+            <text x="710" y="130" text-anchor="start" fill="#10b981" font-size="9">成功 → 交付</text>
+        </svg>
+    </div>
+
+    <h2>二、Claude Code</h2>
+    <p>Claude Code 是 Anthropic 推出的终端驱动编码 Agent。它通过 CLI 界面与开发者交互，能够在终端环境中自主执行编码任务。Claude Code 基于 Claude Sonnet 4 和 Claude Opus 4 模型，具备强大的代码理解和生成能力。它的核心优势在于 Claude 模型本身的代码能力和 Anthropic 在安全性方面的深厚积累。</p>
+
+    <p>在实际使用中，Claude Code 可以完成多种编码任务：创建新项目、添加功能、修复 Bug、重构代码、编写测试等。开发者只需要在终端中描述需求，Claude Code 就会自主分析项目结构、规划实现方案、编写代码并运行测试验证。整个过程不需要开发者手动干预，除非遇到需要确认的决策点。</p>
+
+    <h3>2.1 Claude Code 使用示例</h3>
+    <div class="code-file">Terminal（Claude Code 交互）</div>
+<pre><code class="language-python"># 在终端中启动 Claude Code
+$ claude
+
+# 用户输入:
+> 为项目添加用户注册功能，使用 FastAPI 框架
+
+# Claude Code 自主执行:
+# 1. 分析项目结构
+# 2. 创建 models/user.py
+# 3. 创建 routes/register.py
+# 4. 创建 tests/test_register.py
+# 5. 运行 pytest 验证
+# 6. 报告完成状态</code></pre>
+
+    <h3>2.2 Claude Code 能力边界</h3>
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Claude Code 能力范围</text>
+            
+            <rect x="30" y="50" width="140" height="70" rx="8" fill="#10b981"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">代码生成</text>
+            <text x="100" y="92" text-anchor="middle" fill="white" font-size="8">Python/JS/TS</text>
+            <text x="100" y="106" text-anchor="middle" fill="white" font-size="8">多语言支持</text>
+            
+            <rect x="190" y="50" width="140" height="70" rx="8" fill="#3b82f6"/>
+            <text x="260" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">文件操作</text>
+            <text x="260" y="92" text-anchor="middle" fill="white" font-size="8">创建/修改/删除</text>
+            <text x="260" y="106" text-anchor="middle" fill="white" font-size="8">多文件编辑</text>
+            
+            <rect x="350" y="50" width="140" height="70" rx="8" fill="#8b5cf6"/>
+            <text x="420" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">终端执行</text>
+            <text x="420" y="92" text-anchor="middle" fill="white" font-size="8">运行命令</text>
+            <text x="420" y="106" text-anchor="middle" fill="white" font-size="8">测试验证</text>
+            
+            <rect x="510" y="50" width="140" height="70" rx="8" fill="#f59e0b"/>
+            <text x="580" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Git 操作</text>
+            <text x="580" y="92" text-anchor="middle" fill="white" font-size="8">提交/分支</text>
+            <text x="580" y="106" text-anchor="middle" fill="white" font-size="8">PR 创建</text>
+            
+            <rect x="670" y="50" width="80" height="70" rx="8" fill="#ef4444"/>
+            <text x="710" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">代码审查</text>
+            <text x="710" y="92" text-anchor="middle" fill="white" font-size="8">分析改进</text>
+            <text x="710" y="106" text-anchor="middle" fill="white" font-size="8">最佳实践</text>
+        </svg>
+    </div>
+
+    <h2>三、Codex CLI</h2>
+    <p>Codex CLI 是 OpenAI 推出的命令行编码 Agent，基于 GPT-4o、o1 和 o3 模型。与其他 Agent 相比，Codex CLI 最大的特色是安全沙箱机制——所有的代码执行都在隔离的环境中进行，防止恶意代码或意外操作对系统造成损害。这种安全优先的设计理念使得 Codex CLI 特别适合企业级应用。</p>
+
+    <p>Codex CLI 的功能包括代码生成、代码审查、Bug 修复和文档生成。它能够理解复杂的项目结构，根据开发者的需求生成高质量的代码。安全沙箱确保即使生成了有问题的代码，也不会对开发环境造成实际影响。同时，Codex CLI 的代码审查功能可以分析现有代码，发现潜在问题并提供改进建议。</p>
+
+    <h2>四、OpenCode</h2>
+    <p>OpenCode 是一个开源的终端编码 Agent，支持多种后端模型（包括 Claude、GPT-4 和本地模型）。作为开源项目，OpenCode 的最大优势是灵活性和可定制性——开发者可以根据自己的需求修改 Agent 的行为、添加自定义规则、甚至替换底层模型。这种开放性使得 OpenCode 成为了社区中最受欢迎的编码 Agent 之一，并且拥有一个活跃的开发者社区持续贡献新的功能。</p>
+
+    <p>OpenCode 支持自定义规则系统，开发者可以为项目定义编码规范、命名约定、架构约束等规则。Agent 在生成代码时会自动遵循这些规则，确保生成的代码与项目风格一致。同时，OpenCode 的开源性质意味着社区可以持续贡献新的功能和改进，使其功能不断增强。这种社区驱动的开发模式使得 OpenCode 能够快速响应用户需求，并保持与最新技术的同步。</p>
+
+    <p>在实际使用中，OpenCode 特别适合需要高度定制的场景。开发者可以创建项目特定的规则文件，定义代码风格、导入顺序、类型注解要求等。Agent 会根据这些规则生成符合项目规范的代码，减少后期代码审查的工作量。同时，OpenCode 支持本地模型部署，对于数据敏感的项目，可以在不依赖外部 API 的情况下使用编码 Agent。</p>
+
+    <h3>4.1 OpenCode 自定义规则</h3>
+    <div class="code-file">YAML（OpenCode 规则配置）</div>
+<pre><code class="language-python"># opencode-rules.yaml
+rules:
+  - name: "命名规范"
+    pattern: "snake_case"
+    apply_to: ["functions", "variables"]
+  
+  - name: "类型注解"
+    required: true
+    apply_to: ["function_signatures"]
+  
+  - name: "文档字符串"
+    required: true
+    style: "google"
+  
+  - name: "最大行长度"
+    max_length: 88</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">四大编码 Agent 定位对比</text>
+            
+            <!-- Claude Code -->
+            <rect x="30" y="55" width="170" height="85" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="115" y="78" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">Claude Code</text>
+            <text x="115" y="98" text-anchor="middle" fill="#b45309" font-size="9">Claude Sonnet/Opus 4</text>
+            <text x="115" y="114" text-anchor="middle" fill="#b45309" font-size="9">终端驱动 · 强代码力</text>
+            <text x="115" y="130" text-anchor="middle" fill="#b45309" font-size="9">$20/月</text>
+            
+            <!-- Codex CLI -->
+            <rect x="220" y="55" width="170" height="85" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="305" y="78" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">Codex CLI</text>
+            <text x="305" y="98" text-anchor="middle" fill="#2563eb" font-size="9">GPT-4o / o1 / o3</text>
+            <text x="305" y="114" text-anchor="middle" fill="#2563eb" font-size="9">安全沙箱 · 代码审查</text>
+            <text x="305" y="130" text-anchor="middle" fill="#2563eb" font-size="9">$200/月</text>
+            
+            <!-- OpenCode -->
+            <rect x="410" y="55" width="170" height="85" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="495" y="78" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">OpenCode</text>
+            <text x="495" y="98" text-anchor="middle" fill="#059669" font-size="9">多模型 · 开源</text>
+            <text x="495" y="114" text-anchor="middle" fill="#059669" font-size="9">自定义规则 · 灵活</text>
+            <text x="495" y="130" text-anchor="middle" fill="#059669" font-size="9">免费</text>
+            
+            <!-- Kiro -->
+            <rect x="600" y="55" width="150" height="85" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="675" y="78" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">Kiro Agent</text>
+            <text x="675" y="98" text-anchor="middle" fill="#7c3aed" font-size="9">Claude / Nova</text>
+            <text x="675" y="114" text-anchor="middle" fill="#7c3aed" font-size="9">Specs 驱动 · IDE</text>
+            <text x="675" y="130" text-anchor="middle" fill="#7c3aed" font-size="9">免费（开发者版）</text>
+        </svg>
+    </div>
+
+    <h2>五、Kiro Agent</h2>
+    <p>Kiro Agent 是 AWS 推出的 IDE 级编码 Agent，它与 Kiro IDE 深度集成。Kiro 的核心创新是 Specs 驱动开发——开发者首先定义规格说明（Spec），然后 Agent 根据 Spec 自主实现代码。这种方法将需求定义和代码实现解耦，使得开发过程更加结构化和可控。</p>
+
+    <p>Specs 驱动的工作流程是：定义需求（描述功能和验收标准） → 生成任务（将需求转换为开发任务） → Agent 执行（Agent 读取 Spec 并实现代码） → 验证验收（自动检查是否满足验收标准）。这种结构化的方法特别适合团队协作和复杂项目的开发。</p>
+
+    <h3>5.1 Kiro Agent 代码生成</h3>
+    <div class="code-file">Python（Kiro Agent 生成的数据模型）</div>
+<pre><code class="language-python">from sqlalchemy import Column, Integer, String, DateTime
+from datetime import datetime
+
+class User(Base):
+    """用户数据模型"""
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(Integer, default=1)</code></pre>
+
+    <h2>六、工具对比与选择</h2>
+    <p>四款编码 Agent 各有侧重，选择哪款取决于你的具体需求：如果你追求代码质量和终端体验，Claude Code 是最佳选择；如果安全是首要考虑，Codex CLI 的沙箱机制提供了最强的保护；如果需要最大的灵活性，开源的 OpenCode 允许完全定制；如果偏好结构化的开发流程，Kiro 的 Specs 驱动方法能带来更好的项目组织。理解每款工具的定位和优势，是做出正确选择的关键。</p>
+
+    <h3>6.1 安全机制对比</h3>
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">编码 Agent 安全机制对比</text>
+            
+            <rect x="30" y="55" width="170" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="115" y="78" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">Claude Code</text>
+            <text x="115" y="98" text-anchor="middle" fill="#b45309" font-size="8">Anthropic 宪法 AI</text>
+            <text x="115" y="112" text-anchor="middle" fill="#b45309" font-size="8">行为约束</text>
+            
+            <rect x="220" y="55" width="170" height="65" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="305" y="78" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="bold">Codex CLI</text>
+            <text x="305" y="98" text-anchor="middle" fill="#2563eb" font-size="8">安全沙箱隔离</text>
+            <text x="305" y="112" text-anchor="middle" fill="#2563eb" font-size="8">最强保护</text>
+            
+            <rect x="410" y="55" width="170" height="65" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="495" y="78" text-anchor="middle" fill="#065f46" font-size="10" font-weight="bold">OpenCode</text>
+            <text x="495" y="98" text-anchor="middle" fill="#059669" font-size="8">开源审计</text>
+            <text x="495" y="112" text-anchor="middle" fill="#059669" font-size="8">社区验证</text>
+            
+            <rect x="600" y="55" width="150" height="65" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="675" y="78" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="bold">Kiro Agent</text>
+            <text x="675" y="98" text-anchor="middle" fill="#7c3aed" font-size="8">Specs 约束</text>
+            <text x="675" y="112" text-anchor="middle" fill="#7c3aed" font-size="8">验收标准</text>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>维度</th><th>Claude Code</th><th>Codex CLI</th><th>OpenCode</th><th>Kiro</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>类型</strong></td><td>CLI</td><td>CLI</td><td>CLI</td><td>IDE</td></tr>
+            <tr><td><strong>模型</strong></td><td>Claude 4</td><td>GPT-4o/o1/o3</td><td>多模型</td><td>Claude/Nova</td></tr>
+            <tr><td><strong>价格</strong></td><td>$20/月</td><td>$200/月</td><td>免费</td><td>免费</td></tr>
+            <tr><td><strong>安全沙箱</strong></td><td>❌</td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr><td><strong>开源</strong></td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr>
+            <tr><td><strong>Specs 驱动</strong></td><td>❌</td><td>❌</td><td>❌</td><td>✅</td></tr>
+            <tr><td><strong>自定义规则</strong></td><td>有限</td><td>有限</td><td>✅</td><td>有限</td></tr>
+            <tr><td><strong>Git 操作</strong></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">编码 Agent 选择指南</text>
+            
+            <rect x="30" y="55" width="170" height="65" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="115" y="78" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">追求代码质量？</text>
+            <text x="115" y="98" text-anchor="middle" fill="#b45309" font-size="10">→ Claude Code</text>
+            <text x="115" y="112" text-anchor="middle" fill="#b45309" font-size="8">最强代码理解能力</text>
+            
+            <rect x="220" y="55" width="170" height="65" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="305" y="78" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="bold">安全第一？</text>
+            <text x="305" y="98" text-anchor="middle" fill="#2563eb" font-size="10">→ Codex CLI</text>
+            <text x="305" y="112" text-anchor="middle" fill="#2563eb" font-size="8">沙箱隔离保护</text>
+            
+            <rect x="410" y="55" width="170" height="65" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="495" y="78" text-anchor="middle" fill="#065f46" font-size="10" font-weight="bold">需要定制？</text>
+            <text x="495" y="98" text-anchor="middle" fill="#059669" font-size="10">→ OpenCode</text>
+            <text x="495" y="112" text-anchor="middle" fill="#059669" font-size="8">开源免费可定制</text>
+            
+            <rect x="600" y="55" width="150" height="65" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="675" y="78" text-anchor="middle" fill="#5b21b6" font-size="10" font-weight="bold">结构化开发？</text>
+            <text x="675" y="98" text-anchor="middle" fill="#7c3aed" font-size="10">→ Kiro</text>
+            <text x="675" y="112" text-anchor="middle" fill="#7c3aed" font-size="8">Specs 驱动流程</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>对于个人开发者，建议从 OpenCode 或 Kiro 开始——它们都是免费的，并且功能强大。Claude Code 适合对代码质量有高要求的场景，Codex CLI 适合企业级安全敏感项目。建议同时安装多个 Agent，根据不同的任务类型灵活切换：用 Claude Code 处理核心业务逻辑，用 OpenCode 处理日常编码，用 Kiro 管理结构化项目。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>AI 编码 Agent 代表了软件开发工具的未来方向。Claude Code 以强大的代码能力树立了质量标杆，Codex CLI 以安全沙箱机制保护了企业应用，OpenCode 以开源灵活性赋能了社区创新，Kiro 以 Specs 驱动方法带来了结构化的开发流程。理解每款工具的特点，选择合适的工具组合，可以显著提升开发效率和代码质量。</p>
+
+    <p>在选择编码 Agent 时，建议从实际需求出发进行评估。对于个人项目，可以优先选择免费或低成本的工具（如 OpenCode 或 Kiro）来体验 Agent 编码的能力。对于团队项目，则应该综合考虑代码质量、安全性、协作性和成本等因素。建议先在小型项目或实验性任务中试用不同的 Agent，了解它们的工作方式和能力边界，然后再决定是否在核心项目中使用。</p>
+
+    <p>随着 AI 技术的快速发展，编码 Agent 的能力也在不断提升。建议持续关注社区动态和工具更新，及时调整自己的工具链。同时，也要认识到 Agent 编码仍然存在局限性——对于高度创新或需要深度架构设计的任务，人类的判断力和创造力仍然是不可替代的。最佳的开发模式是人类和 AI 的协作：人类负责架构设计和关键决策，Agent 负责实现细节和常规任务。</p>
+
+    <p>在下一节 11.3 中，我们将学习 Hermes Agent 的核心功能，包括 Skills、Memory、Cron 和多平台集成，了解如何构建和配置自己的 AI Agent 开发环境。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

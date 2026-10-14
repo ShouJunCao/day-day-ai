@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>11.3 Hermes Agent：Skills / Memory / Cron / 多平台集成 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>11.3 Hermes Agent：Skills / Memory / Cron / 多平台集成</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十一：AI Agent 开发工具与 IDE</span>
+        <span class="tag tag-time">预计学习：55 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 Hermes Agent 的核心架构和组件</li>
+        <li>掌握 Skills、Memory、Cron 三大系统的使用方法</li>
+        <li>学会配置多平台集成（Telegram、WhatsApp、Discord、Signal）</li>
+        <li>能够构建和配置自己的 AI Agent 开发环境</li>
+    </ul>
+
+    <h2>一、Hermes Agent 架构概述</h2>
+    <p>Hermes Agent 是由 Nous Research 开发的开源 AI Agent 框架。它提供了一个完整的 Agent 运行环境，包括技能系统（Skills）、记忆系统（Memory）、定时任务系统（Cron）和多平台集成能力。与其他 Agent 框架相比，Hermes 的优势在于其模块化设计和对多平台消息传递的原生支持。</p>
+
+    <p>Hermes Agent 的核心架构分为四个层次：技能层（Skills 定义了 Agent 的能力边界和行为模式）、记忆层（Memory 存储了 Agent 的持久化知识和上下文）、调度层（Cron 管理定时任务和自动化流程）、集成层（Platforms 连接了多个消息平台，实现跨平台的消息传递）。这四个层次相互协作，构成了一个完整的 Agent 运行环境。</p>
+
+    <p>在实际使用中，开发者可以通过配置文件自定义 Agent 的行为，通过创建 Skill 扩展 Agent 的能力，通过 Memory 存储重要的上下文信息，通过 Cron 实现自动化的定时任务。这种灵活的设计使得 Hermes 能够适应从个人助手到企业级应用的各种场景。</p>
+
+    <h3>1.1 Hermes 系统架构</h3>
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Hermes Agent 四层架构</text>
+            
+            <!-- 技能层 -->
+            <rect x="30" y="55" width="350" height="65" rx="10" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="205" y="80" text-anchor="middle" fill="#92400e" font-size="13" font-weight="bold">技能层（Skills）</text>
+            <text x="50" y="102" fill="#b45309" font-size="10">• 能力定义 • 行为模式 • 触发条件</text>
+            <text x="50" y="118" fill="#b45309" font-size="10">• 学习生成 • 代码调试 • 文档生成</text>
+            
+            <!-- 记忆层 -->
+            <rect x="400" y="55" width="350" height="65" rx="10" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="575" y="80" text-anchor="middle" fill="#1e40af" font-size="13" font-weight="bold">记忆层（Memory）</text>
+            <text x="420" y="102" fill="#2563eb" font-size="10">• 用户偏好 • 环境信息 • 工具特性</text>
+            <text x="420" y="118" fill="#2563eb" font-size="10">• 持久化存储 • 检索召回</text>
+            
+            <!-- 调度层 -->
+            <rect x="30" y="140" width="350" height="65" rx="10" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="205" y="165" text-anchor="middle" fill="#065f46" font-size="13" font-weight="bold">调度层（Cron）</text>
+            <text x="50" y="187" fill="#059669" font-size="10">• 定时任务 • 周期执行 • 自动交付</text>
+            <text x="50" y="203" fill="#059669" font-size="10">• AI 日报 • 热点监控 • 代码审查</text>
+            
+            <!-- 集成层 -->
+            <rect x="400" y="140" width="350" height="65" rx="10" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="575" y="165" text-anchor="middle" fill="#5b21b6" font-size="13" font-weight="bold">集成层（Platforms）</text>
+            <text x="420" y="187" fill="#7c3aed" font-size="10">• Telegram • WhatsApp • Discord</text>
+            <text x="420" y="203" fill="#7c3aed" font-size="10">• Signal • Web Chat • 多平台同步</text>
+        </svg>
+    </div>
+
+    <h2>二、Skills 系统</h2>
+    <p>Skills（技能）是 Hermes Agent 的能力定义系统。每个 Skill 包含一组步骤、触发条件和执行逻辑，定义了 Agent 在特定场景下应该如何行动。Skill 的核心价值在于将复杂的操作流程标准化和可重用化——当某个任务模式被多次执行并验证成功后，就可以将其保存为 Skill，供后续类似场景使用。</p>
+
+    <p>Skill 的触发基于语义匹配——当用户的请求与 Skill 的触发条件或描述相匹配时，Agent 会自动加载该 Skill 并遵循其定义的步骤执行。这种机制使得 Agent 能够在不同场景下自动选择合适的工具和方法，而不需要用户手动指定。</p>
+
+    <p>在实际项目中，建议将经常使用的复杂操作流程保存为 Skill。一个好的 Skill 应该包含明确的触发条件、清晰的步骤描述、注意事项和验证方法。通过不断积累和完善 Skill 库，可以显著提高 Agent 的自动化能力和响应质量。</p>
+
+    <h3>2.1 Skill 定义示例</h3>
+    <div class="code-file">Python（Skill 定义）</div>
+<pre><code class="language-python">@dataclass
+class Skill:
+    """Skill 定义"""
+    name: str           # 技能名称
+    category: str       # 分类
+    description: str    # 描述
+    trigger: str        # 触发场景
+    steps: List[str]    # 执行步骤
+
+# 示例: 学习内容生成 Skill
+SKILL = Skill(
+    name="learning-content-generation",
+    category="content-creation",
+    description="生成技术学习资料 HTML",
+    trigger="用户要求生成学习资料",
+    steps=[
+        "分析主题",
+        "编写内容",
+        "生成 SVG 图表",
+        "生成代码",
+        "自检"
+    ]
+)</code></pre>
+
+    <h2>三、Memory 系统</h2>
+    <p>Memory（记忆）是 Hermes Agent 的持久化知识存储系统。它保存了 Agent 在交互过程中学到的重要信息，包括用户偏好、环境配置、工具特性、项目约定等。记忆系统在每次对话开始时被加载到上下文中，使 Agent 能够记住之前学到的知识，而不需要用户重复说明。这种持久化记忆能力是 Agent 区别于普通聊天机器人的关键特征之一。</p>
+
+    <p>Memory 系统支持两种存储目标：user 存储关于用户的信息（姓名、偏好、风格等），memory 存储关于环境和工具的信息（项目配置、工具特性、经验教训等）。这种区分有助于 Agent 在不同场景下选择合适的记忆内容进行参考。例如，当用户提到"按照我的偏好生成文档"时，Agent 会从 user 记忆中检索相关的格式和风格偏好；当用户询问项目配置时，Agent 会从 memory 记忆中查找相关的技术栈和约定。</p>
+
+    <p>记忆的管理原则是精简和高效。由于记忆会在每次对话时被加载到上下文中，占用宝贵的 token 预算，因此应该只保存那些真正重要且稳定的信息。临时性的任务状态、进度信息等不应该保存到记忆中——这些应该通过会话检索（session_search）来获取。同时，应该定期清理过时或不再相关的记忆条目，确保记忆系统始终保持高质量和实用性。一条好的记忆应该是用户不需要重复说明就能让 Agent 理解其意图的关键信息。</p>
+
+    <h3>3.1 Memory 使用示例</h3>
+    <div class="code-file">Python（Memory 存储与检索）</div>
+<pre><code class="language-python">class MemoryStore:
+    """Memory 存储"""
+    
+    def add(self, content: str, target: str = "memory"):
+        """添加记忆"""
+        entry = {
+            "id": str(uuid.uuid4())[:8],
+            "content": content,
+            "target": target,
+            "created_at": datetime.now().isoformat()
+        }
+        self.entries.append(entry)
+        return entry
+    
+    def search(self, query: str):
+        """搜索记忆"""
+        return [
+            e for e in self.entries
+            if query.lower() in e["content"].lower()
+        ]</code></pre>
+
+    <h2>四、Cron 系统</h2>
+    <p>Cron 是 Hermes Agent 的定时任务系统。它允许用户创建周期性执行的任务，如每日 AI 简报、热点话题监控、代码审查提醒等。Cron 任务由 Agent 在指定时间自动执行，执行结果可以通过消息平台自动交付给用户。这种自动化能力使得 Hermes 不仅仅是一个被动的问答工具，更是一个主动的智能助手，能够在用户不在线时依然持续工作。</p>
+
+    <p>Cron 任务的调度格式支持多种表达方式：cron 表达式（如 "0 9 * * *" 表示每天 9 点）、间隔表达（如 "30m" 表示每 30 分钟、"every 2h" 表示每 2 小时）、ISO 时间戳（如 "2026-06-01T09:00:00" 表示一次性定时任务）。这种灵活的调度格式满足了不同场景的定时需求，从高频的实时监控到低频的定期报告生成，都可以通过 Cron 系统轻松实现。</p>
+
+    <p>在实际使用中，建议合理设置 Cron 任务的执行频率。过于频繁的任务会消耗大量的 API 配额和计算资源，而过于稀疏的任务可能无法及时响应变化。建议根据任务的重要性和数据变化的频率来设置执行间隔：对于关键监控任务，可以设置为每 30 分钟；对于日报类任务，每天执行一次即可；对于周报或月报，可以使用 cron 表达式在特定时间执行。同时，建议为每个 Cron 任务设置清晰的描述和交付目标，便于后续的管理和维护。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Cron 任务调度频率建议</text>
+            
+            <rect x="30" y="45" width="160" height="55" rx="8" fill="#ef4444"/>
+            <text x="110" y="68" text-anchor="middle" fill="white" font-size="10" font-weight="bold">高频监控</text>
+            <text x="110" y="88" text-anchor="middle" fill="white" font-size="9">30m ~ 1h</text>
+            
+            <rect x="210" y="45" width="160" height="55" rx="8" fill="#f59e0b"/>
+            <text x="290" y="68" text-anchor="middle" fill="white" font-size="10" font-weight="bold">中频检查</text>
+            <text x="290" y="88" text-anchor="middle" fill="white" font-size="9">every 2h ~ 6h</text>
+            
+            <rect x="390" y="45" width="160" height="55" rx="8" fill="#3b82f6"/>
+            <text x="470" y="68" text-anchor="middle" fill="white" font-size="10" font-weight="bold">日报生成</text>
+            <text x="470" y="88" text-anchor="middle" fill="white" font-size="9">0 9 * * *</text>
+            
+            <rect x="570" y="45" width="180" height="55" rx="8" fill="#10b981"/>
+            <text x="660" y="68" text-anchor="middle" fill="white" font-size="10" font-weight="bold">周报/月报</text>
+            <text x="660" y="88" text-anchor="middle" fill="white" font-size="9">0 9 * * 1 / 月首</text>
+        </svg>
+    </div>
+
+    <h3>4.1 Cron 任务配置</h3>
+    <div class="code-file">Python（Cron 任务管理）</div>
+<pre><code class="language-python">class CronManager:
+    """Cron 管理器"""
+    
+    def create(self, name: str, schedule: str, prompt: str):
+        """创建定时任务"""
+        job = CronJob(
+            name=name,
+            schedule=schedule,  # 如 "0 9 * * *"
+            prompt=prompt,       # 任务描述
+            enabled=True
+        )
+        self.jobs.append(job)
+        return job
+    
+    def enable(self, name: str):
+        """启用任务"""
+        for job in self.jobs:
+            if job.name == name:
+                job.enabled = True
+                return True
+        return False</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Cron 定时任务执行流程</text>
+            
+            <rect x="30" y="55" width="120" height="50" rx="8" fill="#10b981"/>
+            <text x="90" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">创建任务</text>
+            <text x="90" y="95" text-anchor="middle" fill="white" font-size="8">名称/调度/描述</text>
+            
+            <line x1="150" y1="80" x2="190" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="190" y="55" width="120" height="50" rx="8" fill="#f59e0b"/>
+            <text x="250" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">调度等待</text>
+            <text x="250" y="95" text-anchor="middle" fill="white" font-size="8">cron / 间隔</text>
+            
+            <line x1="310" y1="80" x2="350" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="350" y="55" width="120" height="50" rx="8" fill="#3b82f6"/>
+            <text x="410" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Agent 执行</text>
+            <text x="410" y="95" text-anchor="middle" fill="white" font-size="8">加载 Skill + 执行</text>
+            
+            <line x1="470" y1="80" x2="510" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="510" y="55" width="120" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="570" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">结果交付</text>
+            <text x="570" y="95" text-anchor="middle" fill="white" font-size="8">发送到平台</text>
+            
+            <line x1="630" y1="80" x2="670" y2="80" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="710" y="78" text-anchor="middle" fill="white" font-size="11" font-weight="bold">循环</text>
+            <text x="710" y="95" text-anchor="middle" fill="white" font-size="8">下一次调度</text>
+        </svg>
+    </div>
+
+    <h2>五、多平台集成</h2>
+    <p>Hermes Agent 支持多个消息平台的集成，包括 Telegram、WhatsApp、Discord、Signal 和 Web Chat。这种多平台能力使得用户可以在任何熟悉的平台上与 Agent 交互，而不需要切换到特定的应用。所有平台的消息都会路由到同一个 Agent 核心，确保一致的服务体验。这种架构设计既保证了用户的便利性，又降低了 Agent 的开发和维护成本——开发者只需要维护一个 Agent 核心，就可以服务多个平台的用户。</p>
+
+    <p>不同平台支持的功能有所不同：Telegram 支持最丰富的功能（文本、图片、语音、文件、群组、Inline Bot），WhatsApp 和 Discord 支持大部分核心功能，Signal 支持基本的文本和多媒体消息，Web Chat 则提供了完整的桌面体验（包括代码高亮和 Markdown 渲染）。用户可以根据自己的需求选择最适合的平台，也可以同时在多个平台上使用，享受跨平台的一致性体验。对于开发者来说，多平台集成还意味着更大的用户覆盖范围和更灵活的服务交付方式。</p>
+
+    <div class="diagram-container">
+        <svg width="780" height="120" viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">平台功能覆盖矩阵</text>
+            
+            <rect x="30" y="45" width="140" height="55" rx="8" fill="#0088cc"/>
+            <text x="100" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Telegram</text>
+            <text x="100" y="88" text-anchor="middle" fill="white" font-size="8">6 项功能全覆盖</text>
+            
+            <rect x="190" y="45" width="140" height="55" rx="8" fill="#25D366"/>
+            <text x="260" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">WhatsApp</text>
+            <text x="260" y="88" text-anchor="middle" fill="white" font-size="8">4 项核心功能</text>
+            
+            <rect x="350" y="45" width="140" height="55" rx="8" fill="#5865F2"/>
+            <text x="420" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Discord</text>
+            <text x="420" y="88" text-anchor="middle" fill="white" font-size="8">5 项功能支持</text>
+            
+            <rect x="510" y="45" width="120" height="55" rx="8" fill="#3A76F0"/>
+            <text x="570" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Signal</text>
+            <text x="570" y="88" text-anchor="middle" fill="white" font-size="8">3 项基础功能</text>
+            
+            <rect x="650" y="45" width="100" height="55" rx="8" fill="#4361ee"/>
+            <text x="700" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Web Chat</text>
+            <text x="700" y="88" text-anchor="middle" fill="white" font-size="8">桌面完整体验</text>
+        </svg>
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>平台</th><th>类型</th><th>文本</th><th>图片</th><th>语音</th><th>文件</th><th>群组</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Telegram</strong></td><td>消息</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+            <tr><td><strong>WhatsApp</strong></td><td>消息</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+            <tr><td><strong>Discord</strong></td><td>消息</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+            <tr><td><strong>Signal</strong></td><td>消息</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+            <tr><td><strong>Web Chat</strong></td><td>Web</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">多平台消息路由架构</text>
+            
+            <rect x="30" y="55" width="80" height="50" rx="6" fill="#0088cc"/>
+            <text x="70" y="80" text-anchor="middle" fill="white" font-size="9" font-weight="bold">Telegram</text>
+            
+            <rect x="30" y="110" width="80" height="25" rx="6" fill="#25D366"/>
+            <text x="70" y="127" text-anchor="middle" fill="white" font-size="7">WhatsApp</text>
+            
+            <line x1="110" y1="70" x2="170" y2="80" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="110" y1="122" x2="170" y2="85" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="170" y="65" width="100" height="50" rx="8" fill="#1a1a2e"/>
+            <text x="220" y="85" text-anchor="middle" fill="white" font-size="10" font-weight="bold">消息路由</text>
+            <text x="220" y="102" text-anchor="middle" fill="white" font-size="8">统一调度</text>
+            
+            <line x1="270" y1="90" x2="330" y2="90" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="330" y="55" width="160" height="70" rx="10" fill="#4361ee"/>
+            <text x="410" y="80" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Hermes Agent</text>
+            <text x="410" y="100" text-anchor="middle" fill="white" font-size="9">Skills + Memory</text>
+            <text x="410" y="116" text-anchor="middle" fill="white" font-size="9">+ Cron + Tools</text>
+            
+            <line x1="490" y1="90" x2="530" y2="90" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="530" y="55" width="100" height="70" rx="8" fill="#10b981"/>
+            <text x="580" y="78" text-anchor="middle" fill="white" font-size="10" font-weight="bold">LLM 后端</text>
+            <text x="580" y="95" text-anchor="middle" fill="white" font-size="8">DashScope</text>
+            <text x="580" y="110" text-anchor="middle" fill="white" font-size="8">Claude / GPT</text>
+            
+            <line x1="630" y1="90" x2="670" y2="90" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="670" y="55" width="80" height="70" rx="8" fill="#f59e0b"/>
+            <text x="710" y="85" text-anchor="middle" fill="white" font-size="10" font-weight="bold">结果返回</text>
+            <text x="710" y="105" text-anchor="middle" fill="white" font-size="8">原路返回</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在配置 Hermes Agent 时，建议先从一个平台（如 Telegram）开始，验证基本功能正常后再逐步添加其他平台。Skills 应该根据实际使用场景逐步积累——每当发现一个重复执行的操作模式，就考虑将其保存为 Skill。Memory 系统应该只保存真正重要且稳定的信息，避免上下文膨胀。Cron 任务应该设置合理的执行频率，避免过度消耗 API 配额。</p>
+    </div>
+
+    <h2>六、小结</h2>
+    <p>Hermes Agent 提供了一个完整的 AI Agent 开发框架。Skills 系统定义了 Agent 的能力边界，Memory 系统保存了重要的上下文知识，Cron 系统实现了自动化的定时任务，多平台集成确保了用户可以在任何熟悉的平台上与 Agent 交互。这四个核心组件相互配合，构成了一个灵活、强大且易用的 Agent 运行环境。</p>
+
+    <p>在下一节 11.4 中，我们将学习 Kiro IDE 的 Specs 驱动开发和 Agent 模式，了解如何通过规格说明来驱动代码生成和项目管理。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10.6 异常处理、超时与恢复机制 — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>10.6 异常处理、超时与恢复机制</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十：AI Agent 开发</span>
+        <span class="tag tag-time">预计学习：45 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>理解 Agent 执行中常见的异常类型和产生原因</li>
+        <li>掌握超时控制、重试机制和熔断器的实现方法</li>
+        <li>学会设计恢复策略以应对不同类型的错误</li>
+        <li>能够构建鲁棒性强的生产级 Agent 系统</li>
+    </ul>
+
+    <h2>一、异常处理概述</h2>
+    <p>在 Agent 的实际运行过程中，异常情况是不可避免的。常见的异常类型包括：网络异常（连接超时、DNS 解析失败）、API 异常（限流、认证失败、服务不可用）、工具异常（权限不足、资源不存在）、LLM 异常（模型超时、输出格式错误）。这些异常如果处理不当，会导致 Agent 执行中断或产生错误结果。</p>
+
+    <p>完善的异常处理机制是生产级 Agent 系统的必备条件。它不仅能够提高系统的可用性，还能在出现问题时提供清晰的错误信息，便于快速定位和修复。在设计异常处理机制时，需要考虑以下几个原则：快速失败（尽快识别并报告错误）、优雅降级（在部分功能不可用时仍能提供基本服务）、自动恢复（对临时性错误进行自动重试）、可观测性（记录详细的错误信息便于分析）。</p>
+
+    <p>在 Agent 开发中，异常处理应该贯穿整个执行链路：从工具调用层到 Agent 循环层，再到任务调度层，每一层都应该有相应的异常处理逻辑。通过分层处理，可以确保异常在不同层级得到恰当的响应，既不会过度处理简单错误，也不会遗漏严重问题。</p>
+
+    <h3>1.1 异常分类</h3>
+    <div class="diagram-container">
+        <svg width="780" height="200" viewBox="0 0 780 200" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">Agent 异常分类体系</text>
+            
+            <!-- 网络层 -->
+            <rect x="30" y="50" width="220" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="140" y="70" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">网络层异常</text>
+            <text x="50" y="95" fill="#b45309" font-size="9">连接超时、DNS 失败、TCP 重置</text>
+            
+            <!-- API 层 -->
+            <rect x="280" y="50" width="220" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="390" y="70" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">API 层异常</text>
+            <text x="300" y="95" fill="#2563eb" font-size="9">限流、认证失败、服务不可用</text>
+            
+            <!-- 工具层 -->
+            <rect x="530" y="50" width="220" height="60" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="640" y="70" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">工具层异常</text>
+            <text x="550" y="95" fill="#059669" font-size="9">权限不足、资源不存在、格式错误</text>
+            
+            <!-- LLM 层 -->
+            <rect x="155" y="130" width="220" height="60" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="265" y="150" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">LLM 层异常</text>
+            <text x="175" y="175" fill="#7c3aed" font-size="9">模型超时、输出格式错误、上下文超长</text>
+            
+            <!-- Agent 层 -->
+            <rect x="405" y="130" width="220" height="60" rx="8" fill="#f8fafc" stroke="#64748b"/>
+            <text x="515" y="150" text-anchor="middle" fill="#64748b" font-size="11" font-weight="bold">Agent 层异常</text>
+            <text x="425" y="175" fill="#999" font-size="9">循环无限、状态不一致、任务中断</text>
+        </svg>
+    </div>
+
+    <h2>二、超时控制</h2>
+    <p>超时控制是防止 Agent 无限期等待的关键机制。在 Agent 执行过程中，任何一步操作都可能因为网络问题、服务不可用等原因而长时间阻塞。如果没有超时控制，Agent 可能会陷入无限等待，浪费系统资源并影响用户体验。</p>
+
+    <p>超时控制应该设置在多个层级：工具调用层（单个工具执行的超时时间）、Agent 循环层（整个循环的超时时间）、任务调度层（整个任务的超时时间）。通过多层超时控制，可以在不同粒度上保护系统免受长时间阻塞的影响。</p>
+
+    <h3>2.1 超时控制器实现</h3>
+    <div class="code-file">Python（超时控制器）</div>
+<pre><code class="language-python">import time
+
+class TimeoutController:
+    """超时控制器"""
+    
+    def __init__(self, timeout_seconds=30.0):
+        self.timeout = timeout_seconds
+        self.start_time = None
+    
+    def __enter__(self):
+        self.start_time = time.time()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        elapsed = time.time() - self.start_time
+        if elapsed > self.timeout:
+            raise AgentTimeoutError(
+                f"执行超时: {elapsed:.1f}s > {self.timeout}s"
+            )
+        return False
+    
+    def check_timeout(self):
+        """在循环中主动检查超时"""
+        if self.start_time is None:
+            return False
+        elapsed = time.time() - self.start_time
+        if elapsed > self.timeout:
+            raise AgentTimeoutError(
+                f"执行超时: {elapsed:.1f}s > {self.timeout}s"
+            )
+        return False
+
+# 使用示例
+with TimeoutController(timeout_seconds=30.0) as tc:
+    for step in plan:
+        execute_step(step)
+        tc.check_timeout()</code></pre>
+
+    <h2>三、重试机制</h2>
+    <p>重试机制是处理临时性错误的常用策略。许多错误（如网络抖动、服务暂时不可用、限流）都是暂时性的，通过重试可以自动恢复。然而，重试策略的设计需要谨慎：过少的重试次数可能导致可恢复的错误被误判为永久错误，过多的重试次数则会浪费时间和资源。</p>
+
+    <p>推荐的重试策略是指数退避（Exponential Backoff），即每次重试的等待时间呈指数增长。这种策略既可以给服务足够的恢复时间，又可以避免在服务器高负载时进一步加重负担。同时，应该设置最大重试次数和总超时时间，防止无限重试。</p>
+
+    <h3>3.1 异常处理器实现</h3>
+    <div class="code-file">Python（异常处理器）</div>
+<pre><code class="language-python">class ExceptionHandler:
+    """异常处理器"""
+    
+    def __init__(self, exception_type, max_retries=3,
+                 retry_delay=1.0, fallback_action=None):
+        self.exception_type = exception_type
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.fallback_action = fallback_action
+
+    def handle(self, func, *args, **kwargs):
+        """执行带异常处理的函数"""
+        last_error = None
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                return func(*args, **kwargs)
+            except self.exception_type as e:
+                last_error = e
+                if attempt < self.max_retries:
+                    # 指数退避
+                    delay = self.retry_delay * (2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    print("重试次数耗尽")
+        
+        # 回退逻辑
+        if self.fallback_action:
+            return self.fallback_action(last_error)
+        
+        raise last_error</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">重试机制与指数退避</text>
+            
+            <!-- 时间轴 -->
+            <line x1="50" y1="100" x2="730" y2="100" stroke="#64748b" stroke-width="1"/>
+            
+            <!-- 第一次尝试 -->
+            <rect x="60" y="70" width="60" height="30" rx="4" fill="#3b82f6"/>
+            <text x="90" y="90" text-anchor="middle" fill="white" font-size="9">尝试 1</text>
+            
+            <!-- 失败 -->
+            <text x="120" y="90" text-anchor="middle" fill="#ef4444" font-size="11">✗</text>
+            
+            <!-- 等待 -->
+            <rect x="130" y="80" width="40" height="20" rx="4" fill="#f59e0b"/>
+            <text x="150" y="95" text-anchor="middle" fill="white" font-size="8">1s</text>
+            
+            <!-- 第二次尝试 -->
+            <rect x="170" y="70" width="60" height="30" rx="4" fill="#3b82f6"/>
+            <text x="200" y="90" text-anchor="middle" fill="white" font-size="9">尝试 2</text>
+            
+            <text x="230" y="90" text-anchor="middle" fill="#ef4444" font-size="11">✗</text>
+            
+            <rect x="240" y="80" width="60" height="20" rx="4" fill="#f59e0b"/>
+            <text x="270" y="95" text-anchor="middle" fill="white" font-size="8">2s</text>
+            
+            <!-- 第三次尝试 -->
+            <rect x="300" y="70" width="60" height="30" rx="4" fill="#3b82f6"/>
+            <text x="330" y="90" text-anchor="middle" fill="white" font-size="9">尝试 3</text>
+            
+            <text x="360" y="90" text-anchor="middle" fill="#ef4444" font-size="11">✗</text>
+            
+            <rect x="370" y="80" width="80" height="20" rx="4" fill="#f59e0b"/>
+            <text x="410" y="95" text-anchor="middle" fill="white" font-size="8">4s</text>
+            
+            <!-- 第四次尝试 -->
+            <rect x="450" y="70" width="60" height="30" rx="4" fill="#3b82f6"/>
+            <text x="480" y="90" text-anchor="middle" fill="white" font-size="9">尝试 4</text>
+            
+            <text x="510" y="90" text-anchor="middle" fill="#10b981" font-size="11">✓</text>
+            
+            <!-- 标注 -->
+            <text x="400" y="140" text-anchor="middle" fill="#666" font-size="10">等待时间: 1s → 2s → 4s → 8s（指数增长）</text>
+        </svg>
+    </div>
+
+    <h2>四、熔断器</h2>
+    <p>熔断器（Circuit Breaker）是一种保护机制，用于防止系统在服务持续不可用时反复尝试调用，从而避免资源浪费和级联故障。熔断器的工作模式类似于电路中的保险丝：当错误次数超过阈值时，熔断器"跳闸"（打开），拒绝后续请求；经过一段时间的冷却后，熔断器"半开"，允许试探性请求；如果试探成功，熔断器"闭合"，恢复正常。</p>
+
+    <p>熔断器有三种状态：闭合（Closed，正常执行）、打开（Open，拒绝请求）、半开（Half-Open，试探性执行）。状态转换的规则是：闭合状态下，连续失败次数超过阈值则转为打开；打开状态下，经过冷却期后转为半开；半开状态下，如果试探请求成功则转为闭合，如果失败则转回打开。</p>
+
+    <h3>4.1 熔断器实现</h3>
+    <div class="code-file">Python（熔断器）</div>
+<pre><code class="language-python">class CircuitBreaker:
+    """熔断器"""
+    
+    def __init__(self, failure_threshold=5,
+                 recovery_timeout=60.0):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.state = "closed"
+        self.failure_count = 0
+        self.last_failure_time = None
+
+    def call(self, func, *args, **kwargs):
+        if self.state == "open":
+            if (time.time() - self.last_failure_time 
+                > self.recovery_timeout):
+                self.state = "half_open"
+            else:
+                raise Error("熔断器已打开")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise e</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">熔断器状态转换</text>
+            
+            <!-- Closed -->
+            <circle cx="180" cy="100" r="45" fill="#10b981" opacity="0.2" stroke="#10b981" stroke-width="2"/>
+            <text x="180" y="95" text-anchor="middle" fill="#065f46" font-size="12" font-weight="bold">Closed</text>
+            <text x="180" y="115" text-anchor="middle" fill="#065f46" font-size="9">正常执行</text>
+            
+            <!-- Open -->
+            <circle cx="600" cy="100" r="45" fill="#ef4444" opacity="0.2" stroke="#ef4444" stroke-width="2"/>
+            <text x="600" y="95" text-anchor="middle" fill="#b91c1c" font-size="12" font-weight="bold">Open</text>
+            <text x="600" y="115" text-anchor="middle" fill="#b91c1c" font-size="9">拒绝请求</text>
+            
+            <!-- Half-Open -->
+            <circle cx="390" cy="40" r="35" fill="#f59e0b" opacity="0.2" stroke="#f59e0b" stroke-width="2"/>
+            <text x="390" y="37" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">Half-Open</text>
+            <text x="390" y="52" text-anchor="middle" fill="#92400e" font-size="8">试探执行</text>
+            
+            <!-- 状态转换箭头 -->
+            <line x1="225" y1="80" x2="355" y2="55" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="290" y="55" text-anchor="middle" fill="#f59e0b" font-size="8">失败超限</text>
+            
+            <line x1="425" y1="55" x2="555" y2="80" stroke="#ef4444" stroke-width="1.5"/>
+            <text x="490" y="55" text-anchor="middle" fill="#ef4444" font-size="8">试探失败</text>
+            
+            <line x1="555" y1="120" x2="225" y2="120" stroke="#10b981" stroke-width="1.5"/>
+            <text x="390" y="140" text-anchor="middle" fill="#10b981" font-size="8">冷却期后试探成功 → 恢复闭合</text>
+        </svg>
+    </div>
+
+    <h2>五、恢复策略</h2>
+    <p>恢复策略定义了 Agent 在遇到不同类型错误时应该采取的应对措施。一个好的恢复策略应该能够根据错误的性质选择合适的处理方式，既不会过度处理简单错误，也不会对严重错误掉以轻心。在设计恢复策略时，需要考虑错误的可恢复性、任务的关键程度、系统的整体状态等多个因素。</p>
+
+    <p>常见的恢复策略包括：重试（对临时性错误进行重复尝试）、降级（使用备用方案或简化功能）、跳过（忽略非关键错误继续执行）、中止（遇到严重错误时停止执行）、回退（恢复到之前的稳定状态）。选择合适的恢复策略需要综合考虑错误类型、任务重要性和系统状态等因素。在实际应用中，建议为每种错误类型定义明确的恢复策略，并通过配置化的方式管理这些策略，便于后续的调整和优化。</p>
+
+    <h3>5.1 恢复策略映射</h3>
+    <table>
+        <thead>
+            <tr><th>错误类型</th><th>恢复策略</th><th>说明</th><th>重试次数</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>网络错误</strong></td><td>指数退避重试</td><td>等待后自动重试</td><td>5 次</td></tr>
+            <tr><td><strong>超时</strong></td><td>降低复杂度</td><td>简化任务后重试</td><td>3 次</td></tr>
+            <tr><td><strong>速率限制</strong></td><td>等待</td><td>等待限流窗口过去</td><td>1 次</td></tr>
+            <tr><td><strong>输入无效</strong></td><td>回退</td><td>使用默认值</td><td>0 次</td></tr>
+            <tr><td><strong>服务不可用</strong></td><td>熔断</td><td>触发熔断保护</td><td>0 次</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">异常处理决策流程</text>
+            
+            <!-- 异常发生 -->
+            <rect x="330" y="45" width="120" height="30" rx="15" fill="#ef4444"/>
+            <text x="390" y="65" text-anchor="middle" fill="white" font-size="10" font-weight="bold">异常发生</text>
+            
+            <!-- 分类 -->
+            <line x1="390" y1="75" x2="390" y2="90" stroke="#64748b" stroke-width="2"/>
+            
+            <rect x="100" y="90" width="140" height="50" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="170" y="110" text-anchor="middle" fill="#92400e" font-size="10" font-weight="bold">临时性错误</text>
+            <text x="170" y="130" text-anchor="middle" fill="#92400e" font-size="9">→ 重试 / 等待</text>
+            
+            <rect x="320" y="90" width="140" height="50" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="390" y="110" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="bold">可降级错误</text>
+            <text x="390" y="130" text-anchor="middle" fill="#1e40af" font-size="9">→ 降级 / 回退</text>
+            
+            <rect x="540" y="90" width="140" height="50" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="610" y="110" text-anchor="middle" fill="#065f46" font-size="10" font-weight="bold">致命错误</text>
+            <text x="610" y="130" text-anchor="middle" fill="#065f46" font-size="9">→ 熔断 / 中止</text>
+        </svg>
+    </div>
+
+    <h2>六、综合异常处理框架</h2>
+    <p>将超时控制、重试机制、熔断器和恢复策略组合在一起，可以构建一个完善的异常处理框架。这个框架能够为 Agent 的执行提供全方位的保护，确保在各种异常情况下都能做出恰当的响应。通过分层设计，每一层专注于特定类型的异常处理，既避免了功能重叠，又确保了覆盖的全面性。</p>
+
+    <p>综合框架的设计要点包括：分层处理（不同层级处理不同类型的异常）、策略组合（根据错误类型组合使用多种恢复策略）、状态跟踪（记录错误历史和恢复效果）、可配置性（通过配置文件调整各项参数）。通过这些设计，可以构建出既能应对常见错误又能处理极端情况的鲁棒系统。在实际部署时，建议将异常处理框架与监控告警系统集成，实现自动化的异常检测和响应。</p>
+
+    <h3>6.1 综合框架示例</h3>
+    <div class="code-file">Python（综合异常处理）</div>
+<pre><code class="language-python">class RobustAgent:
+    """鲁棒 Agent"""
+    
+    def __init__(self):
+        self.timeout = TimeoutController(30.0)
+        self.handler = ExceptionHandler(
+            exception_type=Exception,
+            max_retries=3,
+            retry_delay=1.0
+        )
+        self.breaker = CircuitBreaker(
+            failure_threshold=5,
+            recovery_timeout=60.0
+        )
+    
+    def execute_with_protection(self, goal):
+        """带保护的执行"""
+        with self.timeout:
+            # 熔断器保护
+            result = self.breaker.call(
+                self.handler.handle,
+                self._execute, goal
+            )
+            return result
+    
+    def _execute(self, goal):
+        """实际执行逻辑"""
+        # Agent 执行代码
+        pass</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">综合异常处理框架</text>
+            
+            <!-- 外层：超时 -->
+            <rect x="30" y="45" width="720" height="80" rx="12" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,2"/>
+            <text x="40" y="60" fill="#ef4444" font-size="9">超时控制层</text>
+            
+            <!-- 中层：熔断 -->
+            <rect x="50" y="55" width="680" height="60" rx="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <text x="60" y="72" fill="#f59e0b" font-size="9">熔断器层</text>
+            
+            <!-- 内层：重试 -->
+            <rect x="70" y="65" width="640" height="40" rx="6" fill="none" stroke="#3b82f6" stroke-width="2"/>
+            <text x="80" y="85" fill="#3b82f6" font-size="9">重试层</text>
+            
+            <!-- 核心 -->
+            <rect x="310" y="72" width="160" height="26" rx="13" fill="#10b981"/>
+            <text x="390" y="90" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Agent 执行逻辑</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在生产环境中，建议为每个异常处理组件设置合理的参数：超时时间根据网络延迟和任务复杂度调整（通常 30-120 秒），重试次数根据错误类型设置（网络错误 3-5 次，业务错误 1-2 次），熔断阈值根据历史错误率设定（通常 5-10 次连续失败）。同时，建议将所有异常处理和恢复操作记录到日志中，便于后续分析和优化。</p>
+    </div>
+
+    <h2>七、小结</h2>
+    <p>异常处理、超时控制和恢复机制是构建鲁棒 Agent 系统的核心要素。通过合理组合超时控制器、异常处理器、熔断器和恢复策略，可以确保 Agent 在面对各种异常情况时都能做出恰当的响应。这些机制不仅能够提高系统的可用性和稳定性，还能在出现问题时提供清晰的错误信息，便于快速定位和修复。</p>
+
+    <p>在下一节 10.7 中，我们将学习 Agent 可观测性，了解如何通过 LangSmith、LangFuse、Phoenix 等工具监控和分析 Agent 的执行过程，从而持续优化 Agent 的性能和可靠性。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>

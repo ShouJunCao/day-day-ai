@@ -67,14 +67,13 @@ class ReActAgent:
 你可以使用以下工具：
 {tools}
 
-回答格式必须严格遵守（使用英文关键字）：
+回答格式必须严格遵守（关键字必须用英文）：
 Thought: <你的思考过程>
-Action: <工具名称，从上面工具列表中选择>
-Action Input: {{"参数名": "参数值"}}
-Observation: <工具返回结果，由系统自动填充>
+Action: <工具名称>
+Action Input: <JSON 参数>
+Observation: <系统自动填充>
 
-重复以上步骤直到你有足够信息回答。
-当你有足够信息时，输出：
+重复循环直到完成。完成后输出：
 Final Answer: <最终答案>
 
 如果不需要工具，直接输出：
@@ -145,7 +144,8 @@ Final Answer: <最终答案>"""
             if parsed["action"]:
                 action_input = parsed.get("action_input", "{}")
                 print(f"🔧 Action: {parsed['action']}")
-                print(f" Input: {action_input}")
+                print(f"📥 Input: {action_input}")
+                self.trace.append({"step": "action", "tool": parsed["action"], "input": action_input})
                 
                 try:
                     args = json.loads(action_input)
@@ -154,7 +154,8 @@ Final Answer: <最终答案>"""
                 
                 observation = self.registry.execute(parsed["action"], args)
                 obs_text = str(observation)
-                print(f"👁️ Observation: {obs_text[:100]}")
+                print(f"️ Observation: {obs_text[:100]}")
+                self.trace.append({"step": "observation", "content": obs_text})
                 
                 prompt += f"\nThought: {parsed.get('thought', '')}\nAction: {parsed['action']}\nAction Input: {action_input}\nObservation: {obs_text}\n"
         
@@ -203,7 +204,7 @@ if __name__ == "__main__":
     agent = ReActAgent(registry)
     
     # 测试 1：需要工具调用
-    print("\n 测试 1: 计算与天气查询")
+    print("\n📌 测试 1: 计算与天气查询")
     result = agent.run("北京今天天气如何？另外计算 25 * 4 + 10 等于多少？")
     print(f"结果: {result.get('answer')}")
     

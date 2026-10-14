@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10.8 实战：构建数据分析 Agent — 天天AI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <style>
+        :root { --bg: #ffffff; --text: #1a1a2e; --accent: #4361ee; --code-bg: #282c34; --border: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; line-height: 1.8; color: var(--text); background: var(--bg); }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+        h1 { font-size: 2em; color: var(--accent); margin-bottom: 8px; }
+        h2 { font-size: 1.5em; color: var(--text); margin: 32px 0 16px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+        h3 { font-size: 1.2em; color: var(--text); margin: 24px 0 12px; }
+        p { margin-bottom: 16px; }
+        .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .tag-module { background: #dbeafe; color: #1e40af; }
+        .tag-time { background: #fef3c7; color: #92400e; }
+        .tags { margin-bottom: 24px; }
+        .tags .tag { margin-right: 8px; }
+        a.back { display: inline-block; margin-bottom: 24px; color: var(--accent); text-decoration: none; font-size: 0.9em; }
+        a.back:hover { text-decoration: underline; }
+        ul, ol { margin: 12px 0 16px 24px; }
+        li { margin-bottom: 8px; }
+        strong { color: var(--accent); }
+        pre { background: var(--code-bg); border-radius: 8px; padding: 20px; overflow-x: auto; margin: 16px 0; border: 1px solid #3e4451; }
+        pre code { white-space: pre-wrap; font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace; font-size: 0.88em; line-height: 1.7; color: #abb2bf; }
+        .code-file { background: #3e4451; color: #abb2bf; padding: 6px 14px; border-radius: 8px 8px 0 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82em; margin-bottom: -1px; display: inline-block; }
+        .note { padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+        .note-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+        .note-tip { background: #ecfdf5; border-left: 4px solid #10b981; }
+        .note-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+        .note-title { font-weight: 600; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+        th { background: var(--accent); color: white; padding: 12px; text-align: left; }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+        tr:nth-child(even) td { background: #f8fafc; }
+        .diagram-container { text-align: center; margin: 24px 0; overflow-x: auto; }
+        .diagram-container svg { max-width: 100%; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回学习大纲</a>
+    <h1>10.8 实战：构建数据分析 Agent</h1>
+    <div class="tags">
+        <span class="tag tag-module">模块十：AI Agent 开发</span>
+        <span class="tag tag-time">预计学习：60 分钟</span>
+    </div>
+
+    <h2>学习目标</h2>
+    <ul>
+        <li>综合运用前面学习的所有 Agent 技术构建实际应用</li>
+        <li>掌握数据分析 Agent 的架构设计和工具实现</li>
+        <li>理解如何将 ReAct 循环、异常处理、可观测性集成到一个系统中</li>
+        <li>能够独立设计和实现面向特定领域的 Agent 应用</li>
+    </ul>
+
+    <h2>一、项目概述</h2>
+    <p>数据分析 Agent 是本模块的综合实战项目。它将前面学习的所有核心技术（ReAct 循环、任务规划、工具编排、异常处理、熔断器、可观测性）整合到一个完整的应用中，实现一个能够自动执行数据分析全流程的智能 Agent。这个项目不仅是对前面知识的综合运用，更是对实际开发能力的全面检验。</p>
+
+    <p>这个 Agent 的工作流程包括：理解分析需求 → 规划分析步骤 → 查询数据 → 执行统计分析 → 生成分组报告 → 输出最终分析结论。每个步骤都由 Agent 自动决策和执行，开发者只需要提供分析任务和可用工具的定义。通过这种方式，Agent 能够灵活应对各种数据分析需求，而不需要为每种场景编写专门的代码。</p>
+
+    <p>通过这个项目，你将看到一个真实的 Agent 系统是如何将多个技术组件有机组合在一起的。这种综合应用能力是成为高级 Agent 开发者的关键。在实际项目中，数据分析 Agent 可以对接真实的数据源，如数据库、数据仓库、API 等，为企业的数据分析工作提供智能化的支持。</p>
+
+    <h3>1.1 系统架构</h3>
+    <div class="diagram-container">
+        <svg width="780" height="220" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="16" font-weight="bold">数据分析 Agent 系统架构</text>
+            
+            <!-- 用户层 -->
+            <rect x="310" y="45" width="160" height="35" rx="8" fill="#1a1a2e"/>
+            <text x="390" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="bold">用户（自然语言任务）</text>
+            
+            <line x1="390" y1="80" x2="390" y2="100" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Agent 核心层 -->
+            <rect x="100" y="100" width="580" height="50" rx="8" fill="#8b5cf6"/>
+            <text x="390" y="120" text-anchor="middle" fill="white" font-size="12" font-weight="bold">Agent 核心层（ReAct 循环 + 规划器）</text>
+            <text x="390" y="140" text-anchor="middle" fill="white" font-size="9">决策引擎 · 上下文管理 · 状态追踪</text>
+            
+            <!-- 支撑层 -->
+            <line x1="200" y1="150" x2="200" y2="165" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="390" y1="150" x2="390" y2="165" stroke="#64748b" stroke-width="1.5"/>
+            <line x1="580" y1="150" x2="580" y2="165" stroke="#64748b" stroke-width="1.5"/>
+            
+            <rect x="50" y="165" width="180" height="40" rx="6" fill="#ef4444"/>
+            <text x="140" y="190" text-anchor="middle" fill="white" font-size="10" font-weight="bold">异常处理层</text>
+            
+            <rect x="290" y="165" width="200" height="40" rx="6" fill="#3b82f6"/>
+            <text x="390" y="190" text-anchor="middle" fill="white" font-size="10" font-weight="bold">工具执行层</text>
+            
+            <rect x="550" y="165" width="180" height="40" rx="6" fill="#10b981"/>
+            <text x="640" y="190" text-anchor="middle" fill="white" font-size="10" font-weight="bold">可观测性层</text>
+        </svg>
+    </div>
+
+    <h2>二、数据源与工具设计</h2>
+    <p>数据分析 Agent 的核心是它的工具集。我们设计了四个核心工具，覆盖了数据分析的完整流程：数据查询（从数据源获取数据）、指标计算（计算统计指标）、分组聚合（按维度分组分析）、报告生成（输出结构化报告）。</p>
+
+    <p>在实际项目中，这些工具可以对接真实的数据源，如数据库、数据仓库、API 等。为了演示目的，我们使用模拟数据来展示工具的完整工作流程。模拟数据包含了日期、产品、地区、销售额、成本和利润等字段，足以支持多种分析场景。</p>
+
+    <h3>2.1 数据查询工具</h3>
+    <div class="code-file">Python（数据查询工具）</div>
+<pre><code class="language-python">import csv
+import json
+import io
+
+class DataAnalysisTools:
+    """数据分析工具集"""
+    
+    MOCK_DATA = """
+日期,产品,地区,销售额,成本,利润
+2026-01-05,A,华北,15000,9000,6000
+2026-01-12,B,华东,22000,13200,8800
+...
+"""
+
+    @staticmethod
+    def query_data(dataset, filters=None):
+        """查询数据集，支持条件过滤"""
+        reader = csv.DictReader(
+            io.StringIO(MOCK_DATA.strip())
+        )
+        rows = list(reader)
+        
+        if filters:
+            rows = [
+                row for row in rows
+                if all(row.get(k) == str(v) 
+                       for k, v in filters.items())
+            ]
+        
+        return json.dumps(rows, ensure_ascii=False)</code></pre>
+
+    <h3>2.2 指标计算与分组聚合</h3>
+    <div class="code-file">Python（计算与聚合工具）</div>
+<pre><code class="language-python">    @staticmethod
+    def calculate_metrics(data_json, metric):
+        """计算统计指标"""
+        data = json.loads(data_json)
+        values = [float(row.get(metric, 0)) for row in data]
+        
+        return json.dumps({
+            "count": len(values),
+            "sum": sum(values),
+            "avg": sum(values) / len(values),
+            "max": max(values),
+            "min": min(values)
+        }, ensure_ascii=False)
+
+    @staticmethod
+    def group_by(data_json, group_key, agg_key, agg_func):
+        """分组聚合"""
+        data = json.loads(data_json)
+        groups = {}
+        
+        for row in data:
+            key = row.get(group_key)
+            groups.setdefault(key, []).append(
+                float(row.get(agg_key, 0))
+            )
+        
+        result = {}
+        for key, values in groups.items():
+            if agg_func == "sum":
+                result[key] = sum(values)
+            elif agg_func == "avg":
+                result[key] = sum(values) / len(values)
+        
+        return json.dumps(result, ensure_ascii=False)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">数据分析工具链</text>
+            
+            <rect x="30" y="55" width="160" height="80" rx="8" fill="#1a1a2e"/>
+            <text x="110" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">原始数据</text>
+            <text x="110" y="100" text-anchor="middle" fill="white" font-size="8">CSV / JSON / DB</text>
+            <text x="110" y="120" text-anchor="middle" fill="white" font-size="8">12 条销售记录</text>
+            
+            <line x1="190" y1="95" x2="230" y2="95" stroke="#64748b" stroke-width="2"/>
+            <text x="210" y="88" text-anchor="middle" fill="#64748b" font-size="9">查询</text>
+            
+            <rect x="230" y="55" width="160" height="80" rx="8" fill="#8b5cf6"/>
+            <text x="310" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">数据过滤</text>
+            <text x="310" y="100" text-anchor="middle" fill="white" font-size="8">按条件筛选</text>
+            <text x="310" y="120" text-anchor="middle" fill="white" font-size="8">query_data()</text>
+            
+            <line x1="390" y1="95" x2="430" y2="95" stroke="#64748b" stroke-width="2"/>
+            <text x="410" y="88" text-anchor="middle" fill="#64748b" font-size="9">分析</text>
+            
+            <rect x="430" y="55" width="160" height="80" rx="8" fill="#3b82f6"/>
+            <text x="510" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">指标计算</text>
+            <text x="510" y="100" text-anchor="middle" fill="white" font-size="8">分组聚合</text>
+            <text x="510" y="120" text-anchor="middle" fill="white" font-size="8">calculate / group_by</text>
+            
+            <line x1="590" y1="95" x2="630" y2="95" stroke="#64748b" stroke-width="2"/>
+            <text x="610" y="88" text-anchor="middle" fill="#64748b" font-size="9">报告</text>
+            
+            <rect x="630" y="55" width="120" height="80" rx="8" fill="#10b981"/>
+            <text x="690" y="80" text-anchor="middle" fill="white" font-size="11" font-weight="bold">分析报告</text>
+            <text x="690" y="100" text-anchor="middle" fill="white" font-size="8">结构化输出</text>
+            <text x="690" y="120" text-anchor="middle" fill="white" font-size="8">generate_report()</text>
+        </svg>
+    </div>
+
+    <h2>三、ReAct 循环集成</h2>
+    <p>数据分析 Agent 使用 ReAct 循环作为核心执行引擎。Agent 在每一步都先思考下一步应该做什么，然后选择合适的工具执行，最后观察执行结果并决定下一步行动。这种循环模式使得 Agent 能够灵活应对不同的分析需求，而不需要为每种场景编写专门的代码。</p>
+
+    <p>Agent 的提示词设计至关重要。它需要清晰地描述可用工具的功能和参数格式，规定输出格式要求，并提供足够的上下文信息。在数据分析场景中，提示词还需要引导 Agent 按照合理的数据分析流程进行操作：先查询数据，再计算指标，最后生成报告。</p>
+
+    <h3>3.1 Agent 核心实现</h3>
+    <div class="code-file">Python（数据分析 Agent）</div>
+<pre><code class="language-python">class DataAnalysisAgent:
+    """数据分析 Agent"""
+    
+    TOOLS = {
+        "query_data": DataAnalysisTools.query_data,
+        "calculate_metrics": DataAnalysisTools.calculate_metrics,
+        "group_by": DataAnalysisTools.group_by,
+        "generate_report": DataAnalysisTools.generate_report
+    }
+
+    def analyze(self, task):
+        """执行数据分析任务"""
+        prompt = f"""你是一个专业数据分析 Agent。
+任务：{task}
+
+可用工具：
+- query_data: 查询数据集
+- calculate_metrics: 计算统计指标
+- group_by: 分组聚合
+- generate_report: 生成分析报告
+
+回答格式：
+Thought: <思考过程>
+Action: <工具名>
+Action Input: <JSON 参数>
+Observation: <自动填充>
+...
+Final Answer: <最终分析报告>"""
+
+        observations = []
+        for step in range(8):
+            response = self._call_llm(prompt)
+            action = self._parse_action(response)
+            
+            if action.get("final_answer"):
+                return {"success": True, "answer": action["final_answer"]}
+            
+            if action.get("action"):
+                result = self.execute_tool(
+                    action["action"], action["input"]
+                )
+                observations.append(f"Observation: {result}")
+        
+        return {"success": False}</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">数据分析 Agent 执行流程</text>
+            
+            <!-- 用户任务 -->
+            <rect x="30" y="50" width="140" height="40" rx="8" fill="#1a1a2e"/>
+            <text x="100" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">用户任务输入</text>
+            
+            <line x1="170" y1="70" x2="210" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- Agent 决策 -->
+            <rect x="210" y="50" width="140" height="40" rx="8" fill="#8b5cf6"/>
+            <text x="280" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">Agent 决策</text>
+            
+            <line x1="350" y1="70" x2="390" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 工具选择 -->
+            <rect x="390" y="40" width="100" height="25" rx="6" fill="#f59e0b"/>
+            <text x="440" y="58" text-anchor="middle" fill="white" font-size="9">query_data</text>
+            
+            <rect x="390" y="70" width="100" height="25" rx="6" fill="#3b82f6"/>
+            <text x="440" y="88" text-anchor="middle" fill="white" font-size="9">calculate</text>
+            
+            <rect x="390" y="100" width="100" height="25" rx="6" fill="#10b981"/>
+            <text x="440" y="118" text-anchor="middle" fill="white" font-size="9">group_by</text>
+            
+            <rect x="390" y="130" width="100" height="25" rx="6" fill="#ef4444"/>
+            <text x="440" y="148" text-anchor="middle" fill="white" font-size="9">report</text>
+            
+            <line x1="490" y1="70" x2="530" y2="70" stroke="#64748b" stroke-width="2"/>
+            
+            <!-- 结果输出 -->
+            <rect x="530" y="50" width="220" height="40" rx="8" fill="#10b981"/>
+            <text x="640" y="75" text-anchor="middle" fill="white" font-size="10" font-weight="bold">分析报告输出</text>
+        </svg>
+    </div>
+
+    <h2>四、异常处理集成</h2>
+    <p>在实际的数据分析过程中，各种异常情况都可能发生：数据查询失败（数据源不可用）、计算错误（数据格式异常）、工具超时（网络延迟）等。数据分析 Agent 集成了前面学习的异常处理机制，确保在面对各种异常时都能做出恰当的响应。</p>
+
+    <p>Agent 的异常处理策略是：对于临时性错误（如网络抖动），使用指数退避重试；对于数据格式错误，尝试使用默认值或回退逻辑；对于工具不可用，记录错误信息并跳过该步骤。这种分层次的异常处理策略确保了 Agent 的鲁棒性。</p>
+
+    <h3>4.1 异常处理集成</h3>
+    <div class="code-file">Python（异常处理集成）</div>
+<pre><code class="language-python">class DataAnalysisExceptionHandler:
+    """数据分析异常处理器"""
+    
+    def __init__(self, max_retries=2, retry_delay=0.5):
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+
+    def handle(self, func, *args, **kwargs):
+        """执行带异常处理的函数"""
+        last_error = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                last_error = e
+                if attempt < self.max_retries:
+                    delay = self.retry_delay * (2 ** attempt)
+                    time.sleep(delay)
+        
+        return {"error": str(last_error)}</code></pre>
+
+    <h2>五、可观测性集成</h2>
+    <p>数据分析 Agent 集成了完整的可观测性系统，包括执行追踪和指标收集。追踪器记录每个步骤的开始时间、结束时间、执行状态和元数据，形成完整的执行时间线。指标收集器统计总请求数、成功率、平均延迟等关键性能指标。</p>
+
+    <p>可观测性数据的价值不仅在于问题排查，更在于持续优化。通过分析执行追踪数据，可以发现哪些步骤耗时最长、哪些工具调用最频繁、哪些错误类型最常见。这些信息为 Agent 的性能优化提供了数据支持。</p>
+
+    <h3>5.1 追踪器集成</h3>
+    <div class="code-file">Python（追踪器集成）</div>
+<pre><code class="language-python">class DataAnalysisTracer:
+    """数据分析 Agent 追踪器"""
+    
+    def __init__(self):
+        self.session_id = str(uuid.uuid4())
+        self.span_stack = []
+        self.traces = []
+
+    def start_trace(self, name):
+        span = TraceSpan(
+            span_id=str(uuid.uuid4()),
+            name=name,
+            start_time=time.time(),
+            parent_id=self.span_stack[-1].span_id 
+                if self.span_stack else None
+        )
+        if self.span_stack:
+            self.span_stack[-1].children.append(span)
+        self.span_stack.append(span)
+        return span
+
+    def end_trace(self, status="success", metadata=None):
+        if self.span_stack:
+            span = self.span_stack.pop()
+            span.end_time = time.time()
+            span.duration = span.end_time - span.start_time
+            span.status = status
+            if not self.span_stack:
+                self.traces.append(span)</code></pre>
+
+    <div class="diagram-container">
+        <svg width="780" height="160" viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">数据分析 Agent 可观测性视图</text>
+            
+            <!-- 时间线 -->
+            <line x1="50" y1="80" x2="730" y2="80" stroke="#e2e8f0" stroke-width="1"/>
+            
+            <!-- 步骤块 -->
+            <rect x="60" y="65" width="100" height="30" rx="4" fill="#8b5cf6"/>
+            <text x="110" y="85" text-anchor="middle" fill="white" font-size="8">查询数据 0.15s</text>
+            
+            <rect x="170" y="65" width="120" height="30" rx="4" fill="#3b82f6"/>
+            <text x="230" y="85" text-anchor="middle" fill="white" font-size="8">计算指标 0.22s</text>
+            
+            <rect x="300" y="65" width="140" height="30" rx="4" fill="#10b981"/>
+            <text x="370" y="85" text-anchor="middle" fill="white" font-size="8">分组聚合 0.18s</text>
+            
+            <rect x="450" y="65" width="130" height="30" rx="4" fill="#f59e0b"/>
+            <text x="515" y="85" text-anchor="middle" fill="white" font-size="8">生成报告 0.25s</text>
+            
+            <rect x="590" y="65" width="100" height="30" rx="4" fill="#ef4444"/>
+            <text x="640" y="85" text-anchor="middle" fill="white" font-size="8">输出 0.05s</text>
+            
+            <!-- 指标 -->
+            <rect x="100" y="110" width="580" height="35" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="390" y="132" text-anchor="middle" fill="#666" font-size="10">总耗时: 0.85s | 成功率: 100% | Token 消耗: 2450 | 工具调用: 5 次</text>
+        </svg>
+    </div>
+
+    <h2>六、完整代码实现</h2>
+    <p>以下是数据分析 Agent 的完整实现代码。这个 Agent 整合了前面学习的所有技术：ReAct 循环作为执行引擎、数据分析工具集作为能力支撑、异常处理器作为容错保障、追踪器作为可观测性基础设施。</p>
+
+    <h3>6.1 Agent 主类</h3>
+    <div class="code-file">Python（完整 Agent 实现）</div>
+<pre><code class="language-python">class DataAnalysisAgent:
+    """数据分析 Agent — 完整实现"""
+    
+    TOOLS = {
+        "query_data": DataAnalysisTools.query_data,
+        "calculate_metrics": DataAnalysisTools.calculate_metrics,
+        "group_by": DataAnalysisTools.group_by,
+        "generate_report": DataAnalysisTools.generate_report
+    }
+
+    def __init__(self):
+        self.tracer = DataAnalysisTracer()
+        self.handler = DataAnalysisExceptionHandler()
+        self.metrics = {"total_steps": 0, "success": 0}
+
+    def analyze(self, task):
+        """执行数据分析"""
+        # 1. 开始追踪
+        self.tracer.start_trace(task)
+        
+        # 2. ReAct 循环
+        for step in range(8):
+            response = self._call_llm(prompt)
+            action = self._parse_action(response)
+            
+            if action.get("final_answer"):
+                return {"success": True, "answer": action["final_answer"]}
+            
+            # 3. 带异常处理的工具执行
+            result = self.handler.handle(
+                self.execute_tool,
+                action["action"], action["input"]
+            )
+        
+        # 4. 导出追踪数据
+        return {
+            "success": False,
+            "trace": self.tracer.export_summary(),
+            "metrics": self.metrics
+        }</code></pre>
+
+    <h2>七、运行与验证</h2>
+    <p>运行数据分析 Agent 的完整流程如下：首先初始化 Agent 实例，然后调用 analyze 方法传入分析任务。Agent 会自动规划执行步骤、调用相应的工具、处理可能出现的异常，并最终生成分析报告。整个流程完全自动化，开发者只需要定义好工具集和异常处理策略即可。</p>
+
+    <p>在实际部署时，建议将 Agent 与 CI/CD 流水线集成，实现自动化的数据分析和报告生成。同时，建议将可观测性数据与监控告警系统对接，确保在出现异常时能够及时通知相关人员。通过持续的运行和监控，可以不断优化 Agent 的分析策略和工具配置，提升分析质量和效率。</p>
+
+    <table>
+        <thead>
+            <tr><th>测试场景</th><th>预期行为</th><th>验证要点</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>基础查询</strong></td><td>查询销售数据并计算指标</td><td>数据查询正确，指标计算准确</td></tr>
+            <tr><td><strong>分组分析</strong></td><td>按产品/地区分组聚合</td><td>分组结果正确，聚合计算无误</td></tr>
+            <tr><td><strong>条件过滤</strong></td><td>按地区筛选后分析</td><td>过滤条件正确应用</td></tr>
+            <tr><td><strong>异常处理</strong></td><td>工具调用失败时重试</td><td>自动重试机制正常工作</td></tr>
+            <tr><td><strong>可观测性</strong></td><td>完整追踪执行过程</td><td>追踪数据完整，指标统计准确</td></tr>
+        </tbody>
+    </table>
+
+    <div class="diagram-container">
+        <svg width="780" height="140" viewBox="0 0 780 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="390" y="25" text-anchor="middle" fill="#1a1a2e" font-size="15" font-weight="bold">Agent 技术栈总结</text>
+            
+            <rect x="30" y="55" width="140" height="60" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="100" y="80" text-anchor="middle" fill="#92400e" font-size="11" font-weight="bold">ReAct 循环</text>
+            <text x="100" y="100" text-anchor="middle" fill="#b45309" font-size="8">执行引擎</text>
+            
+            <rect x="190" y="55" width="140" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+            <text x="260" y="80" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="bold">工具编排</text>
+            <text x="260" y="100" text-anchor="middle" fill="#2563eb" font-size="8">能力支撑</text>
+            
+            <rect x="350" y="55" width="140" height="60" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+            <text x="420" y="80" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">异常处理</text>
+            <text x="420" y="100" text-anchor="middle" fill="#059669" font-size="8">容错保障</text>
+            
+            <rect x="510" y="55" width="140" height="60" rx="8" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="580" y="80" text-anchor="middle" fill="#5b21b6" font-size="11" font-weight="bold">可观测性</text>
+            <text x="580" y="100" text-anchor="middle" fill="#7c3aed" font-size="8">监控评估</text>
+            
+            <rect x="670" y="55" width="80" height="60" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+            <text x="710" y="80" text-anchor="middle" fill="#666" font-size="11" font-weight="bold">LLM</text>
+            <text x="710" y="100" text-anchor="middle" fill="#999" font-size="8">推理核心</text>
+        </svg>
+    </div>
+
+    <div class="note note-tip">
+        <div class="note-title">💡 实战建议</div>
+        <p>在实际项目中，建议将数据分析 Agent 与真实数据源对接，如数据库、数据仓库或 BI 系统。同时，建议添加更多的分析工具（如数据可视化、趋势分析、异常检测等），以扩展 Agent 的分析能力。可观测性数据应该与监控告警系统集成，实现自动化的性能监控和异常通知。</p>
+    </div>
+
+    <h2>八、模块十总结</h2>
+    <p>模块十系统性地介绍了 AI Agent 的开发技术栈。从架构概述到 ReAct 框架，从多框架对比到规划能力，从循环设计到异常处理，从可观测性到综合实战，我们全面覆盖了 Agent 开发的核心知识。</p>
+
+    <p>通过本模块的学习，开发者应该能够：理解 Agent 的核心概念和架构组成；掌握 ReAct 等主流框架的使用方法；根据项目需求选择合适的开发框架；实现任务分解和动态规划能力；设计健壮的异常处理和恢复机制；构建完整的可观测性系统；综合运用所有技术构建生产级 Agent 应用。</p>
+
+    <p>Agent 技术正在快速发展，新的框架和工具不断涌现。建议持续关注社区动态，学习最佳实践，并将这些技术应用到实际项目中。通过不断的实践和迭代，你将能够构建出越来越强大和智能的 Agent 应用。</p>
+
+    <p>至此，整个学习大纲的十个模块已全部完成。从 Python 基础到进阶特性，从函数式编程到面向对象，从设计模式到并发编程，从 Web 开发到 MCP 协议，再到 AI Agent 开发，我们系统地学习了现代软件开发的核心知识。希望这些学习资料能够帮助你在技术成长的道路上走得更远。</p>
+</div>
+<script>Prism.highlightAll();</script>
+</body>
+</html>
